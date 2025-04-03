@@ -1,0 +1,48 @@
+---
+description: #Tests
+globs: 
+alwaysApply: false
+---
+# ✅ Simple Testing Rules
+
+1 Jest Test Writing Rules for `app/api/chat`
+
+#NEVER modify route.ts only the test file!
+
+This document outlines rules and best practices for writing Jest tests for the `/api/chat` route and related utility functions to ensure test reliability, maintainability, and prevent common issues like state pollution.
+
+## 1. Test Isolation is Critical
+
+*   **Reset Mocks:** Always reset all mocks and spies in a `beforeEach` block using `jest.clearAllMocks()` and `jest.restoreAllMocks()`. For specific mocks that might retain state (like session or utility functions), consider using `.mockReset()` explicitly within `beforeEach`.
+*   **Isolate Initial State:** When mocking initial data (e.g., `mockGetSessionCookieData`), provide a fresh, deep-cloned copy of the initial state object for *each test* to prevent modifications in one test affecting another. Example: `mockGetSessionCookieData.mockResolvedValue(JSON.parse(JSON.stringify(initialSession)));`
+*   **Explicit Mocking:** If `beforeEach` resets are insufficient, explicitly set mock return values (`mockResolvedValue`, `mockImplementation`) *within* the specific test (`it(...)` block) that requires a pristine state.
+*   **Serial Execution:** If state pollution persists despite the above, run tests serially using `npx jest --runInBand` to help isolate the issue, although this should be a last resort. Aim for tests that pass reliably in parallel.
+
+## 2. Accurate Assertions
+
+*   **Trace the Code:** Before writing assertions, carefully trace the execution flow of the code (`route.ts` and relevant utilities) for the specific test scenario.
+*   **Verify Configurations:** Check the corresponding prompt configuration in `prompts.ts` (e.g., `validation`, `buffer_memory`, `saveUserInputAs`, `saveAssistantOutputAs`).
+*   **Assert Actual Outcomes:** Base your `expect(...)` assertions on the *actual* state the code should produce according to its logic and the prompt config, including index changes, buffer size updates, and the exact contents of `namedMemory`. Do not make assumptions.
+*   **Check Mock Calls:** Verify that mocks (`mockUpdateSessionCookieData`, `fetch`, `mockHandleDatabaseStorageIfNeeded`, etc.) are called (or not called) the expected number of times and with the correct arguments.
+
+## 3. Complete Implementation
+
+*   **No Placeholders:** Do not leave placeholder comments like `// ... content ...` in tests. Fully implement the test logic (mock setup, request preparation, calling the handler, assertions).
+*   **Skip Incomplete Tests:** If a test is not yet fully implemented, use `it.skip(...)` or comment out the *entire* `it(...)` block. Do not commit uncommented tests with missing logic.
+
+## 4. Unique Test Names
+
+*   **Descriptive & Unique:** Use clear, descriptive, and unique names for each test case (`it('should do X when Y occurs', ...)`). Avoid duplicate test names.
+
+## 5. Consistent Mocking Strategy
+
+*   **Identify Dependencies:** List all external modules (`session`, `databaseHelpers`, `next/headers`, `fetch`) and internal utility modules (`openaiApiUtils`, `promptUtils`, `memoryUtils`, etc.) used by the code under test.
+*   **Mock Externals:** Mock external dependencies globally (using `jest.mock(...)` at the top level).
+*   **Mock/Spy Internals Carefully:** Decide whether to mock internal utility functions. If a utility might have side effects or maintain internal state affecting tests, consider mocking it using `jest.mock('./path/to/util')`. Alternatively, use `jest.spyOn(utilModule, 'functionName')` if you only need to track calls or provide a mock implementation for specific tests (remember to `.mockRestore()` in `beforeEach` or `afterEach`).
+
+## 6. Debugging Aids
+
+*   **Temporary Logging:** When debugging failing tests, temporarily add clear `console.log` statements within the main code (`route.ts`, utils) to track key state variables (`currentIndex`, `currentNamedMemory`, `currentBufferSize`) at different stages.
+*   **Clean Up Logs:** Remove all temporary debugging logs before committing code.
+
+By following these rules, we can improve the stability and reliability of our test suite.

@@ -1,0 +1,18 @@
+---
+description: #refactoring
+globs: 
+alwaysApply: false
+---
+Please follow these rules for refactoring:
+
+1. **Split** the single large file into multiple smaller files:
+
+   - The main `route.ts` should only parse the request, decide if streaming or not, and call the relevant handler.
+
+2. Do **not** change the existing logic or remove console logs; just refactor it into separate modules and re-import.  
+3. Ensure each new module has **only** the relevant functions.  
+4. Import statements in `route.ts` must be updated so everything compiles.  
+5. Keep the code DRY. If there’s repeated logic in `route.ts` that belongs to a helper, please move it out.  
+6. Use minimal changes to the existing function signatures – only what’s required to cleanly separate them.  
+7. Maintain the same exports for the `POST` function so it’s still recognized as the Next.js route.  
+8. Provide me with **all** new files & the updated imports in your final answer.

@@ -180,22 +180,18 @@ async function handleNonStreamingFlow(
 ): Promise<HandlerResult> {
   const { messagesFromClient, sessionData } = input;
 
-  // console.log(`>>> [DEBUG][LOG 0] Inside handleNonStreamingFlow - input.sessionData: typeof = ${typeof sessionData}, Value = ${JSON.stringify(sessionData)}`);
   // console.log("Entering handleNonStreamingFlow with session data:", JSON.stringify(sessionData, null, 2));
-  // console.log(`   and ${messagesFromClient.length} messages from client.`);
 
-  // --- Step 1: Initialize Local State ---
-  let currentIndex = sessionData.currentIndex;
-  // Create a deep clone of namedMemory to prevent modifying the original session object reference
+  // --- Step 1: Initialize Local State from Session ---
+  let currentIndex = sessionData.currentIndex; // Index for the NEXT prompt to generate
+  const promptIndexThatAskedLastQuestion = sessionData.promptIndexThatAskedLastQuestion; // Index of the prompt the user is responding TO
   let currentNamedMemory: NamedMemory = JSON.parse(JSON.stringify(sessionData.namedMemory ?? {}));
   let currentBufferSize = sessionData.currentBufferSize;
 
-  // The following check might still be useful if cloning fails, but less likely now
   if (typeof currentNamedMemory !== 'object' || currentNamedMemory === null || Array.isArray(currentNamedMemory)) {
-      // console.error(">>> [CRITICAL DEBUG] currentNamedMemory is NOT an object after CLONING! Forcing to {}. Value was:", currentNamedMemory);
       currentNamedMemory = {};
   }
-  // console.log(`>>> [DEBUG][LOG 1] After CLONING: typeof currentNamedMemory = ${typeof currentNamedMemory}, Value = ${JSON.stringify(currentNamedMemory)}`);
+  // console.log(`>>> [DEBUG][FLOW_V2] Initial State: currentIndex=${currentIndex}, askedBy=${promptIndexThatAskedLastQuestion}`);
 
 
   // --- Prepare History and Get User Message ---
@@ -206,373 +202,294 @@ async function handleNonStreamingFlow(
       return { content: "Internal error: Invalid history state.", updatedSessionData: null };
   }
   const userMessage = userMessageEntry.content;
+  // console.log("\n[INFO] Processing User Input:", userMessage.substring(0, 100) + "...");
+
 
   try {
-      // console.log("\n[INFO] Processing User Input:", userMessage.substring(0, 100) + "...");
+    let isStorable = true; // Flag for DB storage, assume true unless validation fails
 
-      // --- Step 2: Process Current Prompt & User Input ---
+    // --- Step 2: VALIDATION BLOCK (New Location - Validate *Previous* Prompt's Question) ---
+    // Check if there *was* a previous prompt that asked a question and if it requires validation.
+    if (promptIndexThatAskedLastQuestion !== null && promptIndexThatAskedLastQuestion >= 0 && promptIndexThatAskedLastQuestion < PROMPT_LIST.length) {
+      const prevPromptObj = PROMPT_LIST[promptIndexThatAskedLastQuestion];
+      const prevPromptValidation = prevPromptObj?.validation;
+      const prevPromptValidationNeeded = typeof prevPromptValidation === 'boolean' ? prevPromptValidation : typeof prevPromptValidation === 'string';
+       // console.log(`>>> [DEBUG][VALIDATION V2] Checking validation for PREVIOUS prompt index: ${promptIndexThatAskedLastQuestion}`);
 
-      // Check for conversation completion *before* processing
+      if (prevPromptValidationNeeded) {
+         // console.log(`[INFO] Previous prompt (index ${promptIndexThatAskedLastQuestion}) requires validation for input: "${userMessage}"`);
+
+         // Prepare previous prompt text with memory for validation context
+         const prevPromptText = prevPromptObj?.prompt_text || "";
+         const prevPromptWithMemory = injectNamedMemory(prevPromptText, currentNamedMemory);
+
+         const customValidation = typeof prevPromptValidation === "string" ? prevPromptValidation : undefined;
+         const isValid = await validateInput(userMessage, prevPromptWithMemory, customValidation);
+
+         if (!isValid) {
+           console.log(`>>> DEBUG: Validation FAILED for user input "${userMessage}" against rules of prompt index: ${promptIndexThatAskedLastQuestion}`);
+           isStorable = false; // Mark interaction as not storable due to failed validation
+
+           // --- Apply Rollback based on the prompt that FAILED validation ---
+           const rolledBackIndex = RollbackOnValidationFailure(promptIndexThatAskedLastQuestion); // Rollback based on the prompt that asked
+           console.log(`>>> DEBUG: RollbackOnValidationFailure(${promptIndexThatAskedLastQuestion}) returned: ${rolledBackIndex}`);
+
+           if (rolledBackIndex !== promptIndexThatAskedLastQuestion) {
+             console.log(`>>> DEBUG: Applying rollback. Failing index: ${promptIndexThatAskedLastQuestion}, Rolled-back index: ${rolledBackIndex}`);
+
+             // --- Generate Retry Message & Return IMMEDIATELY---
+             const rolledBackPromptObj = PROMPT_LIST[rolledBackIndex];
+             const rolledBackPromptText = rolledBackPromptObj?.prompt_text ?? "Please try again.";
+             const rolledBackPromptWithMemory = injectNamedMemory(rolledBackPromptText, currentNamedMemory);
+             const retryContent = await generateRetryMessage(userMessage, rolledBackPromptWithMemory, messagesFromClient); // Pass history
+             // console.log(`>>> DEBUG: About to execute IMMEDIATE return for rolled-back index: ${rolledBackIndex}`);
+             console.log(`>>> DEBUG: About to execute IMMEDIATE return. Retry based on index ${rolledBackIndex}. Next turn starts at index ${rolledBackIndex + 1}.`);
+
+
+             // Return immediately with the retry message.
+             // The *next* turn will start at the index AFTER the rolled-back index.
+             // The question implicitly "asked" by the retry message corresponds to the rolled-back index.
+             return {
+               content: retryContent,
+               updatedSessionData: {
+                 currentIndex: rolledBackIndex + 1, // Next turn starts *after* the rolled-back index
+                 promptIndexThatAskedLastQuestion: rolledBackIndex, // The retry message "asks" based on this index
+                 namedMemory: currentNamedMemory,
+                 currentBufferSize: currentBufferSize
+               }
+             };
+             // --- End of Immediate Return for Rollback ---
+
+           } else { // Validation failed BUT no rollback occurred (fallbackIndex was 0 or undefined for the prompt that asked)
+             console.log(`>>> DEBUG: Validation failed for prompt ${promptIndexThatAskedLastQuestion}, but no rollback applied (fallbackIndex=0 or undefined).`);
+             // What should happen here? Re-ask the SAME question from promptIndexThatAskedLastQuestion?
+             // Let's generate a standard retry based on the *failed* prompt index for now.
+             const failedPromptText = prevPromptObj?.prompt_text ?? "Please try that again.";
+             const failedPromptWithMemory = injectNamedMemory(failedPromptText, currentNamedMemory);
+             const retryContent = await generateRetryMessage(userMessage, failedPromptWithMemory, messagesFromClient);
+
+             console.log(`>>> DEBUG: About to execute IMMEDIATE return to re-ask prompt: ${promptIndexThatAskedLastQuestion}`);
+             return {
+               content: retryContent, // Re-ask the same question
+               updatedSessionData: {
+                 currentIndex: currentIndex, // Next turn still *intended* to be the one after the failed prompt
+                 promptIndexThatAskedLastQuestion: promptIndexThatAskedLastQuestion, // We are re-asking this question
+                 namedMemory: currentNamedMemory,
+                 currentBufferSize: currentBufferSize
+               }
+             };
+           }
+         } else {
+           // --- Validation Succeeded for Previous Prompt ---
+           console.log(`[INFO] Validation SUCCEEDED for user input "${userMessage}" against prompt index: ${promptIndexThatAskedLastQuestion}`);
+           // Proceed normally to generate the response for the *current* `currentIndex`.
+           // Save user input to memory NOW based on the prompt that asked the question
+           saveUserInputToMemoryIfNeeded(userMessage, prevPromptObj, currentNamedMemory);
+           // console.log(`>>> [DEBUG][MEMORY] Saved user input based on previous prompt ${promptIndexThatAskedLastQuestion}. Memory: ${JSON.stringify(currentNamedMemory)}`);
+         }
+       } else {
+         // console.log(`[DEBUG] No validation needed for previous prompt index: ${promptIndexThatAskedLastQuestion}`);
+         // Previous prompt didn't require validation, save user input based on it if configured
+         saveUserInputToMemoryIfNeeded(userMessage, prevPromptObj, currentNamedMemory);
+         // console.log(`>>> [DEBUG][MEMORY] Saved user input based on previous prompt ${promptIndexThatAskedLastQuestion} (no validation needed). Memory: ${JSON.stringify(currentNamedMemory)}`);
+       }
+    } else {
+         // console.log(`[DEBUG] No previous prompt index (${promptIndexThatAskedLastQuestion}) or it's out of bounds. Skipping validation.`);
+         // This happens on the very first turn or if session state is weird.
+         // Optionally save input based on current index if needed? For now, do nothing extra.
+    }
+    // --- END of New Validation Block ---
+
+
+    // --- Step 3: Check for Conversation Completion ---
+    // If validation passed/skipped, check if we are already at the end
       if (currentIndex >= PROMPT_LIST.length) {
-           // console.log("[INFO] Conversation Complete (Index out of bounds).");
+       // console.log("[INFO] Conversation Complete (currentIndex out of bounds).");
            return {
                content: "Thank you for your responses! Goodbye.",
-               updatedSessionData: { currentIndex, namedMemory: currentNamedMemory, currentBufferSize }
+         // Save state reflecting completion
+         updatedSessionData: { currentIndex, promptIndexThatAskedLastQuestion: currentIndex-1, namedMemory: currentNamedMemory, currentBufferSize }
            };
       }
 
-      // Get current prompt details (the one triggered by user input)
+    // --- Step 4: Main Flow - Generate Response for CURRENT Index ---
+    // If we reach here, validation succeeded or wasn't needed for the previous prompt.
+    // We now generate the response for the prompt at `currentIndex`.
+
       const currentPromptObj = PROMPT_LIST[currentIndex];
-      const currentPromptText = currentPromptObj?.prompt_text;
-      if (!currentPromptText) {
-          // console.error("[ERROR] Current prompt text is missing at index:", currentIndex);
-          return { content: "Internal error: Could not retrieve current prompt.", updatedSessionData: null };
-      }
-
-      const thisPromptIndex = currentIndex; // Index for DB storage associated with this user message
-
-      const promptValidation = currentPromptObj?.validation;
-      const promptValidationNeeded = typeof promptValidation === 'boolean' ? promptValidation : typeof promptValidation === 'string';
-
-      // console.log("\n[DEBUG] Current Prompt Index:", currentIndex);
-      // console.log("[DEBUG] Current Prompt Text (snippet):\n", currentPromptText.substring(0, 100) + "...");
-      // console.log("[DEBUG] Validation needed?", promptValidationNeeded);
-
-      // 1) Prepare Prompt with Memory (for validation or immediate use)
-      // console.log(`>>> [DEBUG][LOG 2] Before injectNamedMemory (currentPrompt): typeof currentNamedMemory = ${typeof currentNamedMemory}, Value = ${JSON.stringify(currentNamedMemory)}`);
+    if (!currentPromptObj) {
+         // console.error("[ERROR] Current prompt object is missing at index:", currentIndex);
+         return { content: "Internal error: Could not retrieve current prompt details.", updatedSessionData: null };
+    }
+    const currentPromptText = currentPromptObj.prompt_text || "";
       const currentPromptWithMemory = injectNamedMemory(currentPromptText, currentNamedMemory);
-      // Create history context *just* for validation if needed
-      const historyForValidation = [
+
+    // Update dynamic buffer size based on the prompt that is *about to run*
+    currentBufferSize = updateDynamicBufferMemory(currentPromptObj, currentBufferSize);
+
+    // Prepare conversation history for the main LLM call
+    let historyForLLM = [
           { role: "system", content: currentPromptWithMemory },
           ...currentHistory.filter((entry) => entry.role !== "system"),
       ];
-
-      // 2) Save User Input to Memory (if needed, uses currentPromptObj config)
-      saveUserInputToMemoryIfNeeded(userMessage, currentPromptObj, currentNamedMemory);
-      // console.log(`>>> [DEBUG][LOG 3b] After saveUserInputToMemoryIfNeeded: typeof currentNamedMemory = ${typeof currentNamedMemory}, Value = ${JSON.stringify(currentNamedMemory)}`);
-
-
-      let isStorable = true; // Flag for DB storage
-      let finalResponseContent: string | null = null; // Holds the response to send back
-
-      // --- Step 3: Validation Block ---
-      if (promptValidationNeeded) {
-          // console.log("[INFO] This prompt requires validation.");
-          const customValidation = typeof promptValidation === "string" ? promptValidation : undefined;
-          const isValid = await validateInput(userMessage, currentPromptWithMemory, customValidation);
-
-          if (!isValid) {
-              // Keep currentIndex the same, proceed to main LLM call for this prompt
-              // console.log("[INFO] Validation Failed. Will re-run prompt index:", currentIndex);
-              isStorable = false; // Don't store interaction if validation failed initially
-              // NOTE: Rollback, retry message generation, and early return logic are REMOVED.
-          } else {
-              // --- Validation Succeeded ---
-              // console.log("[INFO] Validation Succeeded.");
-              // Increment index *immediately* after successful validation
-              currentIndex++;
-              // console.log("[INFO] Index incremented due to successful validation. New index:", currentIndex);
-              // Now proceed to main LLM call for the *new* currentIndex (if applicable)
-              // Check if the new index is out of bounds *after* incrementing
-              if (currentIndex >= PROMPT_LIST.length) {
-                   // console.log("[INFO] Conversation Complete (reached end after successful validation). Index:", currentIndex);
-                   // Need a final message here if conversation ends immediately after validation
-                   finalResponseContent = "Thank you! That was the last piece of information needed.";
-                   // Return immediately as there's no next prompt to run
-                   return {
-                       content: finalResponseContent,
-                       updatedSessionData: { currentIndex, namedMemory: currentNamedMemory, currentBufferSize }
-                   };
-              }
-              // If not out of bounds, the flow will continue to Step 4 with the incremented index
-          }
-      } else {
-          // --- No validation needed ---
-          // console.log("[INFO] No validation needed.");
-          // Index will be incremented AFTER the main LLM call in Step 5
-      }
-
-      // --- Step 4: Main Flow: Get LLM Response for the *current* prompt (index `currentIndex`) ---
-      // currentIndex might have been incremented if validation passed
-
-      // console.log(`>>> [DEBUG][LOG 5] Start of main LLM flow for index ${currentIndex}. typeof currentNamedMemory = ${typeof currentNamedMemory}, Value = ${JSON.stringify(currentNamedMemory)}`);
-
-      // Get the prompt object based on the potentially updated currentIndex
-      // Important: Use the potentially incremented `currentIndex` here
-      const effectivePromptObj = PROMPT_LIST[currentIndex];
-      if (!effectivePromptObj) { // Should be caught by the check inside the validation block, but double-check
-          // console.error("[ERROR] Attempting to run main flow, but index is out of bounds:", currentIndex);
-          // This path might be hit if validation succeeded but there are no more prompts.
-          // The check inside the `isValid` block should handle this, but as a safety net:
-          return { content: "Thank you, the conversation is complete.", updatedSessionData: { currentIndex, namedMemory: currentNamedMemory, currentBufferSize } };
-      }
-
-      // Re-evaluate prompt text with memory for the potentially new index
-      const effectivePromptText = effectivePromptObj.prompt_text || "";
-      // Use potentially updated memory AND the potentially updated prompt text
-      const effectivePromptWithMemory = injectNamedMemory(effectivePromptText, currentNamedMemory); 
-
-      // Update dynamic buffer size based on the prompt that is *about to run* (effectivePromptObj)
-      const newBufferSize = updateDynamicBufferMemory(effectivePromptObj, currentBufferSize);
-      if (newBufferSize !== currentBufferSize) {
-           // console.log(`[BUFFER DYNAMIC] Buffer size changed from ${currentBufferSize} to ${newBufferSize}`);
-           currentBufferSize = newBufferSize; // Update local buffer size state
-      }
-      // console.log("[DEBUG] Effective buffer size for main call:", currentBufferSize);
-
-      // Prepare the *current* system prompt (using currentPromptObj and currentPromptWithMemory)
-      // console.log("[DEBUG] Preparing for main LLM call (index", currentIndex, "):", effectivePromptWithMemory.substring(0, 100) + "...");
-
-      // Prepare conversation history for the LLM call
-      let historyForLLM = [
-          { role: "system", content: effectivePromptWithMemory }, // Use the prompt text for the current index
-          ...currentHistory.filter((entry) => entry.role !== "system"), // Use the initial client history for this turn
-      ];
-      historyForLLM = manageBuffer(historyForLLM, currentBufferSize); // Apply buffer
+    historyForLLM = manageBuffer(historyForLLM, currentBufferSize);
 
       // --- Main LLM Call ---
       const mainPayload = {
-          model: getModelForCurrentPrompt(currentIndex), // Use potentially updated index
-          temperature: effectivePromptObj?.temperature ?? 0,
-          messages: historyForLLM, // History is prepared using effectivePromptWithMemory
+      model: getModelForCurrentPrompt(currentIndex),
+      temperature: currentPromptObj?.temperature ?? 0,
+      messages: historyForLLM,
       };
       // console.log("[DEBUG] Main Payload to LLM (index", currentIndex, "):", JSON.stringify(mainPayload, null, 2));
       const rawAssistantContent = await fetchApiResponseWithRetry(mainPayload);
-      const assistantContentCleaned = cleanLlmResponse(rawAssistantContent); // Cleaned LLM response
+    const assistantContentCleaned = cleanLlmResponse(rawAssistantContent);
 
       if (!assistantContentCleaned) {
-          // console.error("[ERROR] Main LLM call failed or returned empty content after retries for index:", currentIndex);
-          finalResponseContent = "I'm sorry, I couldn't process that. Please try again.";
-          isStorable = false;
-          // Return current state even on error, with the error message. Index doesn't advance.
+       // console.error("[ERROR] Main LLM call failed for index:", currentIndex);
+       // Return state as it was *before* this failed call attempt
           return {
-              content: finalResponseContent,
-              updatedSessionData: { currentIndex, namedMemory: currentNamedMemory, currentBufferSize } // Return state at point of failure
+         content: "I'm sorry, I couldn't process that. Could you repeat?",
+         updatedSessionData: {
+            currentIndex: currentIndex, // Stay on the current index
+            promptIndexThatAskedLastQuestion: promptIndexThatAskedLastQuestion, // The last *successful* question asker
+            namedMemory: currentNamedMemory,
+            currentBufferSize: currentBufferSize
+          }
           };
       }
 
       // --- Process Assistant Response Memory (Save & Prefix) ---
-      // Uses config for the prompt that just ran (currentPromptObj)
-      // console.log("[DEBUG] Processing assistant response memory for index:", currentIndex);
-      finalResponseContent = processAssistantResponseMemory(
+    // Uses config for the prompt that just ran (currentPromptObj at currentIndex)
+    let finalResponseContent = processAssistantResponseMemory(
           assistantContentCleaned,
-          effectivePromptObj, // Use the object for the prompt that just ran
+      currentPromptObj,
           currentNamedMemory,
-          currentIndex // Pass updated index for logging
+      currentIndex
       );
-      // console.log(`>>> [DEBUG][LOG 7b] After processAssistantResponseMemory: typeof currentNamedMemory = ${typeof currentNamedMemory}, Value = ${JSON.stringify(currentNamedMemory)}`);
-      // console.log("[DEBUG] finalResponseContent after memory processing:", finalResponseContent ? finalResponseContent.substring(0, 100) + "..." : "null");
 
-      // --- Create History Context *After* Main LLM Call ---
-      // This history includes the response just generated and will be the base for chaining/transitions
+    // --- History Context *After* Main LLM Call (for transitions) ---
       let historyAfterLLM = [
-          ...historyForLLM, // History used for the call
-          { role: "assistant", content: finalResponseContent } // Add the response we just got
+      ...historyForLLM,
+      { role: "assistant", content: finalResponseContent }
       ];
-      // Apply important memory insertion if needed for the context (doesn't affect finalResponseContent directly)
-      if (effectivePromptObj.important_memory) {
-          // console.log(`[IMPORTANT MEMORY][Index: ${currentIndex}] Applying important memory.`);
+    if (currentPromptObj.important_memory) {
           historyAfterLLM = insertImportantMemory(historyAfterLLM, finalResponseContent);
       }
 
+    // --- Step 5: Process Transitions ---
+    const executedPromptIndex = currentIndex; // The index that just generated the main response
+    const executedPromptObj = currentPromptObj;
+    let indexGeneratingFinalResponse = executedPromptIndex; // Track which prompt index is responsible for the final output
 
-      
-  // --- Step 5: Process Response, Check Flag, and Potentially Trigger Transitions ---
+    let historyContextForNextStep = historyAfterLLM; // Start with history after the main call
 
-  const executedPromptIndex = currentIndex;
-  const executedPromptObj = effectivePromptObj;
-
-  // History context for transitions should use the prompt that *actually ran*
-  let historyContextForNextStep = [
-       { role: "system", content: effectivePromptWithMemory }, // Use prompt for the index that ran
-       ...currentHistory.filter((entry) => entry.role !== "system"), // History before the call
-       { role: "assistant", content: finalResponseContent } // Add the response we just got
-   ];
-  // Apply important memory based on the prompt that *actually ran*
-  if (executedPromptObj.important_memory) {
-      // console.log(`[IMPORTANT MEMORY][Index: ${executedPromptIndex}] Applying important memory.`);
-      historyContextForNextStep = insertImportantMemory(historyContextForNextStep, finalResponseContent);
-  }
-
-
-  // Initialize flags/variables for post-processing
   let transitionsWereTriggered = false;
-  let finalCombinedContent = finalResponseContent || "";
-  let nextIndexAfterProcessing = executedPromptIndex + 1;
+    let finalCombinedContent = finalResponseContent || ""; // Initialize with base response
+    let nextIndexAfterProcessing = executedPromptIndex + 1; // Default next index
 
-  // --- Check if the EXECUTED prompt triggers transitions ---
-  // console.log(`\n[DEBUG][FLAG CHECK] Checking flags for prompt index: ${executedPromptIndex}`);
-  // console.log(`[DEBUG][FLAG CHECK] Prompt Object text snippet: ${executedPromptObj?.prompt_text?.substring(0, 50)}...`);
   const hasHiddenFlag = executedPromptObj?.autoTransitionHidden === true;
   const hasVisibleFlag = executedPromptObj?.autoTransitionVisible === true;
-  // console.log(`[DEBUG][FLAG CHECK] Has autoTransitionHidden flag? ${hasHiddenFlag}`);
-  // console.log(`[DEBUG][FLAG CHECK] Has autoTransitionVisible flag? ${hasVisibleFlag}`);
-
 
   if (hasHiddenFlag || hasVisibleFlag) {
-      // console.log(`\n[DEBUG][TRANSITION TRIGGER] Prompt ${executedPromptIndex} has an autoTransition flag. Preparing transition sequence.`);
-      transitionsWereTriggered = true; // Mark that we entered the transition phase
-
-      // Start transition checks from the *next* index
+      // console.log(`\n[DEBUG][TRANSITION TRIGGER] Prompt ${executedPromptIndex} has an autoTransition flag.`);
+      transitionsWereTriggered = true;
       let currentTransitionIndex = executedPromptIndex + 1;
-      // console.log(`[DEBUG][TRANSITION TRIGGER] Starting transition checks from index ${currentTransitionIndex}.`);
 
-      // Adjust initial combined content based on the trigger type
       if (hasHiddenFlag) {
-          // console.log("[DEBUG][TRANSITION TRIGGER] Triggering prompt was hidden. Clearing initial response for overwrite by handler(s).");
-          finalCombinedContent = ""; // Start blank
-      } else {
-          // console.log("[DEBUG][TRANSITION TRIGGER] Triggering prompt was visible. Keeping its response as initial combined content.");
-          // finalCombinedContent already holds Response N
+        finalCombinedContent = ""; // Start blank if trigger was hidden
       }
 
-      // --- Auto-Transition Loops (Start checking from currentTransitionIndex) ---
-
       // Hidden Loop
-      // console.log(`\n[DEBUG][TRANSITION LOOP] Checking for AUTO-HIDDEN transitions starting at index: ${currentTransitionIndex}`);
-      while (
-          currentTransitionIndex < PROMPT_LIST.length &&
-          PROMPT_LIST[currentTransitionIndex]?.autoTransitionHidden
-      ) {
-          const loopStartIndex = currentTransitionIndex;
-          // console.log(`[DEBUG][AUTO-HIDDEN LOOP] Found hidden transition at index ${loopStartIndex}.`);
+      while (currentTransitionIndex < PROMPT_LIST.length && PROMPT_LIST[currentTransitionIndex]?.autoTransitionHidden) {
           const { response: autoResp, updatedIndex, updatedNamedMemory, updatedBufferSize, conversationHistory: historyAfterHidden } =
               await handleAutoTransitionHidden(historyContextForNextStep, currentTransitionIndex, currentNamedMemory, currentBufferSize);
-          // Update state
-          currentTransitionIndex = updatedIndex; // Handler updates the index
+        currentTransitionIndex = updatedIndex;
           currentNamedMemory = updatedNamedMemory ?? {};
           currentBufferSize = updatedBufferSize;
           historyContextForNextStep = historyAfterHidden;
-          // Hidden responses OVERWRITE
-          finalCombinedContent = autoResp ?? "";
-          // console.log(`[DEBUG][AUTO-HIDDEN LOOP] Overwrote combined content. Index is now ${currentTransitionIndex}.`);
+        finalCombinedContent = autoResp ?? ""; // Overwrite
+        indexGeneratingFinalResponse = currentTransitionIndex - 1; // Last hidden prompt index generated this
       }
-       // console.log(`[DEBUG][TRANSITION LOOP] Exited AUTO-HIDDEN loop. Current transition index: ${currentTransitionIndex}`);
 
       // Visible Loop
-      // console.log(`\n[DEBUG][TRANSITION LOOP] Checking for AUTO-VISIBLE transitions starting at index: ${currentTransitionIndex}`);
-      while (
-          currentTransitionIndex < PROMPT_LIST.length &&
-          PROMPT_LIST[currentTransitionIndex]?.autoTransitionVisible
-      ) {
-           const loopStartIndex = currentTransitionIndex;
-           // console.log(`[DEBUG][AUTO-VISIBLE LOOP] Found visible transition at index ${loopStartIndex}.`);
+      while (currentTransitionIndex < PROMPT_LIST.length && PROMPT_LIST[currentTransitionIndex]?.autoTransitionVisible) {
            const { response: autoResp, updatedIndex, updatedNamedMemory, updatedBufferSize, conversationHistory: historyAfterVisible } =
               await handleAutoTransitionVisible(historyContextForNextStep, currentTransitionIndex, currentNamedMemory, currentBufferSize);
-            // Update state
-           currentTransitionIndex = updatedIndex; // Handler updates the index
+        currentTransitionIndex = updatedIndex;
            currentNamedMemory = updatedNamedMemory ?? {};
            currentBufferSize = updatedBufferSize;
            historyContextForNextStep = historyAfterVisible;
-           // Append visible responses
            if (autoResp) {
                const separator = finalCombinedContent ? "\n\n" : "";
-               finalCombinedContent += separator + autoResp;
-               // console.log(`[DEBUG][AUTO-VISIBLE LOOP] Appended response. Index is now ${currentTransitionIndex}.`);
+          finalCombinedContent += separator + autoResp; // Append
+          indexGeneratingFinalResponse = currentTransitionIndex - 1; // Last visible prompt index generated/appended this
            } else {
-               // console.log("[DEBUG][AUTO-VISIBLE LOOP] Visible handler returned null response. Breaking loop.");
-               break;
+          break; // Stop if a visible transition fails
            }
       }
-      // console.log(`[DEBUG][TRANSITION LOOP] Exited AUTO-VISIBLE loop. Current transition index: ${currentTransitionIndex}`);
 
-      // After loops, currentTransitionIndex holds the index of the prompt AFTER the last transition (or the first non-transition prompt)
-      nextIndexAfterProcessing = currentTransitionIndex; // Update the final index
+      nextIndexAfterProcessing = currentTransitionIndex; // Update index after loops
 
-      // --- Execute the NEXT NORMAL Prompt if transitions landed on one ---
-      // console.log(`\n[DEBUG][POST-TRANSITION] Checking if a final normal prompt needs to run at index: ${nextIndexAfterProcessing}`);
+      // Execute the NEXT NORMAL Prompt if transitions landed on one
       if (nextIndexAfterProcessing < PROMPT_LIST.length) {
           const nextNormalPromptObj = PROMPT_LIST[nextIndexAfterProcessing];
           if (!nextNormalPromptObj?.autoTransitionHidden && !nextNormalPromptObj?.autoTransitionVisible) {
-               // console.log(`[DEBUG][POST-TRANSITION] Transitions occurred and landed on normal prompt ${nextIndexAfterProcessing}. Executing it.`);
-               // Update buffer size
+          // console.log(`[DEBUG][POST-TRANSITION] Running final normal prompt ${nextIndexAfterProcessing}.`);
                currentBufferSize = updateDynamicBufferMemory(nextNormalPromptObj, currentBufferSize);
-               // Prepare prompt text
-               const finalPromptText = nextNormalPromptObj.prompt_text || "Error: No prompt text.";
+          const finalPromptText = nextNormalPromptObj.prompt_text || "";
                const finalPromptWithMemory = injectNamedMemory(finalPromptText, currentNamedMemory);
-               // Prepare history
-               let historyForFinalCall = [
-                   { role: "system", content: finalPromptWithMemory },
-                   ...historyContextForNextStep.filter((entry) => entry.role !== "system"),
-               ];
+          let historyForFinalCall = [ { role: "system", content: finalPromptWithMemory }, ...historyContextForNextStep.filter((e) => e.role !== "system") ];
                historyForFinalCall = manageBuffer(historyForFinalCall, currentBufferSize);
-               // Final LLM Call
                const finalPayload = { model: getModelForCurrentPrompt(nextIndexAfterProcessing), temperature: nextNormalPromptObj?.temperature ?? 0, messages: historyForFinalCall };
                const rawFinalAssistantContent = await fetchApiResponseWithRetry(finalPayload);
                const finalAssistantContentCleaned = cleanLlmResponse(rawFinalAssistantContent);
 
                if (finalAssistantContentCleaned) {
-                    // console.log(`[DEBUG][POST-TRANSITION] Final LLM Response Received: "${finalAssistantContentCleaned.substring(0, 100)}..."`);
                     const processedFinalContent = processAssistantResponseMemory(finalAssistantContentCleaned, nextNormalPromptObj, currentNamedMemory, nextIndexAfterProcessing);
-                    // Append
                     const separator = finalCombinedContent ? "\n\n" : "";
-                    finalCombinedContent += separator + processedFinalContent;
-                    // console.log(`[DEBUG][POST-TRANSITION] Appended final prompt response.`);
-                    // Increment index one last time *after* successful execution
-                    nextIndexAfterProcessing++;
-                    // console.log(`[DEBUG][POST-TRANSITION] Incremented index after final prompt. Final index: ${nextIndexAfterProcessing}`);
-               } else {
-                   // console.warn(`[WARN][POST-TRANSITION] Final LLM call for index ${nextIndexAfterProcessing} failed. Index not incremented.`);
-               }
-          } else {
-               // console.log(`[DEBUG][POST-TRANSITION] Transitions occurred but landed on another transition prompt (${nextIndexAfterProcessing}) or end of list. No final normal prompt executed.`);
+            finalCombinedContent += separator + processedFinalContent; // Append final normal prompt response
+            indexGeneratingFinalResponse = nextIndexAfterProcessing; // This final prompt generated the last part
+            nextIndexAfterProcessing++; // Increment index *after* successful final prompt execution
           }
-      } else {
-           // console.log(`[DEBUG][POST-TRANSITION] Transitions finished at end of prompt list (index ${nextIndexAfterProcessing}). No final normal prompt to execute.`);
+        }
       }
-
   } else {
-      // The executed prompt did NOT have an auto-transition flag.
-      // console.log(`\n[DEBUG][TRANSITION TRIGGER] Prompt ${executedPromptIndex} has NO autoTransition flag. Normal flow, no transitions triggered.`);
-      // nextIndexAfterProcessing remains executedPromptIndex + 1 from initialization
-      // console.log(`[DEBUG] Index for next turn will be: ${nextIndexAfterProcessing}.`);
-      // finalCombinedContent remains the response from the executed prompt.
-  }
+      // No transitions triggered by the executed prompt (at executedPromptIndex)
+      // indexGeneratingFinalResponse remains executedPromptIndex
+      // nextIndexAfterProcessing remains executedPromptIndex + 1
+    }
 
-  // --- Update finalResponseContent and currentIndex for saving ---
+    // Finalize the response content
   finalResponseContent = finalCombinedContent;
-  // Always use the index calculated after step 5 unless an error stopped processing earlier
-  currentIndex = nextIndexAfterProcessing;
-  // console.log("[DEBUG] Index determined after Step 5 (transitions/increment):", currentIndex);
 
+    // --- Step 6: Store to DB (Optional) and Return Final State ---
+     console.log(`>>> DEBUG: Reaching FINAL return. Final content generated by index: ${indexGeneratingFinalResponse}. Next turn index: ${nextIndexAfterProcessing}. isStorable: ${isStorable}`);
 
-
-
-
-
-      // --- Step 6: Store and Return Final State ---
-
-      console.log("[DEBUG] Reached end of processing for this turn. Final index to save FOR NEXT TURN:", currentIndex);
-
-      // Store final interaction result if needed (use the original prompt index `thisPromptIndex`)
-      if (isStorable) {
-          const contentToStore = finalResponseContent ?? ""; // Ensure we store a string
-          // await handleDatabaseStorageIfNeeded(thisPromptIndex, contentToStore, userMessage);
-          // console.log("[DB-DEBUG] Storing final content for original prompt index:", thisPromptIndex);
+     // Store interaction result if needed (using the index that *asked* the question for context, if validation passed)
+     // If validation failed (isStorable=false), maybe don't store? Or store failure? Needs decision.
+     const indexForStorageContext = isStorable ? promptIndexThatAskedLastQuestion : null; // Example: only store if valid
+     if (isStorable && indexForStorageContext !== null && indexForStorageContext >= 0) {
+       const contentToStore = finalResponseContent ?? "";
+       // await handleDatabaseStorageIfNeeded(indexForStorageContext, contentToStore, userMessage); // Pass user message too
+       // console.log(`[DB-DEBUG] Storing final content related to prompt index ${indexForStorageContext} question.`);
       } else {
-          // console.log("[DB-DEBUG] Interaction was marked non-storable. Skipping storage for original prompt index:", thisPromptIndex);
+       // console.log("[DB-DEBUG] Interaction was not stored (isStorable=false or no valid prev index).");
       }
 
-      // console.log(`>>> [DEBUG][LOG 8] Before final return: typeof currentNamedMemory = ${typeof currentNamedMemory}, Value = ${JSON.stringify(currentNamedMemory)}`);
-      // console.log("handleNonStreamingFlow final session state to save:", JSON.stringify({ currentIndex, namedMemory: currentNamedMemory, currentBufferSize }, null, 2));
-
+     // --- Return final content and session state for the *next* turn ---
       return {
-          content: finalResponseContent, // The final content after all processing
+       content: finalResponseContent,
           updatedSessionData: {
-              // FIX: Use original index (thisPromptIndex) if validation failed (isStorable=false),
-              // otherwise use the potentially advanced index (currentIndex which holds nextIndexAfterProcessing)
-              currentIndex: isStorable ? currentIndex : thisPromptIndex,
+         currentIndex: nextIndexAfterProcessing, // Index for the *next* prompt
+         promptIndexThatAskedLastQuestion: indexGeneratingFinalResponse, // Index that generated *this* response
               namedMemory: currentNamedMemory,
               currentBufferSize: currentBufferSize
           }
       };
 
   } catch (error: any) {
-      console.error("[JEST_DEBUG] ERROR CAUGHT in handleNonStreamingFlow:", error); // <-- ADD LOG
-      // console.error("[ERROR] Unhandled exception in handleNonStreamingFlow:", error);
-      // console.log(`>>> [DEBUG][LOG 9 - ERROR CATCH] State before error return: typeof currentNamedMemory = ${typeof currentNamedMemory}, Value = ${JSON.stringify(currentNamedMemory)}`);
-      // Return null update data to avoid saving partial/incorrect state on unexpected errors
-      return { content: "An internal server error occurred during processing.", updatedSessionData: null };
+      console.error("[JEST_DEBUG] ERROR CAUGHT in handleNonStreamingFlow:", error);
+      return { content: "An internal server error occurred during processing.", updatedSessionData: null }; // Avoid saving state on error
   } finally {
       // console.log("Exiting handleNonStreamingFlow.");
   }

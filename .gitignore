@@ -57,3 +57,8 @@ next-env.d.ts
 .vscode/
 .idea/
 *.sublime-workspace
+
+#Firebase stuff
+firebase-credentials.json
+# Service account credentials for Google Sheets and Firebase Admin
+credentials.json

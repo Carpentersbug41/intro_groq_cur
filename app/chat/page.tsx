@@ -1,7 +1,8 @@
 "use client";
 
+import React from "react";
 import { ChatWindow } from "@/components/ChatWindow";
-
+import { ErrorBoundary } from "@/components/ErrorBoundary"; // Adjust path if needed
 
 export default function ChatIELTSPage() {
   // Empty state content to show if no messages exist yet
@@ -23,18 +24,17 @@ export default function ChatIELTSPage() {
   );
 
   return (
-    <div>
-      {/* First Chatbot */}
-      <ChatWindow
-        endpoint="/api/chat" // ✅ This remains the original chatbot
-        titleText="IELTS Introduction Assistant"
-        placeholder="Enter your IELTS Part 2 introduction..."
-        emptyStateComponent={InfoCard}
-        videoId="zGM30-iAoZA"
-      />
-
-    
-      
-    </div>
+    <ErrorBoundary>
+      <div>
+        {/* First Chatbot */}
+        <ChatWindow
+          endpoint="/api/chat" // ✅ This remains the original chatbot
+          titleText="IELTS Introduction Assistant"
+          placeholder="Enter your IELTS Part 2 introduction..."
+          emptyStateComponent={InfoCard}
+          videoId="zGM30-iAoZA"
+        />
+      </div>
+    </ErrorBoundary>
   );
 }

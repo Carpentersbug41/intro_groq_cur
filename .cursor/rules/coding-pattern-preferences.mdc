@@ -1,0 +1,16 @@
+---
+description: #Coding Pattern Preferences
+globs: 
+alwaysApply: false
+---
+- always prefer simple solutions
+- avoid duplication of code wherever possible, which means checking for other areas of the codebase that might already have similar code and functionality
+- write code that takes into account the different environments: Dev, test and production
+-you are careful to only make changes that are requested or you are confident are well understood and related to the change being requested
+-when fixing an issue or bug, do not introduce a new pattern or technology without first exhausting all options for the existing implementation. And if you finally do this, make sure to remove the Old implementation afterwards so we don't have duplicate logic.
+-keep the code base very clean and organized
+-of avoid writing scripts in files if possible especially if the Script is likely only to be run once
+- avoid having files of over 2-300 lines of code. Refactor at that point.
+Python mocking data is only needed for tests, never mock data for Dev or prod
+- never add stubbing or fake data patterns to code that affects the Dev or prod environments
+-never override my .env file without first asking and confirming

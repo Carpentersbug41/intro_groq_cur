@@ -1,0 +1,22 @@
+## 1. Test Isolation is Critical
+// ... existing code ...
+## 2. Accurate Assertions
+
+*   **Trace the Code:** Before writing assertions, ***meticulously*** trace the execution flow of the code (`route.ts` and relevant utilities like `autoTransitionUtils`, `memoryUtils`, `openaiApiUtils`) for the specific test scenario.
+*   **Verify Configurations:** Check the corresponding prompt configuration in `prompts.ts` (e.g., `validation`, `buffer_memory`, `saveUserInputAs`, `saveAssistantOutputAs`).
+*   **Assert Actual Outcomes:** Base your `expect(...)` assertions on the *actual* state the code should produce according to its logic and the prompt config, including index changes, buffer size updates, and the exact contents of `namedMemory`. Do not make assumptions.
+*   **Assert Against Reality (Especially for Existing/Complex Logic):** When testing intricate logic (like validation interactions or auto-transitions), prioritize asserting against the **actual observed behavior** of the code, even if it differs from initial assumptions. If the source code cannot be changed, the test *must* verify the current implementation's outcome.
+*   **Verify Key State Details:** Pay close attention to the exact final `currentIndex`, the precise contents of `namedMemory`, the final `currentBufferSize`, and any modifications to the response format (e.g., concatenation) resulting from control flow features like validation or transitions.
+*   **Check Mock Calls:** Verify that mocks (`mockUpdateSessionCookieData`, `fetch`, `mockHandleDatabaseStorageIfNeeded`, etc.) are called (or not called) the expected number of times and with the correct arguments.
+
+## 3. Complete Implementation
+// ... existing code ...
+## 5. Consistent Mocking Strategy
+
+*   **Identify Dependencies:** List all external modules (`session`, `databaseHelpers`, `next/headers`, `fetch`) and internal utility modules (`openaiApiUtils`, `promptUtils`, `memoryUtils`, etc.) used by the code under test.
+*   **Mock Externals:** Mock external dependencies globally (using `jest.mock(...)` at the top level).
+*   **Mocking Sequenced Calls (e.g., `fetch` during transitions):** When mocking functions called multiple times within a single test execution, ensure the mock setup accounts for the **exact sequence and number of expected calls**, including any implicit calls triggered by configurations (like validation). Consider using `mockImplementation` if simpler mocks (`mockResolvedValueOnce`) lead to state issues between calls within the *same* test.
+*   **Mock/Spy Internals Carefully:** Decide whether to mock internal utility functions. If a utility might have side effects or maintain internal state affecting tests, consider mocking it using `jest.mock('./path/to/util')`. Alternatively, use `jest.spyOn(utilModule, 'functionName')` if you only need to track calls or provide a mock implementation for specific tests (remember to `.mockRestore()` in `beforeEach` or `afterEach`).
+
+## 6. Debugging Aids
+// ... existing code ... 

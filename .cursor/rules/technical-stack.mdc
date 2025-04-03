@@ -1,0 +1,14 @@
+---
+description: #This is the project's tech stack
+globs: 
+alwaysApply: false
+---
+#technical stack
+
+- Next.js (Node.js) for the backend (serverless functions)
+- React with HTML/JS for the frontend (using client components and hooks)
+- Firestore for database storage (no JSON file storage)
+- Environment-specific configurations (using process.env and local storage)
+- External API integration (GROQ API for chat completions)
+- TypeScript for type safety and clarity
+- React libraries for notifications (react-toastify) and Markdown rendering (ReactMarkdown)

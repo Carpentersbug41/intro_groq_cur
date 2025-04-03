@@ -1,9 +1,13 @@
 "use client";
 
-import { useState, useEffect, FormEvent, useRef } from "react";
+import { useState, useEffect, FormEvent, useRef } from "react"; // <-- Keep useRef
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ReactMarkdown from "react-markdown";
+
+function customTrim(str: string) {
+  return str.replace(/^[\s\u00A0\u200B]+|[\s\u00A0\u200B]+$/g, "");
+}
 
 type Message = {
   role: "user" | "assistant";
@@ -27,57 +31,61 @@ export function ChatWindow(props: {
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [apiKey, setApiKey] = useState<string>("");
-  const [isApiKeyValid, setIsApiKeyValid] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   const messageContainerRef = useRef<HTMLDivElement | null>(null);
+  // --- ADD REF FOR INPUT ---
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
-  // Load API key from localStorage on mount
+  // Effect to scroll messages down
   useEffect(() => {
-    const savedKey = localStorage.getItem("groq_api_key") || "";
-    console.log("✅ Frontend stored API key on mount:", savedKey);
-    setApiKey(savedKey);
-  }, []);
-
-  // Handle changes to API key input
-  const handleApiKeyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newKey = event.target.value.trim();
-    console.log("🔑 User entered API key:", newKey);
-
-    if (newKey) {
-      localStorage.setItem("groq_api_key", newKey);
-      console.log("✅ API Key successfully saved to Local Storage:", newKey);
-    } else {
-      localStorage.removeItem("groq_api_key");
+    if (messageContainerRef.current) {
+      messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
     }
+  }, [messages]);
 
-    setApiKey(newKey);
-  };
+  // --- ADD EFFECT TO MANAGE INPUT FOCUS ---
+  useEffect(() => {
+    // Focus on mount
+    inputRef.current?.focus();
+  }, []); // Empty dependency array means run only once on mount
+
+  useEffect(() => {
+    // Refocus after submission or reset completes
+    if (!isSubmitting && !isResetting && inputRef.current) {
+       console.log("Refocusing input field..."); // Debug log
+       inputRef.current.focus();
+    }
+     // Also log when disabled, for context
+     if (isSubmitting || isResetting) {
+        console.log("Input field disabled, focus not attempted.");
+    }
+  }, [isSubmitting, isResetting]); // Re-run when submission/reset state changes
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (isSubmitting) return;
-    if (!input.trim()) {
+    if (isSubmitting || isResetting) return;
+
+    let trimmedInput = customTrim(input);
+
+    if (!trimmedInput) {
       toast.warning("Please enter a message.");
-      return;
-    }
-    if (!apiKey.trim()) {
-      toast.warning("Please enter your Groq API key.");
+      // --- FOCUS BACK IF INPUT WAS EMPTY ---
+      inputRef.current?.focus();
       return;
     }
 
-    console.log("🚀 Sending API Key to Backend:", apiKey);
     setIsSubmitting(true);
 
-    const userMessage: Message = { role: "user", content: input.trim() };
+    const userMessage: Message = { role: "user", content: trimmedInput };
     setMessages((prev) => [...prev, userMessage]);
-    setInput("");
+    setInput(""); // Clear input *before* API call potentially
 
     try {
+      const messagesToSend = [...messages, userMessage];
       const requestBody = {
-        message: userMessage.content,
-        apiKey: apiKey,
+        messages: messagesToSend,
         stream: false,
       };
 
@@ -87,7 +95,6 @@ export function ChatWindow(props: {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify(requestBody),
       });
@@ -95,134 +102,137 @@ export function ChatWindow(props: {
       if (!res.ok) {
         let errorDetails: any;
         try {
-          // Clone the response so we can safely read it
           errorDetails = await res.clone().json();
         } catch {
           errorDetails = await res.text();
         }
         console.error("❌ Error response details:", errorDetails);
-
-        if (res.status === 401) {
-          setIsApiKeyValid(false);
-          throw new Error("Invalid API key. Please check and try again.");
-        }
-        throw new Error(`Error ${res.status}: ${JSON.stringify(errorDetails)}`);
+        const errorMessage = errorDetails?.message || errorDetails || `HTTP error ${res.status}`;
+        throw new Error(errorMessage);
       }
-
-      setIsApiKeyValid(true);
 
       const responseText = await res.text();
       console.log("🤖 Assistant Response (raw text):", responseText);
 
       const assistantContent = responseText || "Error: No response content.";
       setMessages((prev) => [...prev, { role: "assistant", content: assistantContent }]);
+
     } catch (err: any) {
       console.error("❌ Caught error in handleSubmit:", err);
       toast.error("Error: " + err.message);
+      // Don't clear messages on error
     } finally {
       setIsSubmitting(false);
+      // Focus will be handled by the useEffect hook reacting to isSubmitting becoming false
     }
   }
+
+  const handleNewChat = async () => {
+    if (isSubmitting || isResetting) return;
+
+    setIsResetting(true);
+    console.log("🔄 Resetting chat session...");
+
+    try {
+      const response = await fetch('/api/chat/reset', {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to reset chat session');
+      }
+
+      const data = await response.json();
+      console.log(data.message);
+      toast.success("New chat started!");
+
+      setMessages([]);
+      setInput("");
+
+    } catch (error: any) {
+      console.error("Error resetting chat:", error);
+      toast.error("Error starting new chat: " + error.message);
+    } finally {
+      setIsResetting(false);
+      // Focus will be handled by the useEffect hook reacting to isResetting becoming false
+    }
+  };
 
   function renderMessage(msg: Message, index: number) {
     const isUser = msg.role === "user";
     const bubbleClasses = isUser
-      ? "bg-blue-50 text-blue-800 self-end"
-      : "bg-gray-100 text-gray-800 self-start";
+      ? "bg-blue-100 text-blue-900 self-end rounded-lg max-w-[80%]"
+      : "bg-gray-100 text-gray-900 self-start rounded-lg max-w-[80%]";
 
     return (
-      <div key={index} className={`p-3 mb-2 rounded-md ${bubbleClasses}`}>
-        {isUser ? (
-          <p>{msg.content}</p>
-        ) : (
-          <ReactMarkdown>{msg.content}</ReactMarkdown>
-        )}
+      <div key={index} className={`p-3 mb-2 ${bubbleClasses} break-words`}>
+        {isUser ? <p>{msg.content}</p> : <ReactMarkdown>{msg.content}</ReactMarkdown>}
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-2xl mx-auto flex flex-col bg-white text-gray-900 p-4">
-      {/* Title */}
-      <div className="mb-3">
+    <div className="w-full max-w-2xl mx-auto flex flex-col bg-white text-gray-900 p-4 rounded-lg shadow-md">
+      {/* Header and Video remain the same */}
+       <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-200">
         <h2 className="text-xl font-semibold">{titleText}</h2>
+        <button
+          onClick={handleNewChat}
+          className={`bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md text-sm ${isResetting || isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
+          disabled={isResetting || isSubmitting}
+        >
+          {isResetting ? "Resetting..." : "New Chat"}
+        </button>
       </div>
 
-      {/* Optional YouTube Video */}
-{/* Optional YouTube Video */}
-{videoId && (
-  <div className="mb-3 w-full relative" style={{ paddingTop: "56.25%" }}>
-    <iframe
-      className="absolute top-0 left-0 w-full h-full"
-      src={`https://www.youtube.com/embed/${videoId}`}
-      frameBorder="0"
-      allowFullScreen
-    />
-  </div>
-)}
-
-
-      {/* API Key Input */}
-      <div className="mb-3">
-        <input
-          type="password"
-          placeholder="Enter your Groq API key"
-          value={apiKey}
-          onChange={handleApiKeyChange}
-          className={`w-full p-2 border rounded-md ${isApiKeyValid ? "border-gray-300" : "border-red-500"}`}
-        />
-        {!isApiKeyValid && (
-          <p className="text-red-500 text-sm mt-1">
-            Invalid API key. Please try again.
-          </p>
-        )}
-      </div>
-
-      {/* If no API key, show a friendly message */}
-      {!apiKey.trim() ? (
-        <div className="p-3 text-center border border-yellow-300 bg-yellow-50 rounded-md">
-          <p className="text-yellow-700 font-medium">
-            Please enter your Groq API key to start chatting.
-          </p>
+      {videoId && (
+        <div className="mb-3 w-full relative" style={{ paddingTop: "56.25%" }}>
+          <iframe
+            className="absolute top-0 left-0 w-full h-full rounded"
+            src={`https://www.youtube.com/embed/${videoId}`}
+            title="YouTube video player"
+            frameBorder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerPolicy="strict-origin-when-cross-origin"
+            allowFullScreen
+          />
         </div>
-      ) : (
-        <>
-          <div
-            ref={messageContainerRef}
-            className="flex flex-col mb-3 p-2 space-y-2 overflow-auto border border-gray-200 rounded-md"
-            style={{
-              minHeight: "600px",
-              maxHeight: "600px",
-            }}
-          >
-            {messages.length === 0 && emptyStateComponent
-              ? emptyStateComponent
-              : messages.map((m, idx) => renderMessage(m, idx))}
-          </div>
-
-          {/* Input Form */}
-          <form onSubmit={handleSubmit} className="flex">
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={placeholder}
-              className="flex-grow p-2 mr-2 border border-gray-300 rounded-md"
-              disabled={!apiKey.trim()}
-            />
-            <button
-              type="submit"
-              className={`bg-blue-500 text-white px-4 py-2 rounded-md ${
-                isSubmitting ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-              disabled={!apiKey.trim() || isSubmitting}
-            >
-              {isSubmitting ? "Sending..." : "Send"}
-            </button>
-          </form>
-        </>
       )}
 
-      <ToastContainer />
+      {/* Message Container remains the same */}
+      <div
+        ref={messageContainerRef}
+        className="flex flex-col mb-3 p-3 space-y-3 overflow-y-auto border border-gray-200 rounded-md bg-gray-50"
+        style={{ minHeight: "400px", maxHeight: "600px" }}
+      >
+        {messages.length === 0 && emptyStateComponent
+          ? <div className="flex justify-center items-center h-full text-gray-500">{emptyStateComponent}</div>
+          : messages.map((m, idx) => renderMessage(m, idx))}
+      </div>
+
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="flex items-center">
+        {/* --- ADD REF TO INPUT --- */}
+        <input
+          ref={inputRef} // Assign the ref here
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder={placeholder}
+          className="flex-grow p-2 mr-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          disabled={isSubmitting || isResetting}
+          autoFocus // Optional: helps ensure focus on initial load sometimes
+        />
+        <button
+          type="submit"
+          className={`bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition duration-150 ease-in-out ${isSubmitting || isResetting ? "opacity-50 cursor-not-allowed" : ""}`}
+          disabled={isSubmitting || isResetting}
+        >
+          {isSubmitting ? "Sending..." : "Send"}
+        </button>
+      </form>
+
+      <ToastContainer position="bottom-right" autoClose={3000} />
     </div>
   );
 }

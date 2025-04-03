@@ -1,16 +1,19 @@
+
+// D:\vercel\intro_groq m6\app\api\chat\validationInstructions.ts
+
 // ---------------------------------------------------------------------------------
 // Define validation instructions (only once)
 // ---------------------------------------------------------------------------------
 export const defaultValidationInstruction = `
   You are a validation assistant.
-  Your task is to assess if the user's input answers the request.
+  Your task is to assess if the user's input answers the question they have been asked.
 
-  if the user answers the request, it is VALID. If user doesn't answer properly, it is INVALID.
+  if the user answers the question, it is VALID. If user doesn't answer properly, it is INVALID.
   Current prompt: '{CURRENT_PROMPT}'
   User input: '{USER_INPUT}'
 
   Respond with only one word: "VALID" if the user answers the question appropriately,
-  or "INVALID" if the user doesn't answer the question appropriately.
+  or "INVALID" if the user doesn't answer the question.
   Do not provide any additional explanation or description.
 `;
 
@@ -36,7 +39,7 @@ export const customValidationInstructionForQuestion = `
   User input: '{USER_INPUT}'
 
   Respond with only one word: "VALID" if the user has answered 'yes' or 'ok',
-  or "INVALID" if they have not.
+  or "INVALID" if they have answered 'no' or 'another one' or another question' or something similar.
   Do not provide any additional explanation or description.
 `;
 
@@ -52,5 +55,33 @@ export const customValidationInstructionForOption = `
 
   Respond with only one word: "VALID" if the user chooses an option from the provided options,
   or "INVALID" If user doesn't choose an option from the provided options.
+  Do not provide any additional explanation or description.
+`;
+
+export const customValidationInstructionForintroduction = `
+
+  You are a validation assistant.
+  Your task is to assess if the user has written any text.
+
+  if the user has written any text then return VALID. If user doesn't write anything at all, it is INVALID.
+  Current prompt: '{CURRENT_PROMPT}'
+  User input: '{USER_INPUT}'
+
+  Respond with only one word: "VALID" if the user has written something
+  or "INVALID" If user hasn't written anything.
+  Do not provide any additional explanation or description.
+`;
+
+export const customValidationInstructionForconclusion = `
+
+  You are a validation assistant.
+  Your task is to assess if the user has written any text.
+
+  If the user has written any text then return VALID. If the user doesn't write anything at all, it is INVALID.
+  Current prompt: '{CURRENT_PROMPT}'
+  User input: '{USER_INPUT}'
+
+  Respond with only one word: "VALID" if the user has written something
+  or "INVALID" if the user hasn't written anything.
   Do not provide any additional explanation or description.
 `;
