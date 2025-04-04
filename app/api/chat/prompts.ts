@@ -16,8 +16,8 @@ type PromptType = {
   addToDatabase?: boolean;
   model?: string;          // Optional custom model for this prompt
   fallbackIndex?: number;  // Optional rollback steps if validation fails
-  saveUserInputAs?: string; // <-- New key for user input
-  saveAssistantOutputAs?: string; // <-- New key for assistant output
+  saveUserInputAs?: string; // <-- Saves the raw user input
+  saveAssistantOutputAs?: string; // <-- Saves the assistant's processed output
   dbOptions?: {
     collectionName: string;
     documentId?: string;
@@ -46,6 +46,21 @@ Ask the user what their favorite dish is.
     // autoTransitionHidden: true
 // validation: true,
 
+  },
+
+  {
+    prompt_text: `# System message:
+  Ask the user the answer to 2 + 2.  NEVER correct it or comment,
+  
+  .Never, NEVER! ask anything else!`,
+  saveUserInputAs: "answerquestion"
+  }
+  ,
+  
+  {
+    prompt_text: `# System message: You are an expert in outputting text exactly.
+  Output this text exactly and never output anything else!: 'The User says that 2+2 is {answerquestion}'.
+  Never, NEVER! ask anything else!`,
   },
 
   {
