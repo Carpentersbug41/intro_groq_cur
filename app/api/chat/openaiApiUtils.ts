@@ -4,7 +4,7 @@
 // Import constants needed
 import {
   OPENAI_API_URL,
-  DEFAULT_OPENAI_MODEL
+  ConversationEntry
 } from './route'; // Assuming constants are exported from route.ts
 
 // Import validation instructions if needed (only default is used below)
@@ -16,6 +16,8 @@ import {
 // Define the type for conversation history entries if not globally available/imported
 type ConversationMessage = { role: string; content: string };
 
+// --- Define and Export Constants Here ---
+export const DEFAULT_OPENAI_MODEL = "gpt-4o-mini-2024-07-18";
 
 // --- FUNCTIONS ---
 
@@ -228,10 +230,18 @@ try {
 * @returns The assistant's response content string, or an error message string if all retries fail.
 */
 export async function fetchApiResponseWithRetry(
-payload: any,
-retries = 2,
-delayMs = 500
+payload: { model?: string; messages: ConversationEntry[]; temperature?: number }, // Ensure model is optional here if sometimes omitted intentionally before default is applied
+retries = 3,
+delay = 500
 ): Promise<string | null> {
+    // console.log("[DEBUG] fetchApiResponseWithRetry called with payload model:", payload.model); // Debug log
+    const effectivePayload = {
+        ...payload,
+        // Apply default model *here* if it's missing in the payload
+        model: payload.model || DEFAULT_OPENAI_MODEL,
+    };
+    // console.log("[DEBUG] Effective payload for API:", JSON.stringify(effectivePayload, null, 2)); // Debug log
+
 if (!process.env.OPENAI_API_KEY) {
   console.warn("[WARNING] Missing OpenAI API key. Cannot attempt API call.");
   return "API key is missing. Please configure the server environment.";
@@ -241,13 +251,13 @@ let attempt = 0;
 while (attempt <= retries) { // Use <= to allow initial attempt + retries
   attempt++;
   if (attempt > 1) {
-      console.warn(`[WARN] Retrying API call. Attempt ${attempt}/${retries + 1}. Delaying ${delayMs}ms...`);
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
+      console.warn(`[WARN] Retrying API call. Attempt ${attempt}/${retries + 1}. Delaying ${delay}ms...`);
+      await new Promise((resolve) => setTimeout(resolve, delay));
   } else {
       console.log(`[DEBUG] API Call Attempt: ${attempt}/${retries + 1}`);
   }
 
-  const response = await fetchApiResponse(payload);
+  const response = await fetchApiResponse(effectivePayload);
 
   // Check for immediate failure like missing key
   if (response === "API key is missing. Please configure the server environment.") {

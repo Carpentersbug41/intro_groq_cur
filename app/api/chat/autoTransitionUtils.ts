@@ -2,13 +2,13 @@
 
 import PROMPT_LIST from "./prompts"; // Correct path relative to this new file
 import { getModelForCurrentPrompt } from './promptUtils'; // Adjust path if needed
-import { fetchApiResponseWithRetry } from './openaiApiUtils'; // Adjust path if needed
-import { injectNamedMemory, updateDynamicBufferMemory } from './memoryUtils'; // Import memory utils
+import { fetchApiResponseWithRetry, cleanLlmResponse } from './openaiApiUtils'; // Adjust path if needed
+import { injectNamedMemory, updateDynamicBufferMemory, processAssistantResponseMemory } from './memoryUtils'; // Import memory utils
 import { manageBuffer } from './bufferUtils'; // Import buffer utils
 import { PromptType } from "./prompts"; // Import PromptType if needed
+import { ConversationEntry } from './routeTypes'; // Assuming types are defined/imported
 
 // Define types if not globally available
-type ConversationEntry = { role: string; content: string };
 type NamedMemory = { [key: string]: string };
 
 // Interface for the return type of transition functions
@@ -464,5 +464,146 @@ export async function handleAutoTransitionVisible(
         updatedIndex: tempCurrentIndex,
         updatedNamedMemory: tempNamedMemory,
         updatedBufferSize: tempBufferSize,
+    };
+}
+
+// --- NEW: Function to orchestrate transitions ---
+interface ProcessTransitionsInput {
+    initialHistory: ConversationEntry[];
+    initialContent: string; // Content from the prompt that *triggered* the transition check
+    executedPromptIndex: number; // Index of the prompt that just ran
+    initialNamedMemory: NamedMemory;
+    initialBufferSize: number;
+}
+
+interface ProcessTransitionsResult {
+    finalCombinedContent: string;
+    nextIndexAfterProcessing: number; // Index for the *next* turn
+    indexGeneratingFinalResponse: number; // Index that generated the *last* part of the content
+    finalNamedMemory: NamedMemory;
+    finalBufferSize: number;
+    // Optional: finalHistoryContext if needed downstream
+}
+
+export async function processTransitions(
+    input: ProcessTransitionsInput
+): Promise<ProcessTransitionsResult> {
+    const {
+        initialHistory,
+        initialContent,
+        executedPromptIndex,
+        initialNamedMemory,
+        initialBufferSize,
+    } = input;
+
+    const executedPromptObj = PROMPT_LIST[executedPromptIndex];
+    if (!executedPromptObj) {
+        // Should not happen if called correctly, but good practice to check
+        console.error("[ERROR] processTransitions: executedPromptObj not found at index", executedPromptIndex);
+        return {
+            finalCombinedContent: initialContent,
+            nextIndexAfterProcessing: executedPromptIndex + 1,
+            indexGeneratingFinalResponse: executedPromptIndex,
+            finalNamedMemory: initialNamedMemory,
+            finalBufferSize: initialBufferSize,
+        };
+    }
+
+    let currentNamedMemory = initialNamedMemory;
+    let currentBufferSize = initialBufferSize;
+    let historyContextForNextStep = initialHistory;
+    let finalCombinedContent = initialContent || "";
+    let nextIndexAfterProcessing = executedPromptIndex + 1;
+    let indexGeneratingFinalResponse = executedPromptIndex; // Start assuming the initial prompt generated the content
+
+    const hasHiddenFlag = executedPromptObj.autoTransitionHidden === true;
+    const hasVisibleFlag = executedPromptObj.autoTransitionVisible === true;
+
+    if (!hasHiddenFlag && !hasVisibleFlag) {
+        // No transition flags on the executed prompt, return initial state
+        return {
+            finalCombinedContent: initialContent,
+            nextIndexAfterProcessing: executedPromptIndex + 1,
+            indexGeneratingFinalResponse: executedPromptIndex,
+            finalNamedMemory: initialNamedMemory,
+            finalBufferSize: initialBufferSize,
+        };
+    }
+
+    // console.log(`\n[DEBUG][TRANSITION TRIGGER] Prompt ${executedPromptIndex} has an autoTransition flag.`);
+    let currentTransitionIndex = executedPromptIndex + 1;
+
+    if (hasHiddenFlag) {
+        finalCombinedContent = ""; // Start blank if trigger was hidden
+    }
+
+    // Hidden Loop
+    while (currentTransitionIndex < PROMPT_LIST.length && PROMPT_LIST[currentTransitionIndex]?.autoTransitionHidden) {
+        const { response: autoResp, updatedIndex, updatedNamedMemory, updatedBufferSize: newBufferSize, conversationHistory: historyAfterHidden } =
+            await handleAutoTransitionHidden(historyContextForNextStep, currentTransitionIndex, currentNamedMemory, currentBufferSize);
+        currentTransitionIndex = updatedIndex;
+        currentNamedMemory = updatedNamedMemory ?? {};
+        currentBufferSize = newBufferSize;
+        historyContextForNextStep = historyAfterHidden;
+        finalCombinedContent = autoResp ?? ""; // Overwrite with the last hidden response (or blank if null)
+        indexGeneratingFinalResponse = currentTransitionIndex - 1; // Last hidden prompt index generated this
+    }
+
+    // Visible Loop
+    while (currentTransitionIndex < PROMPT_LIST.length && PROMPT_LIST[currentTransitionIndex]?.autoTransitionVisible) {
+        const { response: autoResp, updatedIndex, updatedNamedMemory, updatedBufferSize: newBufferSize, conversationHistory: historyAfterVisible } =
+            await handleAutoTransitionVisible(historyContextForNextStep, currentTransitionIndex, currentNamedMemory, currentBufferSize);
+        currentTransitionIndex = updatedIndex;
+        currentNamedMemory = updatedNamedMemory ?? {};
+        currentBufferSize = newBufferSize;
+        historyContextForNextStep = historyAfterVisible;
+        if (autoResp) {
+            const separator = finalCombinedContent ? "\n\n" : "";
+            finalCombinedContent += separator + autoResp; // Append
+            indexGeneratingFinalResponse = currentTransitionIndex - 1; // Last visible prompt index generated/appended this
+        } else {
+            // console.log(`[DEBUG][TRANSITION-V] Stopping visible transition chain due to null response at index ${currentTransitionIndex - 1}.`);
+            break; // Stop if a visible transition fails or returns null
+        }
+    }
+
+    nextIndexAfterProcessing = currentTransitionIndex; // Update index after loops
+
+    // Execute the NEXT NORMAL Prompt if transitions landed on one that isn't auto
+    if (nextIndexAfterProcessing < PROMPT_LIST.length) {
+        const nextNormalPromptObj = PROMPT_LIST[nextIndexAfterProcessing];
+        if (!nextNormalPromptObj?.autoTransitionHidden && !nextNormalPromptObj?.autoTransitionVisible) {
+            // console.log(`[DEBUG][POST-TRANSITION] Running final normal prompt ${nextIndexAfterProcessing}.`);
+            currentBufferSize = updateDynamicBufferMemory(nextNormalPromptObj, currentBufferSize); // Update buffer for this call
+            const finalPromptText = nextNormalPromptObj.prompt_text || "";
+            const finalPromptWithMemory = injectNamedMemory(finalPromptText, currentNamedMemory);
+            let historyForFinalCall = [{ role: "system", content: finalPromptWithMemory }, ...historyContextForNextStep.filter((e) => e.role !== "system")];
+            historyForFinalCall = manageBuffer(historyForFinalCall, currentBufferSize);
+
+            const finalPayload = { model: getModelForCurrentPrompt(nextIndexAfterProcessing), temperature: nextNormalPromptObj?.temperature ?? 0, messages: historyForFinalCall };
+            const rawFinalAssistantContent = await fetchApiResponseWithRetry(finalPayload);
+            const finalAssistantContentCleaned = cleanLlmResponse(rawFinalAssistantContent);
+
+            if (finalAssistantContentCleaned) {
+                const processedFinalContent = processAssistantResponseMemory(finalAssistantContentCleaned, nextNormalPromptObj, currentNamedMemory, nextIndexAfterProcessing);
+                const separator = finalCombinedContent ? "\n\n" : "";
+                finalCombinedContent += separator + processedFinalContent; // Append final normal prompt response
+                indexGeneratingFinalResponse = nextIndexAfterProcessing; // This final prompt generated the last part
+                nextIndexAfterProcessing++; // Increment index *after* successful final prompt execution
+                // Note: historyContextForNextStep doesn't include this *very last* response unless needed downstream
+            } else {
+                 console.warn(`[WARN] Post-transition normal prompt ${nextIndexAfterProcessing} failed to generate content.`);
+                 // Decide how to proceed: return content generated so far, or an error?
+                 // Current behaviour: Return content generated up to this point. Index remains pointing *at* the failed prompt.
+            }
+        }
+    }
+
+    return {
+        finalCombinedContent,
+        nextIndexAfterProcessing,
+        indexGeneratingFinalResponse,
+        finalNamedMemory: currentNamedMemory,
+        finalBufferSize: currentBufferSize,
     };
 }
