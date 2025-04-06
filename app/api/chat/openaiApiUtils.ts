@@ -3,7 +3,6 @@
 // --- IMPORTS ---
 // Import constants needed
 import {
-  OPENAI_API_URL,
   ConversationEntry
 } from './route'; // Assuming constants are exported from route.ts
 
@@ -17,7 +16,9 @@ import {
 type ConversationMessage = { role: string; content: string };
 
 // --- Define and Export Constants Here ---
+export const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"; // Moved from route.ts
 export const DEFAULT_OPENAI_MODEL = "gpt-4o-mini-2024-07-18";
+export const BUFFER_SIZE = 8; // Moved from route.ts
 
 // --- FUNCTIONS ---
 

@@ -8,6 +8,7 @@ import { cookies } from 'next/headers';
 import { handleDatabaseStorageIfNeeded } from "@/utils/databaseHelpers"; // Temporarily commented out // Re-enable import
 
 import { handleNonStreamingFlow } from './nonStreamingFlow'; // <-- Import the refactored function
+import { handleStreamingFlow } from './streamingFlow'; // <-- Import the new streaming handler
 
 import { manageBuffer } from './bufferUtils'; // Keep if used by streaming flow
 // Import session functions (they now use cookies() internally again)
@@ -19,13 +20,13 @@ import {
   SessionCookieData // Import the type
 } from '@/lib/session';
 // */
-import { DEFAULT_OPENAI_MODEL } from "./openaiApiUtils"; // Keep constant used by streaming flow
+import { DEFAULT_OPENAI_MODEL, OPENAI_API_URL, BUFFER_SIZE } from "./openaiApiUtils";
 
 // --- Constants ---
-export const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
-// export const DEFAULT_OPENAI_MODEL = "gpt-4o-mini-2024-07-18"; // Moved to openaiApiUtils, imported above
+// Moved -> export const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
+// Moved -> export const DEFAULT_OPENAI_MODEL = "gpt-4o-mini-2024-07-18"; // Already moved
 export const runtime = "nodejs";
-export const BUFFER_SIZE = 8; // Default buffer size
+// Moved -> export const BUFFER_SIZE = 8; // Default buffer size
 
 // --- Force dynamic rendering ---
 export const dynamic = 'force-dynamic';
@@ -102,8 +103,13 @@ export async function POST(req: NextRequest) {
         if (!lastMessage) {
             return NextResponse.json({ message: 'No message content found for streaming.' }, { status: 400 });
         }
-        // Call handleStreamingFlow (note its limitations mentioned in comments)
-        const streamingResponse = await handleStreamingFlow(lastMessage, sessionData.currentBufferSize ?? BUFFER_SIZE, sessionData.currentIndex ?? 0, messagesFromClient);
+        // Call the imported handleStreamingFlow
+        const streamingResponse = await handleStreamingFlow(
+            lastMessage,
+            sessionData.currentBufferSize ?? BUFFER_SIZE, // Pass buffer size
+            sessionData.currentIndex ?? 0, // Pass current index
+            messagesFromClient // Pass full history
+        );
         return streamingResponse; // Return the streaming Response directly
         // result = await handleStreamingFlow(processingInput); // Needs refactoring
         // Note: handleStreamingFlow would also need cookieStore passed if it modifies session
