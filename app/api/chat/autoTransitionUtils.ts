@@ -265,205 +265,55 @@ export async function handleAutoTransitionHidden(
  * Handles the automatic transition for a single visible prompt step.
  */
 export async function handleAutoTransitionVisible(
-    baseConvHistory: ConversationEntry[], // History context from before this step
-    idx: number, // The index of the prompt *triggering* this visible transition
-    currentMemory: NamedMemory, // Pass in current memory
-    currentBuffer: number     // Pass in current buffer size
-): Promise<TransitionResult> { // Use the defined return interface
-     // --- DEBUG START ---
-    console.log(`\n--- [START][AUTO-VISIBLE] ---`);
-    console.log(`[DEBUG][AUTO-VISIBLE] Handler called for index: ${idx}`);
-    console.log(`[DEBUG][AUTO-VISIBLE] Incoming Memory: ${JSON.stringify(currentMemory)}`);
-    console.log(`[DEBUG][AUTO-VISIBLE] Incoming Buffer Size: ${currentBuffer}`);
-    console.log(`[DEBUG][AUTO-VISIBLE] Incoming History Length: ${baseConvHistory.length}`);
-     // --- DEBUG END ---
+    conversationHistory: ConversationEntry[],
+    currentPromptIndex: number,
+    currentNamedMemory: NamedMemory, // Input memory state
+    currentBufferSize: number
+): Promise<{ response: string | null; updatedIndex: number; updatedNamedMemory: NamedMemory; updatedBufferSize: number; conversationHistory: ConversationEntry[] }> {
+    // console.log(`[DEBUG][TRANSITION-V] Running Visible Auto Transition for index: ${currentPromptIndex}`);
+    const promptObj = PROMPT_LIST[currentPromptIndex];
+    if (!promptObj) {
+        console.error(`[ERROR] Auto transition visible failed: Prompt object missing at index ${currentPromptIndex}`);
+        // Return input memory state on error
+        return { response: null, updatedIndex: currentPromptIndex + 1, updatedNamedMemory: currentNamedMemory, updatedBufferSize: currentBufferSize, conversationHistory };
+    }
 
-    // Initialize state for this step
-    let tempNamedMemory = { ...currentMemory };
-    let tempBufferSize = currentBuffer;
-    let tempCurrentIndex = idx;
+    const updatedBufferSize = updateDynamicBufferMemory(promptObj, currentBufferSize);
+    const promptText = promptObj.prompt_text || "";
+    const promptWithMemory = injectNamedMemory(promptText, currentNamedMemory);
 
-    const currentPromptObj: PromptType | undefined = PROMPT_LIST[tempCurrentIndex]; // Added type hint
+    let historyForCall = [{ role: "system", content: promptWithMemory }, ...conversationHistory.filter((e) => e.role !== "system")];
+    historyForCall = manageBuffer(historyForCall, updatedBufferSize);
 
-     if (!currentPromptObj || !currentPromptObj.autoTransitionVisible) {
-        console.warn(`[WARN][AUTO-VISIBLE] Called for index ${idx} which is not autoTransitionVisible. Returning current state.`);
-        console.log(`--- [END][AUTO-VISIBLE] --- (Not Applicable)\n`);
+    const payload = { model: getModelForCurrentPrompt(currentPromptIndex), temperature: promptObj.temperature ?? 0, messages: historyForCall };
+    const rawAssistantContent = await fetchApiResponseWithRetry(payload);
+    const assistantContentCleaned = cleanLlmResponse(rawAssistantContent);
+
+     if (assistantContentCleaned === null) {
+        console.warn(`[WARN] Auto transition visible failed for index ${currentPromptIndex}. Stopping visible transitions.`);
+        // Return input memory state on failure
+        return { response: null, updatedIndex: currentPromptIndex + 1, updatedNamedMemory: currentNamedMemory, updatedBufferSize, conversationHistory }; // Indicate failure with null response
+    }
+
+    // --- Add saveAssistantOutputAs logic here ---
+    // Use processAssistantResponseMemory which handles both saving and prefixing (if any)
+    const processedContent = processAssistantResponseMemory(
+        assistantContentCleaned,
+        promptObj, // Pass the prompt object
+        currentNamedMemory, // Pass the memory object (will be modified)
+        currentPromptIndex // Pass the index
+    );
+    // currentNamedMemory is now potentially updated by processAssistantResponseMemory
+
+    // --- History update and return ---
+    const historyAfterCall = [...historyForCall, { role: "assistant", content: processedContent }]; // Use processed content
+
         return {
-            conversationHistory: baseConvHistory,
-            response: null,
-            updatedIndex: tempCurrentIndex,
-            updatedNamedMemory: tempNamedMemory,
-            updatedBufferSize: tempBufferSize,
-        };
-    }
-    // --- DEBUG START ---
-    console.log(`[DEBUG][AUTO-VISIBLE] Confirmed: Prompt index ${idx} has autoTransitionVisible: true.`);
-    // --- DEBUG END ---
-
-
-    // Check API key
-    if (!process.env.OPENAI_API_KEY) {
-        console.warn("[WARNING][AUTO-VISIBLE] Missing API key.");
-        console.log(`--- [END][AUTO-VISIBLE] --- (API Key Missing)\n`);
-        return {
-            conversationHistory: baseConvHistory,
-            response: "Error: Server API Key not configured.",
-            updatedIndex: tempCurrentIndex,
-            updatedNamedMemory: tempNamedMemory,
-            updatedBufferSize: tempBufferSize,
-        };
-    }
-
-    // --- Simulate User Input ("OK") and Prepare History ---
-    const simulatedUserInput = "OK (visible transition)"; // --- DEBUG VAR ---
-    // --- DEBUG START ---
-    console.log(`[DEBUG][AUTO-VISIBLE] Simulating user input: "${simulatedUserInput}"`);
-    // --- DEBUG END ---
-    let historyForThisStep = [...baseConvHistory, { role: "user", content: simulatedUserInput }];
-    // --- DEBUG START ---
-    console.log(`[DEBUG][AUTO-VISIBLE] History length after adding simulated input: ${historyForThisStep.length}`);
-    // --- DEBUG END ---
-
-
-    // --- Get Prompt Text and Inject Memory ---
-    const promptText = currentPromptObj.prompt_text || "Error: No prompt text found.";
-    // --- DEBUG START ---
-    console.log(`[DEBUG][AUTO-VISIBLE] Raw Prompt Text (Index ${idx}):\n${promptText.substring(0, 150)}...`);
-    // --- DEBUG END ---
-    const promptWithMemory = injectNamedMemory(promptText, tempNamedMemory);
-     // --- DEBUG START ---
-    console.log(`[DEBUG][AUTO-VISIBLE] Prompt Text After Memory Injection (Index ${idx}):\n${promptWithMemory.substring(0, 150)}...`);
-    // --- DEBUG END ---
-
-
-    // --- Update System Prompt ---
-    historyForThisStep = [
-        { role: "system", content: promptWithMemory },
-        ...historyForThisStep.filter((e) => e.role !== "system"),
-    ];
-    // --- DEBUG START ---
-    console.log(`[DEBUG][AUTO-VISIBLE] System prompt updated in history.`);
-    // --- DEBUG END ---
-
-
-    // --- Manage Buffer ---
-    const bufferSizeBefore = tempBufferSize; // --- DEBUG VAR ---
-    historyForThisStep = manageBuffer(historyForThisStep, tempBufferSize);
-    // --- DEBUG START ---
-    console.log(`[DEBUG][AUTO-VISIBLE] Buffer managed. Size: ${bufferSizeBefore}. History length now: ${historyForThisStep.length}`);
-    // --- DEBUG END ---
-
-
-    // --- Prepare API Payload ---
-    const payload = {
-        model: getModelForCurrentPrompt(tempCurrentIndex),
-        messages: historyForThisStep,
-        temperature: currentPromptObj.temperature ?? 0,
-    };
-    // --- DEBUG START ---
-    console.log(`[DEBUG][AUTO-VISIBLE] Preparing LLM Payload for Index ${tempCurrentIndex}:`);
-    console.log(`  Model: ${payload.model}`);
-    console.log(`  Temperature: ${payload.temperature}`);
-    console.log(`  Messages Count: ${payload.messages.length}`);
-    // --- DEBUG END ---
-
-
-    // --- Fetch API Response ---
-    // --- DEBUG START ---
-    console.log(`[DEBUG][AUTO-VISIBLE] Sending request to LLM...`);
-    // --- DEBUG END ---
-    const autoResponse = await fetchApiResponseWithRetry(payload, 2, 500);
-
-    if (!autoResponse) {
-        console.warn(`[WARN][AUTO-VISIBLE][Index: ${tempCurrentIndex}] LLM call returned no content. Ending transition step.`);
-         console.log(`--- [END][AUTO-VISIBLE] --- (LLM Error/No Content)\n`);
-        return {
-            conversationHistory: historyForThisStep,
-            response: null,
-            updatedIndex: tempCurrentIndex + 1, // Increment index even on failure
-            updatedNamedMemory: tempNamedMemory,
-            updatedBufferSize: tempBufferSize,
-        };
-    }
-    // --- DEBUG START ---
-    console.log(`[DEBUG][AUTO-VISIBLE] LLM Response Received (Index ${tempCurrentIndex}):\n"${autoResponse.substring(0, 150)}..."`);
-    // --- DEBUG END ---
-
-    // --- Update State After Successful Response ---
-
-    // 1. Named Memory Saving (Assistant Output)
-    if (currentPromptObj.saveAsNamedMemory) {
-        const memoryKey = currentPromptObj.saveAsNamedMemory;
-        tempNamedMemory[memoryKey] = autoResponse;
-         // --- DEBUG START ---
-        console.log(`[DEBUG][AUTO-VISIBLE][MEMORY] Saved assistant output to namedMemory["${memoryKey}"]`);
-         // --- DEBUG END ---
-    } else {
-        // --- DEBUG START ---
-        console.log(`[DEBUG][AUTO-VISIBLE][MEMORY] No 'saveAsNamedMemory' configured for index ${tempCurrentIndex}.`);
-         // --- DEBUG END ---
-    }
-     // 2. Named Memory Saving (Simulated User Input)
-    if (currentPromptObj.saveUserInputAsMemory) {
-         const memoryKey = currentPromptObj.saveUserInputAsMemory;
-         tempNamedMemory[memoryKey] = simulatedUserInput; // Save the exact simulated input
-         // --- DEBUG START ---
-         console.log(`[DEBUG][AUTO-VISIBLE][MEMORY] Saved simulated user input ("${simulatedUserInput}") to namedMemory["${memoryKey}"]`);
-         // --- DEBUG END ---
-    } else {
-         // --- DEBUG START ---
-        console.log(`[DEBUG][AUTO-VISIBLE][MEMORY] No 'saveUserInputAsMemory' configured for index ${tempCurrentIndex}.`);
-         // --- DEBUG END ---
-    }
-
-    // 3. Update Dynamic Buffer Size
-    const oldBufferSize = tempBufferSize; // --- DEBUG VAR ---
-    tempBufferSize = updateDynamicBufferMemory(currentPromptObj, tempBufferSize);
-    // --- DEBUG START ---
-    if (oldBufferSize !== tempBufferSize) {
-        console.log(`[DEBUG][AUTO-VISIBLE][BUFFER] Buffer size updated from ${oldBufferSize} to ${tempBufferSize}.`);
-    } else {
-        console.log(`[DEBUG][AUTO-VISIBLE][BUFFER] Buffer size remains ${tempBufferSize}.`);
-    }
-    // --- DEBUG END ---
-
-    // 4. Handle Important Memory (Internal history modification)
-    let finalHistoryContext = [...historyForThisStep, { role: "assistant", content: autoResponse }];
-    if (currentPromptObj.important_memory) {
-        // --- DEBUG START ---
-        console.log(`[DEBUG][AUTO-VISIBLE][MEMORY] Prompt index ${tempCurrentIndex} marked as important_memory. Inserting into history context.`);
-        // --- DEBUG END ---
-        finalHistoryContext = insertImportantMemory(finalHistoryContext, autoResponse);
-    } else {
-        // --- DEBUG START ---
-        console.log(`[DEBUG][AUTO-VISIBLE][MEMORY] Prompt index ${tempCurrentIndex} not marked as important_memory.`);
-        // --- DEBUG END ---
-    }
-
-    // 5. Increment Index
-    const indexBeforeIncrement = tempCurrentIndex; // --- DEBUG VAR ---
-    tempCurrentIndex++;
-     // --- DEBUG START ---
-    console.log(`[DEBUG][AUTO-VISIBLE] Index incremented from ${indexBeforeIncrement} to ${tempCurrentIndex}.`);
-     // --- DEBUG END ---
-
-
-    // --- Return Updated State ---
-     // --- DEBUG START ---
-    console.log(`[DEBUG][AUTO-VISIBLE] Returning updated state:`);
-    console.log(`  - updatedIndex: ${tempCurrentIndex}`);
-    console.log(`  - updatedNamedMemory: ${JSON.stringify(tempNamedMemory)}`);
-    console.log(`  - updatedBufferSize: ${tempBufferSize}`);
-    console.log(`  - response: ${autoResponse ? `"${autoResponse.substring(0,50)}..."` : 'null'}`);
-    console.log(`  - conversationHistory length: ${finalHistoryContext.length}`);
-    console.log(`--- [END][AUTO-VISIBLE] --- (Success)\n`);
-     // --- DEBUG END ---
-    return {
-        conversationHistory: finalHistoryContext,
-        response: autoResponse,
-        updatedIndex: tempCurrentIndex,
-        updatedNamedMemory: tempNamedMemory,
-        updatedBufferSize: tempBufferSize,
+        response: processedContent, // Return the processed content to be appended
+        updatedIndex: currentPromptIndex + 1,
+        updatedNamedMemory: currentNamedMemory, // Return the potentially modified memory
+        updatedBufferSize,
+        conversationHistory: historyAfterCall // Pass updated history
     };
 }
 
@@ -561,7 +411,7 @@ export async function processTransitions(
             const separator = finalCombinedContent ? "\n\n" : "";
             finalCombinedContent += separator + autoResp; // Append
             indexGeneratingFinalResponse = currentTransitionIndex - 1; // Last visible prompt index generated/appended this
-        } else {
+    } else {
             // console.log(`[DEBUG][TRANSITION-V] Stopping visible transition chain due to null response at index ${currentTransitionIndex - 1}.`);
             break; // Stop if a visible transition fails or returns null
         }

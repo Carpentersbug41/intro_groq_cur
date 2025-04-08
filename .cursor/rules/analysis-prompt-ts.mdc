@@ -1,0 +1,111 @@
+---
+description: # Analysis of `app/api/chat/prompts.ts`
+globs: 
+alwaysApply: false
+---
+# Analysis of `app/api/chat/prompts.ts`
+
+## 1. Purpose of the File
+
+The `prompts.ts` file serves as the central **configuration hub and blueprint** for the entire conversational flow. It defines the sequence of steps, the content of each step, and the specific behaviors associated with each step in the interaction between the user and the LLM assistant. Think of it as the script or state machine definition for the chat application.
+
+## 2. Core Export: `PROMPT_LIST`
+
+The primary export of this file is the `PROMPT_LIST` constant.
+
+-   **Structure:** `PROMPT_LIST` is an **array**.
+-   **Content:** Each element within this array is an **object** that conforms to the `PromptType` interface (defined near the top of the file).
+-   **Order Matters:** The order of these `PromptType` objects within the array defines the default sequential flow of the conversation. The system typically progresses from one object to the next based on an index managed in the session state (`currentIndex`).
+
+## 3. The `PromptType` Interface
+
+The `PromptType` interface defines the structure and allowed properties for each object within the `PROMPT_LIST`. Each property acts as a configuration setting for that specific step in the conversation:
+
+```typescript
+type PromptType = {
+  // --- Core Content ---
+  prompt_text: string; // The actual text sent to the LLM as the system prompt. Can contain {memoryKey} placeholders.
+
+  // --- Flow Control & Validation ---
+  validation?: boolean | string; // Rules for validating user input responding to the *previous* prompt.
+  fallbackIndex?: number;  // Index to jump to if validation fails.
+  autoTransitionHidden?: boolean; // Proceed to next prompt automatically, hiding this step's output?
+  autoTransitionVisible?: boolean; // Proceed automatically, showing this step's output?
+  chaining?: boolean; // Use previous LLM output as input for this prompt's LLM call?
+
+  // --- LLM Parameters ---
+  temperature?: number; // LLM creativity/randomness setting (0 to 1+).
+  model?: string; // Override the default LLM model for this step.
+
+  // --- State Management ---
+  important_memory?: boolean; // Mark this step's *assistant* output to be preserved by the buffer.
+  buffer_memory?: number; // Set the history buffer size *before* this step runs.
+  saveUserInputAs?: string; // Key to save the *user's* input under in namedMemory (after validation).
+  saveAssistantOutputAs?: string; // Key to save this step's *assistant* output under in namedMemory.
+
+  // --- Optional/Future Use ---
+  wait_time?:number; // (Not implemented) Potential delay.
+  addToDatabase?: boolean; // (Implementation unclear) Flag for DB storage.
+  dbOptions?: { // (Implementation unclear) Specific DB storage details.
+    collectionName: string;
+    documentId?: string;
+    fields?: { /* ... */ };
+    timestamp?: boolean;
+  };
+};
+```
+
+## 4. How it Works in the Conversational Flow
+
+1.  **Initialization:** The conversation starts, and the session state likely initializes `currentIndex` to `0`.
+2.  **User Input:** The user sends a message.
+3.  **State Retrieval:** The backend (`route.ts` / `nonStreamingFlow.ts`) retrieves the current session state, including `currentIndex` and `promptIndexThatAskedLastQuestion`.
+4.  **Validation (Looking Back):** If `promptIndexThatAskedLastQuestion` is valid, the system looks up the `PromptType` object at that index in `PROMPT_LIST`. It checks the `validation` and `fallbackIndex` properties of *that previous prompt* to validate the current user input.
+5.  **Processing Current Step (Using `currentIndex`):**
+    *   If validation passes (or wasn't required), the system retrieves the `PromptType` object at the current `currentIndex` from `PROMPT_LIST`.
+    *   It uses the properties of *this current object* to determine behavior:
+        *   `prompt_text` (after memory injection) is used as the system prompt for the LLM.
+        *   `model` and `temperature` configure the LLM call.
+        *   `buffer_memory` adjusts the history size before the call.
+        *   `saveAssistantOutputAs` determines if/how the LLM's response is saved.
+        *   `important_memory` flags the response for buffer preservation.
+        *   `autoTransitionHidden`/`autoTransitionVisible` flags trigger the transition logic (`autoTransitionUtils.ts`) *after* this step executes successfully.
+        *   `chaining` (potentially) triggers `chainUtils.ts`.
+6.  **State Update:** After processing the step (and any transitions), the backend calculates the `nextIndexAfterProcessing` and the `indexGeneratingFinalResponse`. These, along with any updated memory/buffer size, are saved back into the session state, ready for the next user input.
+
+## 5. Example Conceptual Flow
+
+Imagine `PROMPT_LIST` like this (simplified):
+
+```typescript
+[
+  // Index 0: Greeting
+  { prompt_text: "Hello! Welcome. Are you ready?" , validation: true, fallbackIndex: 0 },
+  // Index 1: Ask Question
+  { prompt_text: "Great! What is your favorite color?", saveAssistantOutputAs: "question_text", validation: true, fallbackIndex: 1, saveUserInputAs: "user_color_response" },
+  // Index 2: Acknowledge & Use Memory
+  { prompt_text: "Interesting that you chose {user_color_response}. Thanks!", autoTransitionVisible: true }, // Uses memory
+  // Index 3: Goodbye
+  { prompt_text: "Okay, goodbye!" }
+]
+```
+
+-   Turn 1: Runs index 0. Asks "Are you ready?". Needs validation.
+-   Turn 2: User says "Yes". Validated against index 0 rules. Runs index 1. Asks about color. Saves user input as "user\_color\_response". Needs validation.
+-   Turn 3: User says "Blue". Validated against index 1 rules. Runs index 2. Uses `{user_color_response}` memory, says "Interesting... Blue. Thanks!". Has `autoTransitionVisible`.
+-   Turn 3 (cont.): Because of `autoTransitionVisible` on index 2, it immediately runs index 3. Outputs "Okay, goodbye!".
+-   End.
+
+## 6. Customization and Importance
+
+This file is critical. By adding, removing, or modifying the `PromptType` objects in `PROMPT_LIST` and adjusting their properties, you directly control:
+
+-   The conversation's path and length.
+-   What the assistant says at each step.
+-   How user input is validated.
+-   What information is remembered (`namedMemory`).
+-   How much history is kept (`buffer_memory`).
+-   Whether steps happen automatically (`autoTransition`).
+-   Which LLM model or settings are used per step.
+
+Therefore, editing `prompts.ts` is the primary method for designing and altering the chat application's conversational logic.
