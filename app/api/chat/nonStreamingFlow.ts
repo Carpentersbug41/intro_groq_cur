@@ -1,5 +1,5 @@
 // --- Imports needed specifically for handleNonStreamingFlow ---
-import PROMPT_LIST from "./prompts";
+import { PROMPT_LIST, PromptType } from "./prompts";
 import { ConversationEntry, HandlerResult, ConversationProcessingInput } from './routeTypes'; // Assuming types moved or defined here/imported
 import {
   validateInput,
@@ -56,19 +56,19 @@ export async function handleNonStreamingFlow(
 ): Promise<HandlerResult> {
   const { messagesFromClient, sessionData } = input;
 
-  // console.log("Entering handleNonStreamingFlow with session data:", JSON.stringify(sessionData, null, 2));
+  // Store the initial currentIndex intended for this turn
+  const initialCurrentIndex = sessionData.currentIndex;
+  console.log(`>>> [Fallback Debug] Start of Turn: initialCurrentIndex = ${initialCurrentIndex}`);
 
   // --- Step 1: Initialize Local State from Session ---
-  let currentIndex = sessionData.currentIndex; // Index for the NEXT prompt to generate
-  const promptIndexThatAskedLastQuestion = sessionData.promptIndexThatAskedLastQuestion; // Index of the prompt the user is responding TO
+  let currentIndex = sessionData.currentIndex;
+  const promptIndexThatAskedLastQuestion = sessionData.promptIndexThatAskedLastQuestion;
   let currentNamedMemory: NamedMemory = JSON.parse(JSON.stringify(sessionData.namedMemory ?? {}));
   let currentBufferSize = sessionData.currentBufferSize;
 
   if (typeof currentNamedMemory !== 'object' || currentNamedMemory === null || Array.isArray(currentNamedMemory)) {
       currentNamedMemory = {};
   }
-  // console.log(`>>> [DEBUG][FLOW_V2] Initial State: currentIndex=${currentIndex}, askedBy=${promptIndexThatAskedLastQuestion}`);
-
 
   // --- Prepare History and Get User Message ---
   let currentHistory: ConversationEntry[] = [...messagesFromClient];
@@ -106,69 +106,174 @@ export async function handleNonStreamingFlow(
          const prevPromptWithMemory = injectNamedMemory(prevPromptText, currentNamedMemory);
 
          const customValidation = typeof prevPromptValidation === "string" ? prevPromptValidation : undefined;
+         console.log(`>>> [Fallback Debug] Validating user input "${userMessage}" against prompt index: ${promptIndexThatAskedLastQuestion}`);
          const isValid = await validateInput(userMessage, prevPromptWithMemory, customValidation);
 
          if (!isValid) {
-           console.log(`>>> DEBUG: Validation FAILED for user input "${userMessage}" against rules of prompt index: ${promptIndexThatAskedLastQuestion}`);
+           console.log(`>>> [Fallback Debug] Validation FAILED.`);
            isStorable = false; // Mark interaction as not storable due to failed validation
 
-           // --- Apply Rollback based on the prompt that FAILED validation ---
-           const rolledBackIndex = RollbackOnValidationFailure(promptIndexThatAskedLastQuestion); // Rollback based on the prompt that asked
-           console.log(`>>> DEBUG: RollbackOnValidationFailure(${promptIndexThatAskedLastQuestion}) returned: ${rolledBackIndex}`);
+           // --- START: Reverted Fallback Calculation ---
+           console.log(`>>> [Fallback Debug] Initiating fallback logic...`);
+           console.log(`>>> [Fallback Debug] Failed Prompt Index (promptIndexThatAskedLastQuestion): ${promptIndexThatAskedLastQuestion}`);
 
-           if (rolledBackIndex !== promptIndexThatAskedLastQuestion) {
-             console.log(`>>> DEBUG: Applying rollback. Failing index: ${promptIndexThatAskedLastQuestion}, Rolled-back index: ${rolledBackIndex}`);
-
-             // --- Generate Retry Message & Return IMMEDIATELY---
-             const rolledBackPromptObj = PROMPT_LIST[rolledBackIndex];
-             // Null check
-             if (!rolledBackPromptObj) {
-                console.error(`[ERROR] Rollback block: Could not find prompt object at rolled-back index ${rolledBackIndex}`);
-                return { content: "Internal error: Could not generate retry message.", updatedSessionData: null };
-             }
-             const rolledBackPromptText = rolledBackPromptObj.prompt_text ?? "Please try again.";
-             const rolledBackPromptWithMemory = injectNamedMemory(rolledBackPromptText, currentNamedMemory);
-             const retryContent = await generateRetryMessage(userMessage, rolledBackPromptWithMemory, messagesFromClient); // Pass history
-             // console.log(`>>> DEBUG: About to execute IMMEDIATE return for rolled-back index: ${rolledBackIndex}`);
-             console.log(`>>> DEBUG: About to execute IMMEDIATE return. Retry based on index ${rolledBackIndex}. Next turn starts at index ${rolledBackIndex + 1}.`);
+           // Use the RollbackOnValidationFailure function again
+           const targetIndexOnFallback = RollbackOnValidationFailure(promptIndexThatAskedLastQuestion);
+           // The function already logs internally, but add context here
+           console.log(`>>> [Fallback Debug] RollbackOnValidationFailure(${promptIndexThatAskedLastQuestion}) determined targetIndexOnFallback: ${targetIndexOnFallback}`);
 
 
-             // Return immediately with the retry message.
-             // The *next* turn will start at the index AFTER the rolled-back index.
-             // The question implicitly "asked" by the retry message corresponds to the rolled-back index.
+           // Check if rollback actually changed the index (i.e., fallbackIndex was defined and > 0)
+           if (targetIndexOnFallback !== promptIndexThatAskedLastQuestion) {
+                console.log(`>>> [Fallback Debug] Fallback applied. Target index ${targetIndexOnFallback} is different from failed index ${promptIndexThatAskedLastQuestion}. Executing target prompt.`);
+
+                // --- Execute the Target Fallback Prompt ---
+                const targetPromptObj = PROMPT_LIST[targetIndexOnFallback];
+                if (!targetPromptObj) {
+                    console.error(`[ERROR] Fallback block: Could not find prompt object at target index ${targetIndexOnFallback}`);
+                    return { content: "Internal error: Could not execute fallback.", updatedSessionData: null };
+                }
+
+                // Simulate execution flow for the target prompt
+                const fallbackPromptText = targetPromptObj.prompt_text || "";
+                const fallbackPromptWithMemory = injectNamedMemory(fallbackPromptText, currentNamedMemory);
+                currentBufferSize = updateDynamicBufferMemory(targetPromptObj, currentBufferSize); // Update buffer for this prompt
+
+                // Clean history? Decide if needed based on testing this new logic. Start without for simplicity.
+                let historyPayloadForFallback = [
+                    { role: "system", content: fallbackPromptWithMemory },
+                    ...currentHistory.filter((entry) => entry.role !== "system"), // Use full current history for now
+                ];
+                historyPayloadForFallback = manageBuffer(historyPayloadForFallback, currentBufferSize);
+
+                // Call LLM for the target fallback prompt
+                const fallbackPayload = {
+                    model: getModelForCurrentPrompt(targetIndexOnFallback),
+                    temperature: targetPromptObj?.temperature ?? 0,
+                    messages: historyPayloadForFallback,
+                };
+
+                // --- START EDIT: Log the context BEFORE the API call ---
+                console.log(`>>> [Fallback Debug] Context for API call to target index ${targetIndexOnFallback}:`);
+                console.log(JSON.stringify(historyPayloadForFallback, null, 2)); // Log the full messages array
+                console.log(`--- End Fallback API Call Context ---`);
+                // --- END EDIT ---
+
+                console.log(`>>> [Fallback Debug] Making API call for target index ${targetIndexOnFallback}...`);
+                const rawFallbackContent = await fetchApiResponseWithRetry(fallbackPayload);
+                const fallbackContentCleaned = cleanLlmResponse(rawFallbackContent);
+
+                if (!fallbackContentCleaned) {
+                    console.error(`>>> [Fallback Debug] Fallback LLM call FAILED for target index ${targetIndexOnFallback}.`);
+                    // Return state as it was *before* this failed attempt, but advance index to avoid loop
              return {
-               content: retryContent,
+                        content: "I'm sorry, I couldn't process that fallback. Could you try again?",
                updatedSessionData: {
-                 currentIndex: rolledBackIndex + 1, // Next turn starts *after* the rolled-back index
-                 promptIndexThatAskedLastQuestion: rolledBackIndex, // The retry message "asks" based on this index
+                            currentIndex: currentIndex, // Keep original intended next index
+                            promptIndexThatAskedLastQuestion: promptIndexThatAskedLastQuestion, // The one that failed validation
                  namedMemory: currentNamedMemory,
                  currentBufferSize: currentBufferSize
                }
              };
-             // --- End of Immediate Return for Rollback ---
+                } else {
+                  console.log(`>>> [Fallback Debug] Fallback LLM call SUCCEEDED for target index ${targetIndexOnFallback}. Response: "${fallbackContentCleaned.substring(0,50)}..."`);
+                }
 
-           } else { // Validation failed BUT no rollback occurred (fallbackIndex was 0 or undefined for the prompt that asked)
-             console.log(`>>> DEBUG: Validation failed for prompt ${promptIndexThatAskedLastQuestion}, but no rollback applied (fallbackIndex=0 or undefined).`);
-             // What should happen here? Re-ask the SAME question from promptIndexThatAskedLastQuestion?
-             // Let's generate a standard retry based on the *failed* prompt index for now.
-             const failedPromptText = prevPromptObj.prompt_text ?? "Please try that again."; // Use prevPromptObj checked earlier
+                // Process memory for the fallback response
+                let baseFallbackResponse = fallbackContentCleaned ?? "[Fallback Error]"; // Handle null case
+                processAssistantResponseMemory(baseFallbackResponse, targetPromptObj, currentNamedMemory, targetIndexOnFallback);
+                console.log(`>>> [Fallback Debug] Processed memory for target index ${targetIndexOnFallback}.`);
+
+                // --- START EDIT: Check for Transitions on Fallback Prompt ---
+                const hasHiddenFlag = targetPromptObj.autoTransitionHidden === true;
+                const hasVisibleFlag = targetPromptObj.autoTransitionVisible === true;
+
+                if (hasHiddenFlag || hasVisibleFlag) {
+                    // Prepare history *including* the fallback response for transitions
+                    let historyAfterFallbackLLM = [
+                        ...historyPayloadForFallback, // History used FOR the call
+                        // Add the assistant response received from the fallback call
+                        // IMPORTANT: Use the *clean* response before potential prefixing
+                        { role: "assistant", content: baseFallbackResponse }
+                    ];
+                    // Handle important memory prefixing for the history context if needed
+                    // Note: processTransitions expects the clean content as initialContent,
+                    // but the history context might need the prefix.
+                     if (targetPromptObj.important_memory) {
+                         console.log(`>>> [Fallback Debug][Memory] Fallback prompt ${targetIndexOnFallback} is important_memory. Adding prefix to history context.`);
+                         // Apply prefix to the last message in history for transition context
+                         historyAfterFallbackLLM[historyAfterFallbackLLM.length - 1].content = `Important_memory: ${baseFallbackResponse}`;
+                         // baseFallbackResponse itself remains clean for processTransitions initialContent
+                     }
+
+                    console.log(`>>> [Fallback Debug] Fallback prompt ${targetIndexOnFallback} has autoTransition flag. Processing transitions...`);
+                    const transitionResult = await processTransitions({
+                        initialHistory: historyAfterFallbackLLM, // History context *after* fallback call
+                        initialContent: baseFallbackResponse, // Clean content *from* fallback call
+                        executedPromptIndex: targetIndexOnFallback, // The index that "executed"
+                        initialNamedMemory: currentNamedMemory, // Memory *after* fallback processing
+                        initialBufferSize: currentBufferSize, // Buffer size *after* fallback update
+                    });
+
+                    // Return result from transitions
+                    console.log(`>>> [Fallback Debug] Fallback + Transition complete. Final content generated by index: ${transitionResult.indexGeneratingFinalResponse}. Next turn index: ${transitionResult.nextIndexAfterProcessing}.`);
+                     const finalSessionData = {
+                         currentIndex: transitionResult.nextIndexAfterProcessing,
+                         promptIndexThatAskedLastQuestion: transitionResult.indexGeneratingFinalResponse,
+                         namedMemory: transitionResult.finalNamedMemory,
+                         currentBufferSize: transitionResult.finalBufferSize
+                     };
+                    console.log(`>>> [Fallback Debug] Returning transition result. Setting state for NEXT turn: ${JSON.stringify(finalSessionData)}`);
+                    return {
+                        content: transitionResult.finalCombinedContent,
+                        updatedSessionData: finalSessionData
+                    };
+
+                } else {
+                    // --- No Transition on Fallback Prompt ---
+                    console.log(`>>> [Fallback Debug] Fallback prompt ${targetIndexOnFallback} has NO autoTransition flag. Returning its content ONLY.`);
+                    // Return the fallback content and set state for the next turn (current behavior)
+                     const finalSessionData = {
+                         currentIndex: targetIndexOnFallback + 1,
+                         promptIndexThatAskedLastQuestion: targetIndexOnFallback,
+                         namedMemory: currentNamedMemory,
+                         currentBufferSize: currentBufferSize
+                     };
+                    console.log(`>>> [Fallback Debug] Returning fallback content. Setting state for NEXT turn: ${JSON.stringify(finalSessionData)}`);
+                    return {
+                        content: baseFallbackResponse, // Return the clean response
+                        updatedSessionData: finalSessionData
+                    };
+                }
+                // --- END EDIT: Check for Transitions on Fallback Prompt ---
+
+           } else {
+               // --- Fallback Calculation Resulted in NO Index Change ---
+               // (This happens if fallbackIndex was 0 or undefined on the failed prompt)
+               console.warn(`>>> [Fallback Debug] Fallback calculation resulted in NO index change (target index ${targetIndexOnFallback} is same as failed index ${promptIndexThatAskedLastQuestion}). Re-asking original question.`);
+               // Revert to re-asking the prompt that failed validation
+               const failedPromptObj = prevPromptObj;
+               const failedPromptText = failedPromptObj.prompt_text ?? "Please try that again.";
              const failedPromptWithMemory = injectNamedMemory(failedPromptText, currentNamedMemory);
              const retryContent = await generateRetryMessage(userMessage, failedPromptWithMemory, messagesFromClient);
 
-             console.log(`>>> DEBUG: About to execute IMMEDIATE return to re-ask prompt: ${promptIndexThatAskedLastQuestion}`);
-             return {
-               content: retryContent, // Re-ask the same question
-               updatedSessionData: {
-                 currentIndex: currentIndex, // Next turn still *intended* to be the one after the failed prompt
-                 promptIndexThatAskedLastQuestion: promptIndexThatAskedLastQuestion, // We are re-asking this question
+               const finalSessionData = {
+                   currentIndex: initialCurrentIndex, // Keep original intended index
+                   promptIndexThatAskedLastQuestion: promptIndexThatAskedLastQuestion,
                  namedMemory: currentNamedMemory,
                  currentBufferSize: currentBufferSize
-               }
-             };
+               };
+                console.log(`>>> [Fallback Debug] Returning retry message for prompt ${promptIndexThatAskedLastQuestion}. Setting state for NEXT turn: ${JSON.stringify(finalSessionData)}`);
+               return {
+                   content: retryContent,
+                   updatedSessionData: finalSessionData
+               };
            }
+           // --- END: Reverted Fallback Calculation ---
+
          } else {
            // --- Validation Succeeded for Previous Prompt ---
-           console.log(`[INFO] Validation SUCCEEDED for user input "${userMessage}" against prompt index: ${promptIndexThatAskedLastQuestion}`);
+           console.log(`>>> [Fallback Debug] Validation SUCCEEDED for prompt index ${promptIndexThatAskedLastQuestion}. Proceeding with main flow.`);
            // Proceed normally to generate the response for the *current* `currentIndex`.
            // Save user input to memory NOW based on the prompt that asked the question
            saveUserInputToMemoryIfNeeded(userMessage, prevPromptObj, currentNamedMemory); // Use prevPromptObj checked earlier
@@ -220,6 +325,9 @@ export async function handleNonStreamingFlow(
           ...currentHistory.filter((entry) => entry.role !== "system"),
       ];
     historyForLLM = manageBuffer(historyForLLM, currentBufferSize);
+    // --- START EDIT: Log the history AFTER buffering ---
+    console.log("[DEBUG] History AFTER manageBuffer (Size:", currentBufferSize, ") for Main LLM Call (Index:", currentIndex, "):", JSON.stringify(historyForLLM, null, 2));
+    // --- END EDIT ---
 
       // --- Main LLM Call ---
       const mainPayload = {
@@ -282,7 +390,7 @@ export async function handleNonStreamingFlow(
     currentNamedMemory = transitionResult.finalNamedMemory;
     currentBufferSize = transitionResult.finalBufferSize;
 
-    // --- Step 6: Store to DB (Optional) and Return Final State ---
+    // --- Step 6: Store to DB (Optional) and Prepare Final Return ---
      console.log(`>>> DEBUG: Reaching FINAL return. Final content generated by index: ${indexGeneratingFinalResponse}. Next turn index: ${nextIndexAfterProcessing}. isStorable: ${isStorable}`);
 
      // Store interaction result if needed (using the index that *asked* the question for context, if validation passed)
@@ -296,7 +404,40 @@ export async function handleNonStreamingFlow(
        // console.log("[DB-DEBUG] Interaction was not stored (isStorable=false or no valid prev index).");
       }
 
-     // --- Return final content and session state for the *next* turn ---
+     // --- START EDIT: Modify Final Context Logging ---
+     console.log("--------------------------------------------------");
+     console.log("[DEBUG] FINAL CONTEXT before returning from handleNonStreamingFlow:");
+
+     // 1. Log the System Prompt used for the final generating step
+     let finalSystemPromptText = "[Error: Could not determine final system prompt]";
+     if (indexGeneratingFinalResponse >= 0 && indexGeneratingFinalResponse < PROMPT_LIST.length) {
+         const finalPromptObj = PROMPT_LIST[indexGeneratingFinalResponse];
+         if (finalPromptObj) {
+             const rawPrompt = finalPromptObj.prompt_text || "[Prompt text missing]";
+             finalSystemPromptText = injectNamedMemory(rawPrompt, currentNamedMemory);
+         }
+     }
+     console.log("  - System Prompt (for generating index " + indexGeneratingFinalResponse + "):");
+     console.log("    " + finalSystemPromptText.replace(/\n/g, "\n    "));
+
+     // 2. REMOVED: Log the history RECEIVED from the client this turn
+     // console.log("  - History Received from Client this Turn:", JSON.stringify(messagesFromClient, null, 2)); // <-- Commented out
+
+     // 3. Log the final content being sent back
+     console.log("  - Final Assistant Content Sent to Client:", finalResponseContent ? `"${finalResponseContent}"` : "[null]");
+
+     // 4. Log Session Data to be Saved (No change)
+     console.log("  - Session Data to be Saved for NEXT Turn:", JSON.stringify({
+         currentIndex: nextIndexAfterProcessing,
+         promptIndexThatAskedLastQuestion: indexGeneratingFinalResponse,
+         namedMemory: currentNamedMemory,
+         currentBufferSize: currentBufferSize
+     }, null, 2));
+     console.log("--------------------------------------------------");
+     // --- END EDIT: Modify Final Context Logging ---
+
+
+     // Return final content and session state for the *next* turn
       return {
        content: finalResponseContent,
           updatedSessionData: {

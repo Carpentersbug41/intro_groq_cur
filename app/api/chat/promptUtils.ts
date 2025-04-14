@@ -1,6 +1,7 @@
 // src/app/api/chat/promptUtils.ts
 
-import PROMPT_LIST from "./prompts"; // Adjust path if needed
+import { PROMPT_LIST } from "./prompts"; // <--- ENSURE THIS IMPORT IS CORRECT
+import { PromptType } from "./routeTypes"; // Assuming PromptType might be here or defined locally
 
 // Import the constant needed by getModelForCurrentPrompt
 // Option 1: Import directly from route.ts (if still exported there)
@@ -25,9 +26,10 @@ export function getModelForCurrentPrompt(currentIndex: number): string {
     // console.log(`[MODEL DEBUG] Prompt at index ${currentIndex}:`, PROMPT_LIST[currentIndex]); // Log the prompt object
     // console.log(`[MODEL DEBUG] Model found for index ${currentIndex}: ${promptModel}`); // Log the specific model found
     if (!promptModel) {
-        // console.log(`[MODEL DEBUG] No custom model at index ${currentIndex}. Using default model: ${DEFAULT_OPENAI_MODEL}`);
+        // console.log(`[MODEL DEBUG] No specific model found for index ${currentIndex}, defaulting to gpt-3.5-turbo.`);
+        return "gpt-3.5-turbo"; // Default model
     }
-    return promptModel || DEFAULT_OPENAI_MODEL;
+    return promptModel;
 }
 
 

@@ -1,11 +1,10 @@
 // src/app/api/chat/autoTransitionUtils.ts
 
-import PROMPT_LIST from "./prompts"; // Correct path relative to this new file
+import { PROMPT_LIST, PromptType } from "./prompts"; // Use named imports for both
 import { getModelForCurrentPrompt } from './promptUtils'; // Adjust path if needed
 import { fetchApiResponseWithRetry, cleanLlmResponse } from './openaiApiUtils'; // Adjust path if needed
 import { injectNamedMemory, updateDynamicBufferMemory, processAssistantResponseMemory } from './memoryUtils'; // Import memory utils
 import { manageBuffer } from './bufferUtils'; // Import buffer utils
-import { PromptType } from "./prompts"; // Import PromptType if needed
 import { ConversationEntry } from './routeTypes'; // Assuming types are defined/imported
 
 // Define types if not globally available

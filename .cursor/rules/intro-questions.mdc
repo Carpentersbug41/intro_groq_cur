@@ -1,0 +1,107 @@
+---
+description: # IELTS Introduction Type Requirements - Questionnaire
+globs: 
+alwaysApply: false
+---
+# IELTS Introduction Type Requirements - Questionnaire
+
+Use this questionnaire to gather the necessary details for creating a new IELTS introduction prompt flow (`prompts_*.ts`).
+
+## 1. Module Identification & Core Content
+
+### 1.1 Introduction Type Name
+- What is the specific name of the IELTS introduction type? (e.g., `IELTS Opinion Introduction`, `IELTS Discuss Both Views Introduction`)
+- **Answer:** `[Your Answer Here]`
+
+### 1.2 Target File Name
+- What short name should be used for the prompt file (`prompts_[type_short_name].ts`)? (e.g., `opinion`, `discuss`)
+- **Answer:** `[Your Answer Here]`
+
+### 1.3 Sample Questions
+- Provide 5-10 unique sample essay questions specifically for this introduction type. Include the full question text and any instruction lines.
+    1. `[Full Question 1]`
+    2. `[Full Question 2]`
+    3. `[Full Question 3]`
+    4. `[Full Question 4]`
+    5. `[Full Question 5]`
+    6. `[Full Question 6 (Optional)]`
+    7. `[Full Question 7 (Optional)]`
+    8. `[Full Question 8 (Optional)]`
+    9. `[Full Question 9 (Optional)]`
+    10. `[Full Question 10 (Optional)]`
+
+### 1.4 Required Formula/Structure
+- What is the *exact* required structure and phrasing for this introduction type?
+- Be explicit about keywords, components (use placeholders like `[Paraphrased Statement]`, `[View A Summary]`, `[Thesis Statement]`), and order.
+- **Answer:** `[Define the precise formula here]`
+
+## 2. Data Extraction & Memory Keys
+
+### 2.1 Extract from Original Question
+- Besides the full question (`[original_question]`), what specific component needs extraction? (e.g., Main Question Statement)
+- What label should prompts use? (e.g., `Original Question Statement`)
+- *(This will be saved as `[original_question_statement]`)*
+- **Answer (Component & Label):** `[Your Answer Here]`
+
+### 2.2 Extract from User Introduction
+- What specific components need extraction from the user's introduction? List each:
+    - **Component 1:**
+        - Description: `[e.g., User's Paraphrased Statement]`
+        - Prompt Label: `[e.g., User Question Statement]`
+        - Memory Key: `[e.g., [user_question_statement]]`
+    - **Component 2 (if applicable):**
+        - Description: `[e.g., User's Summary of View A]`
+        - Prompt Label: `[e.g., User Summary of View A]`
+        - Memory Key: `[e.g., [user_view_a_summary_key]]`
+    - **Component 3 (if applicable):**
+        - Description: `[e.g., User's Thesis Statement]`
+        - Prompt Label: `[e.g., User Thesis]`
+        - Memory Key: `[e.g., [user_thesis_key]]`
+    - *(Add more if needed)*
+
+### 2.3 Additional Memory Keys
+- Are any other *custom* memory keys needed beyond the standard ones (`[original_question]`, `[user_introduction]`, `[user_introduction_displayed]`, `[consolidated_context]`, `[formula_feedback_errors]`, `[formula_corrected_version]`, etc.) and those defined in 2.2?
+- **Answer (List custom keys or "None"):** `[Your Answer Here]`
+
+## 3. Analysis Configuration
+
+*(Answer Yes/No for each block)*
+
+### 3.1 Formula Check
+- Enable check against the formula from 1.4?
+- **Answer (Yes/No):** `[Your Answer Here]`
+
+### 3.2 Paraphrasing Check
+- Enable check comparing user's statement (`[user_question_statement]`) vs. original (`[original_question_statement]`)?
+- **Answer (Yes/No):** `[Your Answer Here]`
+
+### 3.3 Clause Order Check
+- Enable check for varied clause order in the user's statement?
+- **Answer (Yes/No):** `[Your Answer Here]`
+
+### 3.4 Idea/Component Quality Check
+- Enable check on quality (relevance, clarity, conciseness) of specific user components?
+- **Answer (Yes/No):** `[Your Answer Here]`
+    - If Yes, which component memory key(s) to target? `[List keys, e.g., [user_extracted_ideas], [user_thesis_key]]`
+
+### 3.5 Cohesion Check (CC)
+- Enable check for formula adherence and key linking words?
+- **Answer (Yes/No):** `[Your Answer Here]`
+
+### 3.6 Lexical Resource (LR)
+- Enable check evaluating vocabulary (range, accuracy, formality)?
+- **Answer (Yes/No):** `[Your Answer Here]`
+
+### 3.7 Grammar Check (GRA)
+- Enable check for grammatical errors and sentence structure variety?
+- **Answer (Yes/No):** `[Your Answer Here]`
+
+### 3.8 Task Response (TR)
+- Enable check ensuring all required parts of the formula are addressed?
+- **Answer (Yes/No):** `[Your Answer Here]`
+
+## 4. Additional Notes
+
+### 4.1 Specific Rules/Considerations
+- Are there any other specific rules, constraints, common errors, or unique considerations for this introduction type?
+- **Answer:** `[Add any notes here or "None"]`

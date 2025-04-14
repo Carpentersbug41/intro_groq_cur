@@ -1,0 +1,132 @@
+---
+description: # Module Definition: [Module Type - e.g., IELTS Opinion Introduction]
+globs: **Consolidation Step:** A key step in the flow 
+alwaysApply: false
+---
+# Module Definition: [Module Type - e.g., IELTS Opinion Introduction]
+
+## 1. Module Identification
+
+-   **Module Name:** `[e.g., IELTS Opinion Introduction]`
+-   **Target File Path:** `[e.g., app/api/chat/prompts_introduction.ts]`
+-   **Base Template:** `promptFlowTemplate.ts`
+-   **Final Export Variable:** `PROMPT_LIST`
+
+## 2. Skill-Specific Placeholders
+
+*   `[Skill Name]`: "[Text for Skill Name]"
+*   `[Task Description]`: "[Text for Task Description]"
+*   `[Content Type]`: "[Text for Content Type]"
+*   `[User Action]`: "[Text for User Action]"
+*   `[Context Type]`: "[Text for Context Type]"
+*   `[Specific Formula]`: "[The exact formula string for this skill]"
+    *   *(Note: Customize based on essay type like Agree/Disagree, Discuss Both Views etc.)*
+
+## 3. Content List (for Index 2)
+
+### Sample `[Content Type]` List:
+
+1.  [Sample Item 1 text]
+    -   [Optional sub-point or instruction for item 1]
+2.  [Sample Item 2 text]
+    -   [Optional sub-point or instruction for item 2]
+3.  [...]
+    *(Add the actual list of questions/topics/examples here)*
+
+## 4. Analysis Block Configuration
+
+### Data Extraction (Indices 7, 8 - Renumbered)
+
+-   **Original Component:**
+    -   `[Component To Extract]`: "[e.g., main question statement]"
+    -   `[Component Name]`: "[e.g., Original Question Statement]"
+-   **User Component:**
+    -   `[Component To Extract]`: "[e.g., user's paraphrased question statement]"
+    -   `[Component Name]`: "[e.g., User's Question Statement]"
+
+### Formula Check (Block 1)
+
+-   **Status:** Enabled / Disabled
+-   **Formula:** Use `[Specific Formula]` defined above.
+
+### Paraphrasing Check (Block 2)
+
+-   **Status:** Enabled / Disabled
+-   **Target:** [e.g., Question Statement / Opinion / Idea 1 / Idea 2]
+-   **Placeholders:**
+    -   `[Component Being Paraphrased]`: "[Text for component]"
+    -   `[Component Name]`: "[Text for component label]"
+-   **Memory Keys:** `{[original_component_extracted_key]}`, `{[user_component_key]}` *(Confirm these keys)*
+
+### Clause Order Check (Block 3 - Optional)
+
+-   **Status:** Enabled / Disabled
+-   **Target:** [e.g., Question Statement]
+-   **Placeholders:**
+    -   `[Component Being Analyzed]`: "[Text for component label]"
+-   **Memory Keys:** `{[original_component_extracted_key]}`, `{[user_component_key]}` *(Confirm these keys)*
+
+### Idea Quality Check (Block 4)
+
+-   **Status:** Enabled / Disabled
+-   **Target Memory Key:** `{[skill_user_input_displayed]}` *(or corrected version key)*
+-   **Extraction Note:** [e.g., Extract two ideas following the opinion statement]
+
+### Cohesion Check (Block 5)
+
+-   **Status:** Enabled / Disabled
+-   **Target Memory Key:** `{[skill_user_input_displayed]}` *(or corrected version key)*
+
+### Lexical Resource (Block 6)
+
+-   **Status:** Enabled / Disabled
+-   **Target Memory Key:** `{[skill_user_input_displayed]}` *(or corrected version key)*
+
+### Grammar Check (Block 7)
+
+-   **Status:** Enabled / Disabled
+-   **Target Memory Key:** `{[skill_user_input_displayed]}` *(or corrected version key)*
+
+### Task Response Check (Block 8)
+
+-   **Status:** Enabled / Disabled
+-   **Target Memory Keys:** `{[skill_user_input_displayed]}`, `{[original_content_key]}` *(Confirm these keys)*
+
+## 5. Memory Key Mapping
+
+*(Map standard placeholders from template to specific keys for this module)*
+
+-   `[original_content_key]`: `"key_for_original_content"`
+-   `[skill_user_input]`: `"key_for_user_raw_input"`
+-   `[skill_user_input_displayed]`: `"key_for_displayed_user_input"`
+-   `[original_component_extracted_key]`: `"key_for_extracted_original_part"`
+-   `[user_component_key]`: `"key_for_extracted_user_part"`
+-   `[consolidated_context]`: `"key_for_consolidated_data"`
+-   `[formula_feedback_errors]`: `"key_for_formula_feedback"`
+-   `[formula_corrected_version]`: `"key_for_corrected_formula_version"`
+-   `[user_extracted_ideas]`: `"key_for_extracted_ideas"`
+-   `[paraphrase_corrected_version]`: `"key_for_corrected_paraphrase"`
+-   `[clause_order_analysis]`: `"key_for_clause_analysis_result"`
+-   `[clause_reordered_suggestion]`: `"key_for_reordered_clause_suggestion"`
+    *(Define others as needed, e.g., `[cc_feedback]`, `[lr_feedback]`, `[gra_feedback]`, `[tr_feedback]`)*
+
+## 6. Validation Configuration (Optional)
+
+*(Define expected validation logic/types if more specific than `validation: true`)*
+
+-   **Index 0 (Readiness):** `[e.g., Yes/No]`
+-   **Index 3 (Confirmation):** `[e.g., Yes/No/Another]`
+-   **Index 5 (User Input):** `[e.g., Free Text]`
+-   **Index 13, 19, 23, 27, 30, 33, 37, 39 (Readiness Checks):** `[e.g., Yes/No]`
+-   **Index 41 (Next Action):** `[e.g., Choice (Numeric/Text)]`
+
+## 7. Multi-Part Analysis Handling (If Applicable)
+
+*(Instructions for modules requiring analysis of multiple distinct parts, like Conclusion's Opinion, Idea 1, Idea 2)*
+
+-   **Example:** For Conclusion module:
+    -   Run Paraphrasing Block (Indices 13-19) three times.
+    -   **Run 1:** Target = Opinion. Set `[Component Being Paraphrased]`="main opinion". Use memory keys `{[original_opinion_key]}`, `{[user_opinion_key]}`.
+    -   **Run 2:** Target = Idea 1. Set `[Component Being Paraphrased]`="first supporting idea". Use memory keys `{[original_idea1_key]}`, `{[user_idea1_key]}`.
+    -   **Run 3:** Target = Idea 2. Set `[Component Being Paraphrased]`="second supporting idea". Use memory keys `{[original_idea2_key]}`, `{[user_idea2_key]}`.
+    -   *(Note: Requires prior steps to extract these specific components and save them to unique memory keys)*
