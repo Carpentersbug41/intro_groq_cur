@@ -254,14 +254,23 @@ export async function handleNonStreamingFlow(
                // Revert to re-asking the prompt that failed validation
                const failedPromptObj = prevPromptObj;
                const failedPromptText = failedPromptObj.prompt_text ?? "Please try that again.";
-             const failedPromptWithMemory = injectNamedMemory(failedPromptText, currentNamedMemory);
-             const retryContent = await generateRetryMessage(userMessage, failedPromptWithMemory, messagesFromClient);
+               const failedPromptWithMemory = injectNamedMemory(failedPromptText, currentNamedMemory);
+
+               // --- START EDIT: Apply buffer to history before generating retry message ---
+               // Use the currentHistory which includes the user's invalid message
+               // Use the currentBufferSize active at this point (before potential fallback prompt updates)
+               const historyForRetry = manageBuffer(currentHistory, currentBufferSize);
+               console.log(`[DEBUG] Applying buffer size ${currentBufferSize} to history before generating retry message.`);
+               // --- END EDIT ---
+
+               // --- Pass the *buffered* history to generateRetryMessage ---
+               const retryContent = await generateRetryMessage(userMessage, failedPromptWithMemory, historyForRetry); // Use historyForRetry
 
                const finalSessionData = {
                    currentIndex: initialCurrentIndex, // Keep original intended index
                    promptIndexThatAskedLastQuestion: promptIndexThatAskedLastQuestion,
                  namedMemory: currentNamedMemory,
-                 currentBufferSize: currentBufferSize
+                 currentBufferSize: currentBufferSize // Use the buffer size active before the fallback attempt
                };
                 console.log(`>>> [Fallback Debug] Returning retry message for prompt ${promptIndexThatAskedLastQuestion}. Setting state for NEXT turn: ${JSON.stringify(finalSessionData)}`);
                return {

@@ -307,31 +307,25 @@ import {
 
 
 
+  // --- Step 1 (Index 0): Initial readiness check ---
+//   {
+//     prompt_text: `# System message:
+// You are a simple greeter.
+// Output exactly: "Test 0: Hello!"
+// Wait for user response.`,
+//   },
 
+//   // --- Test 1: Simple Validation (Yes/No) ---
+//   {
+//     prompt_text: `# System message:
+// You are checking readiness.
+// Output exactly: "Test 1: Are you ready for the next test? (Validation: Yes/No)"
+// Wait for user response.`,
+//     validation: true, // Simple boolean validation (expects "VALID" or "INVALID" based on default instruction)
+//   },
 
-
-
-
-
-     // --- Test 0: Simple Prompt ---
-  {
-    prompt_text: `# System message:
-You are a simple greeter.
-Output exactly: "Test 0: Hello!"
-Wait for user response.`,
-  },
-
-  // --- Test 1: Simple Validation (Yes/No) ---
-  {
-    prompt_text: `# System message:
-You are checking readiness.
-Output exactly: "Test 1: Are you ready for the next test? (Validation: Yes/No)"
-Wait for user response.`,
-    validation: true, // Simple boolean validation (expects "VALID" or "INVALID" based on default instruction)
-  },
-
-  {
-    prompt_text: `# System message: You are an expert in asking people's names. You only know this.  Ask the user their name and the test number.
+{
+  prompt_text: `# System message: You are an expert in asking people's names. You only know this.  Ask the user their name and the test number.
 
 Output exactly: "Test 1.5: Hello! What is your name?"
 #NEVER output anything else or reply to the previous prompt.
@@ -339,107 +333,136 @@ Output exactly: "Test 1.5: Hello! What is your name?"
 #NEVER use any other words or phrases.
 
 `,
+saveUserInputAs: "name", 
+buffer_memory: 3,
+
+},//-- Test 2: Validation with Fallback ---
+// If user says "no" or similar (INVALID), it should fallback to Test 1.
+
+{
+  prompt_text: `# System message: You are an expert in outputting text EXACTLY as you are instructed.
+
+Output exactly: "New variable = {name}"
+#NEVER output anything else or reply to the previous prompt.
+#NEVER ask anything else or add extra information.
+#NEVER use any other words or phrases.
+#NEVER ask the user their name!!!
+
+`,
 autoTransitionVisible: true, 
-  },// --- Test 2: Validation with Fallback ---
-  // If user says "no" or similar (INVALID), it should fallback to Test 1.
-  {
-    prompt_text: `# System message:
+important_memory: true,
+
+},//
+
+
+{
+  prompt_text: `# System message:
 You are confirming a choice, with fallback.
 Output exactly: "Test 2: Do you want to proceed? (Validation: Yes/No, Fallback to Test 1)"
 Wait for user response.`,
-    validation: true,
-    fallbackIndex: 1, // Fallback to Test 1 if validation fails
-  },
+  validation: true,
+  fallbackIndex: 1, // Fallback to Test 1 if validation fails
+},
 
-  // --- Test 3: Save User Input ---
-  {
-    prompt_text: `# System message:
+// --- Test 3: Save User Input ---
+{
+  prompt_text: `# System message:
 You are asking for a favorite color and saving the input.
-Output exactly: "Test 3: What is your favorite color? (Saves input to {fav_color})"
+Output exactly: "Test 3: What is your favorite color? "
 Wait for user response.`,
-    saveUserInputAs: "fav_color", // Saves the user's raw input to named memory
-  },
+  saveUserInputAs: "fav_color",
+  buffer_memory: 1, // Saves the user's raw input to named memory
+},
+{
+  prompt_text: `# System message:
+Output everything you know about the user!
+Never output anything else or reply to the previous prompt.
+Never ask anything else or add extra information.
+Never use any other words or phrases.
 
-  // --- Test 4: Save Assistant Output & Use Memory ---
-  {
-    prompt_text: `# System message:
-You are confirming the favorite color using memory.
-Output exactly: "Test 4: I see your favorite color is {fav_color}. (Saves this confirmation as {color_confirmation})"`,
-    saveAssistantOutputAs: "color_confirmation", // Saves *this* assistant response
-    autoTransitionVisible: true, // Immediately move to the next step after displaying this
-    temperature: 0, // Ensure exact output
-  },
+`,
 
-  // --- Test 5: Important Memory & Visible Transition ---
-  // This confirmation should be marked as important memory
-  {
-    prompt_text: `# System message:
-You are summarizing the important memory.
-Output exactly: "Test 5: Just confirming, we noted your color confirmation: {color_confirmation} (Important Memory, Visible Transition)"`,
-    important_memory: true, // Mark this as important
-    autoTransitionVisible: true, // Move immediately to the next visible step
-    temperature: 0,
-  },
+  saveAssistantOutputAs: "user_info", // Saves the user's raw input to named memory
+},
+// --- Test 4: Save Assistant Output & Use Memory ---
+{
+  prompt_text: `# System message:
+This is what I know: {user_info}
 
-  // --- Test 6: Hidden Transition - Process Data ---
-  // This step runs hidden, potentially processing something.
-  {
-    prompt_text: `# System message:
+`,
+  // buffer_memory: 1, // Saves *this* assistant response
+  autoTransitionVisible: true, // Immediately move to the next step after displaying this
+  temperature: 0, // Ensure exact output
+  important_memory: true, // Mark this as important
+},
+
+// --- Test 5: Important Memory & Visible Transition ---
+// This confirmation should be marked as important memory
+{
+  prompt_text: `# System message:
+Say something intelligent`,
+
+},
+
+// --- Test 6: Hidden Transition - Process Data ---
+// This step runs hidden, potentially processing something.
+{
+  prompt_text: `# System message:
 You are a hidden data processor.
 Analyze the favorite color: {fav_color}.
 Output a simple analysis like: "Analysis: {fav_color} is a primary color." or "Analysis: {fav_color} is a secondary color." (Saves as {color_analysis})
 Do not output anything else.`,
-    autoTransitionHidden: true, // Runs without user seeing prompt or needing input
-    saveAssistantOutputAs: "color_analysis",
-    temperature: 0.1, // Allow slight variation for analysis
-  },
+  autoTransitionHidden: true, // Runs without user seeing prompt or needing input
+  saveAssistantOutputAs: "color_analysis",
+  temperature: 0.1, // Allow slight variation for analysis
+},
 
-  // --- Test 7: Display Result After Hidden Transition ---
-  // This step displays the result from the hidden step.
-  {
-    prompt_text: `# System message:
+// --- Test 7: Display Result After Hidden Transition ---
+// This step displays the result from the hidden step.
+{
+  prompt_text: `# System message:
 You are displaying the result of a hidden process.
 Output exactly: "Test 7: Hidden analysis result: {color_analysis}"
 Wait for user response.`,
-    temperature: 0,
-  },
+  temperature: 0,
+},
 
-  // --- Test 8: Change Buffer Size ---
-  {
-    prompt_text: `# System message:
+// --- Test 8: Change Buffer Size ---
+{
+  prompt_text: `# System message:
 You are preparing for a longer context section.
 Output exactly: "Test 8: We need more context. Changing buffer size to 4. Ready?"
 Wait for user response.`,
-    buffer_memory: 4, // Change buffer size for subsequent calls
-    validation: true, // Simple ready check
-  },
+  // buffer_memory: 4, // Change buffer size for subsequent calls
+  validation: true, // Simple ready check
+},
 
-  // --- Test 9: Prompt Using Larger Buffer ---
-  {
-    prompt_text: `# System message:
+// --- Test 9: Prompt Using Larger Buffer ---
+{
+  prompt_text: `# System message:
 You are summarizing the interaction using potentially more history.
 Look back at the conversation (buffer is now 4). Mention the name (if provided earlier), color ({fav_color}), and analysis ({color_analysis}).
 Output a summary like: "Test 9: Summary (Buffer 4): We learned your color is {fav_color}, which we analyzed as '{color_analysis}'. "
 Wait for user response.`,
-    temperature: 0.1,
-  },
+  temperature: 0.1,
+},
 
-  // --- Test 10: Validation with Specific Instruction & Fallback ---
-  {
-    prompt_text: `# System message:
+// --- Test 10: Validation with Specific Instruction & Fallback ---
+{
+  prompt_text: `# System message:
 You are asking for confirmation using a specific validation rule.
 Output exactly: "Test 10: Was this test sequence helpful? (Validation: custom - expects positive response, Fallback to Test 8)"
 Wait for user response.`,
-    validation: customValidationInstructionForQuestion, // Use a specific validation instruction
-    fallbackIndex: 8, // Fallback to buffer size change step
-  },
+  validation: customValidationInstructionForQuestion, // Use a specific validation instruction
+  fallbackIndex: 8, // Fallback to buffer size change step
+},
 
-  // --- Test 11: Final Simple Prompt ---
-  {
-    prompt_text: `# System message:
+// --- Test 11: Final Simple Prompt ---
+{
+  prompt_text: `# System message:
 You are concluding the test.
 Output exactly: "Test 11: Test sequence complete. Thank you!"`,
-  },
+},
   
   
   

@@ -27,7 +27,7 @@ export function getModelForCurrentPrompt(currentIndex: number): string {
     // console.log(`[MODEL DEBUG] Model found for index ${currentIndex}: ${promptModel}`); // Log the specific model found
     if (!promptModel) {
         // console.log(`[MODEL DEBUG] No specific model found for index ${currentIndex}, defaulting to gpt-3.5-turbo.`);
-        return "gpt-3.5-turbo"; // Default model
+        return "gpt-4.1-mini-2025-04-14"; // Default model
     }
     return promptModel;
 }

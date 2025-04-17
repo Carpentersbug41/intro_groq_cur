@@ -34,167 +34,12 @@ type PromptType = {
 
 // D:\vercel\intro_groq m6\app\api\chat\prompts.ts
 export const PROMPT_LIST: PromptType[] = [
-  // --- Step 1 (Index 0): Initial readiness check ---
-//   {
-//     prompt_text: `# System message:
-// You are a simple greeter.
-// Output exactly: "Test 0: Hello!"
-// Wait for user response.`,
-//   },
-
-//   // --- Test 1: Simple Validation (Yes/No) ---
-//   {
-//     prompt_text: `# System message:
-// You are checking readiness.
-// Output exactly: "Test 1: Are you ready for the next test? (Validation: Yes/No)"
-// Wait for user response.`,
-//     validation: true, // Simple boolean validation (expects "VALID" or "INVALID" based on default instruction)
-//   },
-
-  {
-    prompt_text: `# System message: You are an expert in asking people's names. You only know this.  Ask the user their name and the test number.
-
-Output exactly: "Test 1.5: Hello! What is your name?"
-#NEVER output anything else or reply to the previous prompt.
-#NEVER ask anything else or add extra information.
-#NEVER use any other words or phrases.
-
-`,
-saveUserInputAs: "name", 
-buffer_memory: 3,
-
-  },//-- Test 2: Validation with Fallback ---
-  // If user says "no" or similar (INVALID), it should fallback to Test 1.
-
-  {
-    prompt_text: `# System message: You are an expert in outputting text EXACTLY as you are instructed.
-
-Output exactly: "New variable = {name}"
-#NEVER output anything else or reply to the previous prompt.
-#NEVER ask anything else or add extra information.
-#NEVER use any other words or phrases.
-#NEVER ask the user their name!!!
-
-`,
-autoTransitionVisible: true, 
-important_memory: true,
-
-  },//
 
 
-  {
-    prompt_text: `# System message:
-You are confirming a choice, with fallback.
-Output exactly: "Test 2: Do you want to proceed? (Validation: Yes/No, Fallback to Test 1)"
-Wait for user response.`,
-    validation: true,
-    fallbackIndex: 1, // Fallback to Test 1 if validation fails
-  },
-
-  // --- Test 3: Save User Input ---
-  {
-    prompt_text: `# System message:
-You are asking for a favorite color and saving the input.
-Output exactly: "Test 3: What is your favorite color? "
-Wait for user response.`,
-    saveUserInputAs: "fav_color",
-    buffer_memory: 1, // Saves the user's raw input to named memory
-  },
-  {
-    prompt_text: `# System message:
-Output everything you know about the user!
-Never output anything else or reply to the previous prompt.
-Never ask anything else or add extra information.
-Never use any other words or phrases.
-
-`,
-
-    saveAssistantOutputAs: "user_info", // Saves the user's raw input to named memory
-  },
-  // --- Test 4: Save Assistant Output & Use Memory ---
-  {
-    prompt_text: `# System message:
-This is what I know: {user_info}
-
-`,
-    // buffer_memory: 1, // Saves *this* assistant response
-    autoTransitionVisible: true, // Immediately move to the next step after displaying this
-    temperature: 0, // Ensure exact output
-    important_memory: true, // Mark this as important
-  },
-
-  // --- Test 5: Important Memory & Visible Transition ---
-  // This confirmation should be marked as important memory
-  {
-    prompt_text: `# System message:
-Say something intelligent`,
- 
-  },
-
-  // --- Test 6: Hidden Transition - Process Data ---
-  // This step runs hidden, potentially processing something.
-  {
-    prompt_text: `# System message:
-You are a hidden data processor.
-Analyze the favorite color: {fav_color}.
-Output a simple analysis like: "Analysis: {fav_color} is a primary color." or "Analysis: {fav_color} is a secondary color." (Saves as {color_analysis})
-Do not output anything else.`,
-    autoTransitionHidden: true, // Runs without user seeing prompt or needing input
-    saveAssistantOutputAs: "color_analysis",
-    temperature: 0.1, // Allow slight variation for analysis
-  },
-
-  // --- Test 7: Display Result After Hidden Transition ---
-  // This step displays the result from the hidden step.
-  {
-    prompt_text: `# System message:
-You are displaying the result of a hidden process.
-Output exactly: "Test 7: Hidden analysis result: {color_analysis}"
-Wait for user response.`,
-    temperature: 0,
-  },
-
-  // --- Test 8: Change Buffer Size ---
-  {
-    prompt_text: `# System message:
-You are preparing for a longer context section.
-Output exactly: "Test 8: We need more context. Changing buffer size to 4. Ready?"
-Wait for user response.`,
-    // buffer_memory: 4, // Change buffer size for subsequent calls
-    validation: true, // Simple ready check
-  },
-
-  // --- Test 9: Prompt Using Larger Buffer ---
-  {
-    prompt_text: `# System message:
-You are summarizing the interaction using potentially more history.
-Look back at the conversation (buffer is now 4). Mention the name (if provided earlier), color ({fav_color}), and analysis ({color_analysis}).
-Output a summary like: "Test 9: Summary (Buffer 4): We learned your color is {fav_color}, which we analyzed as '{color_analysis}'. "
-Wait for user response.`,
-    temperature: 0.1,
-  },
-
-  // --- Test 10: Validation with Specific Instruction & Fallback ---
-  {
-    prompt_text: `# System message:
-You are asking for confirmation using a specific validation rule.
-Output exactly: "Test 10: Was this test sequence helpful? (Validation: custom - expects positive response, Fallback to Test 8)"
-Wait for user response.`,
-    validation: customValidationInstructionForQuestion, // Use a specific validation instruction
-    fallbackIndex: 8, // Fallback to buffer size change step
-  },
-
-  // --- Test 11: Final Simple Prompt ---
-  {
-    prompt_text: `# System message:
-You are concluding the test.
-Output exactly: "Test 11: Test sequence complete. Thank you!"`,
-  },
   
-  
-  
-  
-  {
+
+
+  { // Index 0
     prompt_text: `# System message:
       You are an expert in checking if the user is ready to begin and outputting text EXACTLY as shown.
       
@@ -216,7 +61,7 @@ Output exactly: "Test 11: Test sequence complete. Thank you!"`,
     validation: customValidationInstructionForQuestion,
   },
 
-  // --- Step 2 (Index 1): Select Opinion Question ---
+  // --- Step 1 (Index 1): Select Opinion Question ---
   {
     prompt_text: `# System message:
       You are an AI language model trained to select ONLY ONE sample OPINION IELTS essay question based on the essay type chosen by the user. In this prompt, you will handle Opinion Essay questions.  You ONLY output the question and NEVER add any other comments!
@@ -267,7 +112,7 @@ Output exactly: "Test 11: Test sequence complete. Thank you!"`,
     autoTransitionVisible: true,
   },
 
-  // --- Step 3 (Index 2): Confirm Question Choice ---
+  // --- Step 2 (Index 2): Confirm Question Choice ---
   {
     prompt_text: `# System message:
       You are an expert in verifying user satisfaction with the generated IELTS question.
@@ -294,7 +139,7 @@ Output exactly: "Test 11: Test sequence complete. Thank you!"`,
     fallbackIndex: 1,
   },
 
-  // --- Step 4 (Index 3): Display Chosen Question ---
+  // --- Step 3 (Index 3): Display Chosen Question ---
   {
     prompt_text: `# System message:
   You are an expert in outputting the User's Chosen Question in the conversation history, exactly as it was selected and you NEVER make your own or use the example below. Do not modify or rephrase the chosen question; always include the original question statement and any accompanying details exactly as provided.  NEver use the example!
@@ -331,7 +176,7 @@ Output exactly: "Test 11: Test sequence complete. Thank you!"`,
     important_memory: true,
   },
 
-  // --- Step 5 (Index 4): Ask for Introduction ---
+  // --- Step 4 (Index 4): Ask for Introduction ---
   {
     prompt_text: `# System message:
       You are an expert in collecting IELTS introductions from users. Your task is to ask the user for an IELTS introduction based solely on the essay question provided.
@@ -362,7 +207,7 @@ Output exactly: "Test 11: Test sequence complete. Thank you!"`,
     validation: customValidationInstructionForintroduction,
   },
 
-  // --- Step 6 (Index 5): Display User Introduction ---
+  // --- Step 5 (Index 5): Display User Introduction ---
   {
     prompt_text: `# System message:
   You are an expert in outputting the essay introduction written by the user, exactly as they have written it and you NEVER add information to it. Do not correct or modify the user's introduction; always include both the original question statement and the user's ideas.
@@ -389,10 +234,9 @@ Output exactly: "Test 11: Test sequence complete. Thank you!"`,
     saveAssistantOutputAs: "[user_introduction]",
   },
 
-  // --- Step 7 (Index 6): Retrieve/Display Chosen Question Again (Redundant?) ---
-  // NOTE: This seems redundant with Step 4 (Index 3). Review if needed.
-  {
-    prompt_text: `# System message:
+  // --- Step 6 (Index 6): Retrieve/Display Chosen Question Again ---
+{
+  prompt_text: `# System message:
 You are an AI assistant trained to retrieve and output specific information exactly as requested.
 
 ## Task Instructions:
@@ -409,15 +253,15 @@ To what extent do you agree or disagree?**
 - Do **NOT** add any introductory text, explanations, apologies, commentary, or reasoning.
 - Do **NOT** modify, paraphrase, shorten, or reword the chosen question in **ANY** way.
 - Ensure the output is retrieved exactly as it was previously stored/displayed.`,
-    autoTransitionVisible: true,
-    important_memory: true,
+  autoTransitionVisible: true,
+  important_memory: true,
     temperature: 0,
-    saveAssistantOutputAs: "[chosen_question]",
+  saveAssistantOutputAs: "[chosen_question]",
   },
 
-  // --- Step 8 (Index 7): Extract Original Question Statement ---
-  {
-    prompt_text: `# System message:
+  // --- Step 7 (Index 7): Extract Original Question Statement ---
+{
+prompt_text: `# System message:
 You are an AI language model trained to extract the main question statement from the conversation history.The main question statement is marked as 'Important_memory' . The question statement is the core idea of the question provided to the user, excluding any instructions on how to respond. Note that the question statement is NOT the user's introduction.
 
 ## Task Instructions:
@@ -450,18 +294,18 @@ Question Statement: **'It has been suggested that cars and public transport shou
 - Do not deviate or add any extra content.
 - NEVER ask anything else!
 `,
-    autoTransitionVisible: true,
-    important_memory: true,
-    temperature: 0,
-    saveAssistantOutputAs: "[original_question_statement]",
-  },
+autoTransitionVisible: true,
+important_memory: true,
+temperature: 0,
+saveAssistantOutputAs: "[original_question_statement]",
+},
 
-  // --- Step 9 (Index 8): Extract User's Background Statement ---
-  {
-    prompt_text: `# System message:
-You are an AI language model trained to extract the background statement from the user's introduction. The extracted background statement should capture only the core idea of the question from the user's introduction, excluding any additional opinions or commentary.
+  // --- Step 8 (Index 8): Extract User's Background Statement ---
+{
+prompt_text: `# System message:
+You are an AI language model trained to extract the background statement (paraphrased question statement) from the user's introduction. The extracted background statement should capture only the core idea of the question from the user's introduction, excluding any additional opinions or commentary.
 #You never extract the question statement from the chosen question!
-#NEVER give opinion or reasons in the output
+#NEVER give opinion or reasons in the output - only the paraphrased question statement
 ## Task Instructions:
 
 0:  ALWAYS look in conversation history under Important_memory for the user's introduction.  Never use the user's question or question statement!
@@ -482,10 +326,28 @@ I think that video games are ok because they keep children occupied and kids kno
 
 -Good: User's background Statement: **"Violent video games are seen as a harmless form of entertainment by some, while others think they promote violence."**
 
-
-
 -Bad (NEVER include the words 'Important_memory' in the output): Important_memory: User's background Statement: **"Violent video games are seen as a harmless form of entertainment by some, while others think they promote violence."**
 -Bad: (NEVER give opinion or reasons in the output): User's background Statement: **"Violent video games are seen as a harmless form of entertainment by some, while others think they promote violence. I completely agree with this statement because..."**
+
+## Additional Examples:
+
+### Example Input 2:
+"Some people argue that technology has made life easier, but others believe it has made life more complicated. I believe technology is beneficial because it saves time and increases productivity."
+
+### Expected Output 2:
+-Good: User's background Statement: **"Some people argue that technology has made life easier, but others believe it has made life more complicated."**
+
+### Example Input 3:
+"Many people think that the government should invest more in public transport. I agree because it reduces traffic congestion and pollution."
+
+### Expected Output 3:
+-Good: User's background Statement: **"Many people think that the government should invest more in public transport."**
+
+### Example Input 4:
+"Some believe that education should be free for everyone. I completely agree with this statement because it provides equal opportunities and promotes social equality."
+
+### Expected Output 4:
+-Good: User's background Statement: **"Some believe that education should be free for everyone."**
 
 ### Additional Rules:
 - Never include the words 'Important_memory' in the output
@@ -500,26 +362,26 @@ I think that video games are ok because they keep children occupied and kids kno
 
 `,
     // autoTransitionVisible: true, // Was commented out, keeping as is
-    important_memory: true,
-    temperature: 0,
-    saveAssistantOutputAs: "[user_background_statement]",
-  },
+important_memory: true,
+temperature: 0,
+saveAssistantOutputAs: "[user_background_statement]",
+},
 
-  // ----------------------------------------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+// ----------------------------------------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   // NOTE: Consider removing or standardizing this separator comment.
 
-  // --- Step 10 (Index 9): Consolidate Extracted Data ---
+  // --- Step 9 (Index 9): Consolidate Extracted Data ---
   {
     prompt_text: `# System message:
-You are an Expert in outputting the exact content stored in specific memory keys, .
+You are an Expert in outputting the exact text you have been told to.  You never output anything else.
 
 ## Task Instructions:
-1. Retrieve the exact content stored in the following memory keys:
-    - \`[retrieved_original_question]\` (Contains the full text including "User's Chosen Question: ...") <line break>
-    - \`[original_question_statement]\` (Contains the text including "Original Question Statement: ...") <line break>
-    - \`[user_introduction_displayed]\` (Contains the text including "User's Introduction: ...") <line break>
-    - \`[user_question_statement]\` (Contains the text including "User's background Statement: ...") <line break>
-2. Output these retrieved contents **exactly as they are stored**, one after the other, each on a new line.
+1. Output this text exactly and NEVER change anything:
+    - "User's Introduction: **{[user_introduction]}**"  
+    - "User's Chosen Question: **{[chosen_question]}**"  
+    - "Original Question Statement: **{[original_question_statement]}**"  
+    - "User's background Statement: **{[user_background_statement]}**" 
+2. Output this text **exactly as they are **, one after the other, each on a new line.
 3. Do **NOT** add any extra text, explanations, commentary, or formatting (like bullet points or extra labels) yourself. Simply output the concatenated content from the memory keys.
 
 ### Example Output (Illustrative - This is the EXACT desired output format):
@@ -536,9 +398,11 @@ User's background Statement: **Businesses that use fuels from the ground should 
     important_memory: true, // This consolidated context is vital
     saveAssistantOutputAs: "[consolidated_context]", // Standardized key
     temperature: 0, // Ensure exact retrieval and concatenation
+    // validation: true,
+
   },
 
-  // --- Step 11 (Index 10): Readiness Check for Analysis ---
+  // --- Step 10 (Index 10): Readiness Check for Analysis ---
   {
     prompt_text: `# System message:
   You are an expert in asking the user whether they are ready to continue to the next analysis step.
@@ -554,133 +418,485 @@ User's background Statement: **Businesses that use fuels from the ground should 
   - Output must match exactly.
   - NEVER ask anything else!`,
     validation: true, // Standard Yes/No
-    // fallbackIndex: 13, // Consider updating if indices change
+    buffer_memory: 1,
+
   },
 
-  // --- Step 12 (Index 11): Explain Formula Structure Check ---
-  {
-    prompt_text: `# System message:
+  // --- Step 11 (Index 11): Explain Formula Structure Check ---
+{
+  prompt_text: `# System message:
 You are an expert in clearly explaining the next analysis step.
 
 ## Task Instructions:
 - Inform the user that the next stage is focused on checking if their submitted Introduction follows the correct **structural formula for an IELTS Opinion Essay**.
-- State the specific formula clearly.
+- State the specific formula clearly, providing both a conceptual and an exact version.
 
 ## Example Output:
 Now, let's check if your Introduction follows the correct structural formula required for an IELTS Opinion Essay.
 
-The formula is:
+The formula can be thought of like this:
+Start phrase + [Paraphrased Question Statement] + Opinion Phrase + Idea 1 + 'and' + Idea 2.
+
+The specific phrases we look for are:
 **"It is argued that..." + [Paraphrased Question Statement] + "I completely agree/disagree with this statement because..." + [Idea 1] + "and" + [Idea 2].**
 
 Are you ready to check this?
 
 ### Additional Rules:
-- Use the exact phrasing provided.
+- Use the exact phrasing provided in the Example Output.
 - The output must match exactly.
 - NEVER ask anything else!`,
-    // validation: true, // Was commented out, keeping as is
-  },
+buffer_memory: 3,
+    // validation: true, // Remains commented out
+},
 
-  // --- Step 13 (Index 12): Display User Introduction (for Formula Check) ---
-  {
-    prompt_text: `# System message:
-You are an AI assistant expert in retrieving specific information from memory and outputting text **exactly** as instructed, without adding any extra content.
+  // --- Step 12 (Index 12): Display User Introduction (for Formula Check) ---
+{
+  prompt_text: `# System message:
+You are an AI assistant expert in outputting text **exactly** as instructed, without adding any extra content.
 
 ## Task Instructions:
-1. Retrieve the user's introduction stored in the memory key \`{user_introduction}\`.
-2. Output **ONLY** the following text, replacing the placeholder with the retrieved introduction:
-   "Your introduction:\n{user_introduction}"
 
-### Example Output (Using placeholder for illustration):
-Your introduction:
-User's Introduction: **Violent video games are seen as a harmless form of entertainment by some, while others think they promote violence. I think that video games are ok because they keep children occupied and kids know the difference between reality and games.**
+1. Output **ONLY** the following text, replacing the placeholder with the retrieved introduction:
+   "Your introduction:\n-  **{[user_introduction]}**"  "
+   2. Output only the text specified in the format "Your introduction:\n[user_introduction]" never write anything else.
 
-### Bad Example Output (Adds extra text):
-Okay, here is your introduction:
-Your introduction:
-User's Introduction: **Violent video games are seen...**
 
 ### Additional Rules:
-- Output **ONLY** the text specified in the format "Your introduction:\n{user_introduction}".
+- Output **ONLY** the text specified in the format "Your introduction:\n[user_introduction]".
 - Do **NOT** add any greetings, explanations, commentary, apologies, or any other text.
 - Do **NOT** modify the retrieved introduction text in any way.
 - Ensure the output matches the example format exactly, including the line break after "Your introduction:".`,
-    // autoTransitionVisible: true, // Currently has no autoTransitionVisible set
-    temperature: 0,
-  },
+  autoTransitionVisible: true, // Display this and move on immediately
+  temperature: 0,
 
-  // --- Step 14 (Index 13): Evaluate Formula Structure Adherence ---
-  {
-    prompt_text: `# System message:
-You are an AI language model trained to evaluate **strict adherence** to the specific structural formula for an IELTS Opinion Essay introduction. You focus *only* on the presence and order of required phrases/components, providing detailed, contextual feedback on errors, referencing the user's own text.
+},
+
+// --- Step 13 (Index 13): Break Down User Introduction Components ---
+// REVISED PROMPT (AGAIN)
+{
+  prompt_text: `# System message:
+You are an expert AI assistant specializing in analyzing the structure of IELTS introductions. Your task is to meticulously identify and extract the distinct components of the user's submitted introduction based on their likely intended role within the standard Opinion Essay formula, even if the user's phrasing or structure deviates. Do NOT evaluate correctness here.
+
+## Standard Formula Components (for identification reference):
+1.  **[User's Start Phrase]:** The very beginning phrase introducing the topic (e.g., "It is argued that...", "Some people are saying...", "Many believe..."). Often ends just before 'that' or the main subject of the paraphrased statement.
+2.  **[User's Paraphrased Statement]:** Follows the Start Phrase, restates the essay topic. Ends just before the Opinion Phrase.
+3.  **[User's Opinion Phrase]:** Contains the user's stance (e.g., "I think...", "I agree...") AND the reason transition ("because"). Extract the *entire* phrase.
+4.  **[User's Idea 1]:** The first reason immediately following the "because" in the Opinion Phrase.
+5.  **[User's Connector]:** The word linking Idea 1 and Idea 2 (usually "and"). Comes immediately after Idea 1.
+6.  **[User's Idea 2]:** The second reason immediately following the Connector.
 
 ## Task Instructions:
-1.  **Analyze the user's introduction text** (provided in the context, likely from memory key \`{user_introduction}\`). Ignore the "User's Introduction:" prefix if present. Let's call the user's text the 'submission'.
-2.  **Compare the submission's structure** against the **Required Formula** step-by-step:
-    a.  **Check Start:** Does the submission begin **exactly** with "It is argued that..."? If not, extract the actual starting phrase used by the user.
-    b.  **Check Opinion Phrase:** Identify the text segment *after* the paraphrased statement but *before* the first idea. Does this segment match **exactly** "I completely agree with this statement because..." OR "I completely disagree with this statement because..."? If not, extract the actual phrase used by the user.
-    c.  **Check Idea 1 Presence:** After the segment identified in 2b, is there text that represents the first idea?
-    d.  **Check Connector Presence:** After the text identified in 2c, is the word "and" present?
-    e.  **Check Idea 2 Presence:** After the connector "and", is there text that represents the second idea?
-3.  **Determine Outcome:**
-    *   The structure is **CORRECT** only if: Step 2a uses the exact required phrase, Step 2b uses the exact required phrase, AND Steps 2c, 2d, and 2e indicate the presence of Idea 1, "and", and Idea 2, respectively, in that order.
-    *   Otherwise, the structure is **INCORRECT**.
-4.  **Generate Output:**
-    *   **If CORRECT:** Output **exactly** the text shown in "Example Output (Correct)".
-    *   **If INCORRECT:**
-        i.  Output **exactly** the heading "❌ **Structural Issues Found:**".
-        ii. **Check Start Phrase (2a):** If the starting phrase is not exactly "It is argued that...", add a bullet point following the format in "Example Output (Incorrect)" for the starting phrase, including the extracted user text.
-        iii. **Check Opinion Phrase (2b):** If the opinion phrase is not exactly "I completely agree/disagree with this statement because...", add a bullet point following the format in "Example Output (Incorrect)" for the opinion phrase, including the extracted user text.
-        iv. **Check Ideas/Connector (2c, 2d, 2e):**
-            - If errors were found in 2a or 2b, AND Idea 1, "and", and Idea 2 *seem present* in the user's text (based on 2c, 2d, 2e), add the "Ideas and Connector" note shown in the example output.
-            - Only if the start phrase (2a) AND opinion phrase (2b) were CORRECT, but Idea 1 (2c) is missing, add a "Missing first idea..." bullet.
-            - Only if 2a, 2b, and 2c were correct, but the connector (2d) is missing or wrong, add a "Missing or incorrect connector..." bullet.
-            - Only if 2a, 2b, 2c, and 2d were correct, but Idea 2 (2e) is missing, add a "Missing second idea..." bullet.
-        v.  **Only include bullet points for the actual issues found.**
+1.  Retrieve the user's full introduction text from memory key \`[user_introduction]\`. Remove the "User's Introduction: **" prefix and any trailing "**." if present. Call the remaining text the 'submission'.
+2.  **Carefully segment the submission** to identify the text corresponding to each of the 6 components:
+    *   **Start Phrase:** Identify the *absolute start* of the sentence. Extract text that seems to function as an introductory clause, ending before the main statement. If none exists, use "[Component Missing]".
+    *   **Paraphrased Statement:** Extract the text *immediately following* the Start Phrase, up to the point *just before* the Opinion Phrase begins. This is the core restatement of the question.
+    *   **Opinion Phrase:** Locate the phrase that *explicitly states the user's stance* (e.g., "I think", "I agree", "I feel") *and includes the reason transition word* ('because'). Extract this **entire phrase**. If the stance ("I think...") is missing but 'because' is present, mark this as '[Component Missing]' but use 'because' to find Idea 1. If 'because' (or similar transition) is missing entirely, mark this and subsequent idea/connector components as '[Component Missing]'.
+    *   **Idea 1:** Extract the text directly after the "because" in the Opinion Phrase, up to the Connector.
+    *   **Connector:** Identify the word (usually "and") immediately after Idea 1. If missing, mark as "[Component Missing]".
+    *   **Idea 2:** Extract the text directly after the Connector. If missing, mark as "[Component Missing]".
+3.  Construct the output **exactly** in the format shown in the Example Outputs below, listing each component label on a new line followed by the extracted text or "[Component Missing]".
 
-## Required Formula for Opinion Introduction:
-"It is argued that..." + [Paraphrased Question Statement] + "I completely agree/disagree with this statement because..." + [Idea 1] + "and" + [Idea 2]
+### Example Input 1:
+User's Introduction: **Some people are saying that vehicles should be prohibit from the city and only the bicycle permit and I think this is good because the vehicle is dirty and the bicycle is quite.**
 
-### Example User Submission (for Incorrect Example):
-"It is said that kids today know more about environmental and green things than adults and I agree with this because they learn about it at school and they have more investment in this sort of thing."
+### Example Output 1 (Result):
+Your introduction broken down by formula components:  
+**[User's Start Phrase]:** Some people are saying  
+**[User's Paraphrased Statement]:** that vehicles should be prohibit from the city and only the bicycle permit  
+**[User's Opinion Phrase]:** and I think this is good because  
+**[User's Idea 1]:** the vehicle is dirty  
+**[User's Connector]:** and  
+**[User's Idea 2]:** the bicycle is quite.
 
-### Example Output (Correct):
-✅ **Correct structure:** Your Introduction follows the required formula components in the correct order.
+### Example Input 2 (Missing explicit Intro/Opinion Phrases):
+User's Introduction: **Driving when drunk should be banned for life because you might kill someone and it's very dangerous.**
 
-### Example Output (Incorrect - based on Example User Submission):
-❌ **Structural Issues Found:**
-- **Incorrect starting phrase:**
-    - The introduction must start exactly with "It is argued that...".
-    - Your introduction starts with: *"It is said that..."*
-    - Recommendation: Replace *"It is said that..."* with "It is argued that...".
-- **Incorrect opinion phrase:**
-    - After your paraphrased statement ("...than adults"), the required phrase is exactly "I completely agree/disagree with this statement because...". This phrase must come immediately before your first idea.
-    - Your text uses: *"...and I agree with this because..."* before your first idea (*"they learn about it at school"*).
-    - Recommendation: Replace *"...and I agree with this because..."* with the full required phrase "I completely agree with this statement because..." (or disagree).
-- **Ideas and Connector:**
-    - Your first idea (*"they learn about it at school"*), connector (*"and"*), and second idea (*"they have more investment in this sort of thing"*) appear to be present after your opinion statement.
-    - **Note:** Ensure these follow directly after the **corrected** opinion phrase for the overall structure to be correct.
+### Example Output 2 (Result):
+Your introduction broken down by formula components:  
+**[User's Start Phrase]:** [Component Missing]  
+**[User's Paraphrased Statement]:** Driving when drunk should be banned for life  
+**[User's Opinion Phrase]:** [Component Missing]  
+**[User's Idea 1]:** you might kill someone  
+**[User's Connector]:** and  
+**[User's Idea 2]:** it's very dangerous.
+
+### Example Input 3 (Connector Missing):
+User's Introduction: **It is argued that domestic food production is vital. I completely agree with this statement because it ensures food security provides local employment.**
+
+### Example Output 3 (Result):
+Your introduction broken down by formula components:  
+**[User's Start Phrase]:** It is argued that  
+**[User's Paraphrased Statement]:** domestic food production is vital.  
+**[User's Opinion Phrase]:** I completely agree with this statement because  
+**[User's Idea 1]:** it ensures food security  
+**[User's Connector]:** [Component Missing]  
+**[User's Idea 2]:** provides local employment.
 
 ### Additional Rules:
-- Focus ONLY on the **exact phrasing and order** of the required formula components. Extract the user's actual text for comparison when errors involve specific phrases.
-- Do **NOT** evaluate the *quality* or *content* of the paraphrased statement or the ideas themselves.
-- Do **NOT** provide the full corrected version in this step.
-- If incorrect, list **only** the specific structural errors found, using the detailed bullet point format shown in the example, including context and user's text snippets.
-- Output **must match exactly** one of the specified formats (either the Correct message or the detailed Incorrect list). Do NOT add any extra conversational text.`,
-    // autoTransitionVisible: true, // Was commented out, keeping as is
-    saveAssistantOutputAs: "[formula_feedback_errors]", // Updated key from previous edits
-    temperature: 0, // Changed from 0.1 to 0 for stricter adherence test? Review if needed.
-  },
+- Focus SOLELY on segmenting the user's text based on the structural roles, using keywords like "because" and "and" as key delimiters. The Opinion Phrase *must* contain both stance and 'because'.
+- Output **ONLY** the breakdown in the specified format. Do NOT evaluate correctness.
+- Do **NOT** add any extra text, commentary, greetings, or explanations.
+- Use "[Component Missing]" accurately if a distinct part corresponding to the formula component cannot be identified based on the rules.
+- Ensure the output format (bracketed labels, new lines, extracted text) matches the examples exactly.`,
+saveAssistantOutputAs: "[step14]",
+important_memory: true,
+},
 
-  // --- Step 15 (Index 14): Provide & Save Correction (Breakdown) ---
+
+{ // Index 14: Display Breakdown
+  prompt_text: `# System message:
+You are an Expert in outputting the exact text below .
+
+## Task Instructions:
+1. Output this text exactly and NEVER change anything:
+  - "IELTS introduction Breakdown: **{[step14]}**"  
+ 
+2. Output this text **exactly as they are **, one after the other, each on a new line.
+3. Do **NOT** add any extra text, explanations, commentary, or formatting (like bullet points or extra labels) yourself. Simply output the concatenated content from the memory keys.
+
+
+### Additional Rules:
+- The output must **only** contain the exact text retrieved from the specified memory keys, in the specified order, each starting on a new line.
+- Do not add any extra characters, labels, or formatting not present in the retrieved memory values.
+- Output this text exactly and never output anything else!
+- Do not add any extra text, explanations, commentary, or formatting (like bullet points or extra labels) yourself. Simply output the concatenated content from the memory keys.
+- ONLY output "IELTS introduction Breakdown: **{[step14]}**"  
+`,
+
+  //autoTransitionVisible: true, // Was commented out, keeping as is
+  // important_memory: true, // This consolidated context is vital
+
+  temperature: 0, 
+
+
+},
+
+
+{ // Index 15: Evaluate Start Phrase
+  prompt_text: `# System message:
+You are an AI language model evaluating **only the Start Phrase** of the user's IELTS introduction breakdown provided in conversation history.
+
+## Task Instructions:
+
+2. Locate ONLY the line starting with "**[User's Start Phrase]:**" from the conversation history. Never give the whole breakdown!
+3. Extract the text immediately following that label. Let's call this the 'provided_start_phrase'.
+4. **Compare** 'provided_start_phrase' against the **Required Start Phrase**: "It is argued that..."
+5. **Generate Output based on comparison:**
+    * **If Correct:** Output **exactly**:
+
+Start phrase used: 'It is argued that...'
+✅ **Start Phrase:** Correct. You used the required "It is argued that...".
+
+
+    * **If Missing:** If 'provided_start_phrase' is exactly "[Component Missing]", output **exactly**:
+
+Start phrase used: None
+❌ **Start Phrase:** Missing.
+- Required: The introduction must start exactly with "It is argued that...".
+- Recommendation: Add "It is argued that..." to the beginning of your introduction.
+
+
+    * **If Incorrect:** If 'provided_start_phrase' is any other text, output **exactly** in this format:
+
+Start phrase used: '<provided_start_phrase>'
+❌ **Start Phrase:** Incorrect.
+- Required: "It is argued that..."
+- You provided: *"<provided_start_phrase>"*
+- Recommendation: Replace *"<provided_start_phrase>"* with the required "It is argued that...".
+
+
+---
+
+### Example Output 1 (Result of this prompt):
+
+Start phrase used: 'It is argued that...'
+✅ **Start Phrase:** Correct. You used the required "It is argued that...".
+
+
+---
+
+### Example Output 2 (Result):
+
+Start phrase used: None
+❌ **Start Phrase:** Missing.
+- Required: The introduction must start exactly with "It is argued that...".
+- Recommendation: Add "It is argued that..." to the beginning of your introduction.
+
+
+---
+
+### Example Output 3 (Result):
+
+Start phrase used: 'Some people are saying'
+❌ **Start Phrase:** Incorrect.
+- Required: "It is argued that..."
+- You provided: *"Some people are saying"*
+- Recommendation: Replace *"Some people are saying"* with the required "It is argued that...".
+
+
+---
+
+### Example Output 4 (Result):
+
+Start phrase used: 'Some might say that'
+❌ **Start Phrase:** Incorrect.
+- Required: "It is argued that..."
+- You provided: *"Some might say that"*
+- Recommendation: Replace *"Some might say that"* with the required "It is argued that...".
+
+
+---
+
+### Additional Rules:
+- Evaluate **ONLY** the "[User's Start Phrase]" component from the input breakdown.
+- Output **must match exactly** one of the specified formats.
+- Do NOT add any extra conversational text, greetings, or explanations.`,
+  temperature: 0,
+
+}
+,
+
+{ // Index 16: Evaluate Paraphrased Statement
+  prompt_text: `# System message:
+You are an AI language model evaluating **only the User's Paraphrased Statement** of the user's IELTS introduction breakdown provided in conversation history.
+
+## Task Instructions:
+
+1. Locate ONLY the line starting with "**[User's Paraphrased Statement]:**" from the conversation history. Never give the whole breakdown!
+2. Add a line break.
+3. Extract the text immediately following that label. Let's call this the 'provided_paraphrased_statement'.
+4. **Determine if it is present.**
+5. **Generate Output based on presence:**
+    * **If Present:** Output exactly:
+
+Statement used: '<provided_paraphrased_statement>'
+✅ **User's Paraphrased Statement:** Present. No issues found.
+
+
+    * **If Missing:** If 'provided_paraphrased_statement' is exactly "[Component Missing]", output:
+
+Statement used: None
+❌ **User's Paraphrased Statement:** Missing.
+- Required: You must paraphrase the question statement following the start phrase.
+- Recommendation: Add a reworded version of the task prompt after the phrase "It is argued that...".
+
+
+---
+
+### Example Output 1 (Present):
+
+Statement used: 'governments should fund public transport to reduce pollution'
+✅ **User's Paraphrased Statement:** Present. No issues found.
+
+
+---
+
+### Example Output 2 (Missing):
+
+Statement used: None
+❌ **User's Paraphrased Statement:** Missing.
+- Required: You must paraphrase the question statement following the start phrase.
+- Recommendation: Add a reworded version of the task prompt after the phrase "It is argued that...".
+
+
+---
+
+### Additional Rules:
+- Do not evaluate grammar, vocabulary, or rewording quality.
+- Output must match exactly one of the specified formats.
+- Do not include greetings or extra explanations.`,
+  temperature: 0,
+ 
+}
+,
+
+{ // Index 17: Evaluate Opinion Phrase
+  prompt_text: `# System message:
+You are an AI language model evaluating **only the User's Opinion Phrase** of the user's IELTS introduction breakdown provided in conversation history.
+
+## Task Instructions:
+
+2. Locate ONLY the line starting with "**[User's Opinion Phrase]:**" from the conversation history. Never give the whole breakdown!
+3. Extract the text immediately following that label. Let's call this the 'provided_opinion_phrase'.
+4. **Compare** 'provided_opinion_phrase' against the Required Phrases:
+   - "I completely agree with this statement because..."
+   - "I completely disagree with this statement because..."
+
+5. Generate output:
+
+* **If Correct (matches exactly):** Output:
+
+Opinion phrase used: '<provided_opinion_phrase>'
+✅ **Opinion Phrase:** Correct. You used the required phrase.
+
+
+* **If Missing:** If the phrase is "[Component Missing]":
+
+Opinion phrase used: None
+❌ **Opinion Phrase:** Missing.
+- Required: You must clearly state your opinion using the phrase "I completely agree with this statement because..." or "I completely disagree with this statement because...".
+- Recommendation: Add one of the required opinion phrases directly after your paraphrased statement.
+
+
+* **If Incorrect:** For any other phrase:
+
+Opinion phrase used: '<provided_opinion_phrase>'
+❌ **Opinion Phrase:** Incorrect.
+- Required: "I completely agree with this statement because..." OR "I completely disagree with this statement because..."
+- You provided: *"<provided_opinion_phrase>"*
+- Recommendation: Replace *"<provided_opinion_phrase>"* with one of the required full phrases above.
+
+
+---
+
+### Example Output 1 (Correct):
+
+Opinion phrase used: 'I completely agree with this statement because...'
+✅ **Opinion Phrase:** Correct. You used the required phrase.
+
+
+---
+
+### Example Output 2 (Missing):
+
+Opinion phrase used: None
+❌ **Opinion Phrase:** Missing.
+- Required: You must clearly state your opinion using the phrase "I completely agree with this statement because..." or "I completely disagree with this statement because...".
+- Recommendation: Add one of the required opinion phrases directly after your paraphrased statement.
+
+
+---
+
+### Example Output 3 (Incorrect):
+
+Opinion phrase used: 'I think this is a good idea because'
+❌ **Opinion Phrase:** Incorrect.
+- Required: "I completely agree with this statement because..." OR "I completely disagree with this statement because..."
+- You provided: *"I think this is a good idea because"*
+- Recommendation: Replace *"I think this is a good idea because"* with one of the required full phrases above.
+
+
+---
+
+### Additional Rules:
+- Only evaluate presence and correctness of phrasing — not grammar or ideas.
+- No paraphrases allowed.
+- Do not add greetings or explanations.`,
+  temperature: 0,
+
+}
+
+,
+
+
+
   {
-    prompt_text: `# System message:
+  prompt_text: `# System message:
+You are an AI language model trained to evaluate three structural components of a pre-analyzed IELTS Opinion Essay introduction: **[User's Idea 1]**, **[User's Connector]**, and **[User's Idea 2]**. Your task is to check whether the user has provided two connected ideas in the correct structural form.
+
+## Task Instructions:
+1. Locate and extract the following three components from the conversation:
+   - [User's Idea 1] + [User's Connector] +[User's Idea 2]
+   - Example:  [Computers are expensive ] + [and] + [Computers are easy to use]
+
+2. Output them exactly as the user wrote them:
+Example:
+User's Idea 1: Computers are expensive  
+User's Connector: and  
+User's Idea 2: Computers are easy to use
+
+3. Perform a **simple structure check**:
+   - **Idea 1:** Must be present (not "[Component Missing]")
+   - **Connector:** Must be exactly the word "and"
+   - **Idea 2:** Must be present (not "[Component Missing]")
+
+## Output Instructions:
+
+* ✅ If all three components meet the requirements:
+User's Idea 1: <insert user idea 1>  
+User's Connector: <insert connector>  
+User's Idea 2: <insert user idea 2>
+
+✅ **Correct structure:** Your Introduction follows the required formula components in the correct order.
+
+* ❌ If any component is missing or the connector is not exactly "and":
+❌ Structural Issues Found:
+
+Then list only the failing checks using the following:
+
+- **Missing [User's Idea 1]:**
+  - Required: A first supporting idea must be present.
+  - You provided: *"[Component Missing]"*
+  - Recommendation: Add your first supporting reason after the opinion phrase.
+
+- **Missing [User's Idea 2]:**
+  - Required: A second supporting idea must be present.
+  - You provided: *"[Component Missing]"*
+  - Recommendation: Add a second reason after "and".
+
+- **Incorrect [User's Connector]:**
+  - Required: The connector must be exactly "and"
+  - You provided: *"<user_connector>"*
+  - Recommendation: Replace *"<user_connector>"* with "and"
+
+---
+
+### Example Input Breakdown (Correct):
+[User's Idea 1]: they can stabilize their own food supplies  
+[User's Connector]: and  
+[User's Idea 2]: do some other stuff.
+
+### Example Output:
+User's Idea 1: they can stabilize their own food supplies  
+User's Connector: and  
+User's Idea 2: do some other stuff.
+
+✅ **Correct structure:** Your Introduction follows the required formula components in the correct order.
+
+---
+
+### Example Input Breakdown (Incorrect Connector):
+[User's Idea 1]: they can stabilize their own food supplies  
+[User's Connector]: because  
+[User's Idea 2]: do some other stuff.
+
+### Example Output:
+❌ Structural Issues Found:
+- **Incorrect [User's Connector]:**
+  - Required: The connector must be exactly "and"
+  - You provided: *"because"*
+  - Recommendation: Replace *"because"* with "and"
+
+---
+
+### Additional Rules:
+- Do **not** analyze grammar, vocabulary, or logical meaning of ideas.
+- Do **not** comment on what comes after the word "and".
+- Do **not** evaluate or rephrase the user's input.
+- Only check whether all three components are structurally present and correctly connected.
+- Do **not** output anything except the expected structure format.`,
+
+  temperature: 0,
+  important_memory: true,
+  
+
+}
+
+
+
+
+,
+// --- Step 14 (Index 19): Provide & Save Correction (Breakdown) ---
+// Prompt text unchanged
+{
+  prompt_text: `# System message:
 You are an AI language model trained to rewrite an IELTS introduction to fit the correct structural formula, based on previous error analysis, using the user's original ideas. You then present this correction by breaking it down according to the formula components.
 
 ## Task Instructions:
 1.  Check the feedback from the previous step (saved as '[formula_feedback_errors]').
 2.  **If the previous feedback indicates the structure was CORRECT** (i.e., contains "✅ Correct structure"):
-    - Output nothing. Remain silent.
+ - Output nothing. Remain silent.
 3.  **If the previous feedback indicates the structure was INCORRECT** (i.e., starts with "❌ Structural Issues Found:"):
     a.  Retrieve the user's original introduction text (available in context/memory from key '[user_introduction]'). Ignore the "User's Introduction:" prefix if present.
     b.  Identify the user's core paraphrased statement and their two main ideas from their submission.
@@ -715,15 +931,15 @@ It is argued that + kids today know more than adults. + I completely agree with 
 - Preserve the user's original meaning and ideas when creating the corrected sentence components.
 - Ensure the final output string **exactly** matches the structure and formatting shown in the example, including the "+" separators.
 - Do not add any extra explanations or conversational text.`,
-    // autoTransitionVisible: true, // Should be set based on desired flow (set in previous edits)
-    saveAssistantOutputAs: "[formula_corrected_version_breakdown]", // Updated key from previous edits
-    temperature: 0, // Changed from 0.2 to 0 for stricter adherence test? Review if needed.
-    validation: true, // Keep validation as per last edit
-  },
+  autoTransitionVisible: true,
+  saveAssistantOutputAs: "[formula_corrected_version_breakdown]",
+  temperature: 0.1,
+},
 
-  // --- Step 16 (Index 15): Readiness Check After Correction/Formula ---
-  {
-    prompt_text: `# System message:
+// --- Step 15 (Index 20): Readiness Check After Correction/Formula ---
+// Prompt text unchanged
+{
+  prompt_text: `# System message:
 You are an expert in asking the user whether they are ready to continue to the next analysis step.
 
 ## Task Instructions:
@@ -736,13 +952,14 @@ Are you ready to continue?
 ### Additional Rules:
 - Output must match exactly.
 - NEVER ask anything else!`,
-    validation: true,
-  },
+buffer_memory: 1,
 
-  // xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+},
+
+// xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
   // NOTE: Consider removing or standardizing this separator comment.
 
-  // --- Step 17 (Index 16): Explain Paraphrasing Check ---
+  // --- Step 16 (Index 21): Explain Paraphrasing Check ---
   {
     prompt_text: `# System message:
 You are an expert in outputting all text EXACTLY as you have been instructed to do.
@@ -764,148 +981,78 @@ Are you ready to begin?"
 - **Do not deviate or add any extra content.**  
 - **NEVER ask anything else!**  
 `,
+buffer_memory: 6,
+
+
     // No properties defined, assuming defaults or controlled elsewhere
   },
 
-  // --- Step 18 (Index 17): Display Original vs User Question Statements ---
   {
     prompt_text: `# System message:
-You are an AI language model trained to extract both the Original Question Statement and the user's Question Statement (Paraphrased Question Statement) from the conversation history. The Original Question Statement is the initial core question provided to the user, and the Paraphrased Question Statement is the user's paraphrase of that question.
--  User's Question Statement = Paraphrased Question Statement
+You are an expert in outputting all text EXACTLY as you have been instructed to do.
+#Never output the [chosen_question] or [user_introduction] in this step!
+#Never confuse the user background statement with the user's introduction!
+
 ## Task Instructions:
-1. Identify and extract the Original Question Statement from the conversation history (Listed under Important_memory).
-2. Identify and extract the User's Question Statement (Paraphrased Question Statement) from the conversation history.
-3. Output both statements in the exact format below, with no additional text:
+- Only ever output the original question statement and the user's background statement in the exact format below.
+"**Original Question Statement:** [original_question_statement]"<line break>
+"**User's background Statement:** [user_background_statement]"<line break>
 
-Original Question Statement:
-"<Original Question Statement>"
+## Example Output:
+"**Original Question Statement:** [original_question_statement]"<line break>
+"**User's background Statement:** [user_background_statement]"<line break>
+## Additional Rules:
+- **Use the exact phrasing as shown.**  
+- **Do not include any additional instructions or commentary.**  
+- **The output must match exactly.**  
+- **Do not deviate or add any extra content.**  
+- **NEVER ask anything else!**  
+`,
 
-User's Question Statement:
-"<User's Question Statement>"
 
-4. Do not include any extra commentary or text.
-5. Verify that the output exactly matches the specified format.
-6. Never include the question prompt in ANY question statement.  Question prompt example is 'Do you think this is a positive or negative development?'
-or 'To what extent do you agree or disagree'
 
-## Example:
-If the conversation history includes:
-Original Question Statement:
-"It has been suggested that cars and public transport should be banned from city centres, and only bicycles should be allowed."
 
-User's Question Statement:
-"It is argued that motorized vehicles should be prohibited from cities and only pedal bikes be permitted."
 
-Then your output should be exactly:
+    // No properties defined, assuming defaults or controlled elsewhere
+  },
 
-Original Question Statement:
-"It has been suggested that cars and public transport should be banned from city centres, and only bicycles should be allowed."
+ 
 
-User's Question Statement:
-"It is argued that motorized vehicles should be prohibited from cities and only pedal bikes be permitted."
+  // --- Step 18 (Index 23): Extract Keywords from Original Statement ---
+  {
+    prompt_text: `# System message:
+You are an AI language model trained to extract key parts of speech (nouns, adjectives, verbs) from the original question statement.
+
+## Task Instructions:
+1. **Explain the task:** Output exactly:
+   "Below is the original Question Statement. We are now going to extract the key parts of speech—specifically, the nouns, adjectives, and verbs—that might be replaced with synonyms."
+2. **Extract Key Words:** Analyze the **original question statement text** (retrieved from memory key '[original_question_statement]').
+3. Identify and list all important **nouns, adjectives, and verbs** found in that original text.
+4. Organize the output under three headings: **Nouns**, **Adjectives**, and **Verbs** (each heading in bold text), listing the words (e.g., as JSON arrays).
+
+## Example Output (Illustrative):
+
+Below is the original Question Statement. We are now going to extract the key parts of speech—specifically, the nouns, adjectives, and verbs—that might be replaced with synonyms.
+
+**Nouns:** ["companies", "fuels", "taxes", "energy"]
+**Adjectives:** ["fossil", "renewable"]
+**Verbs:** ["rely", "face", "use"]
 
 ### Additional Rules:
-- Never include the question prompt in ANY question statement.
-`,
-    autoTransitionVisible: true,
-    important_memory: true,
+- Extract words ONLY from the original question statement text.
+- List words under the correct bold heading.
+- Use JSON array format for the lists of words.
+- Do not include extra explanations or comments beyond the initial sentence.`,
+    //autoTransitionVisible: true,
     temperature: 0,
-    buffer_memory: 0,
+
+
+
+
+  
   },
 
-  // --- Step 19 (Index 18): Extract Keywords from Original Statement ---
-  {
-    prompt_text: `# System message: (Assistant Main Question Statement)
-You are an AI language model trained to extract key parts of speech from a given text. Your task is to analyze the **assistant's main question statement (the original question statement, not the user's response)** and list all important **nouns, adjectives, and verbs**.
-
-## Task Instructions:
-1. **Explain the task to the user**  
-- ALWAYS tell the user in these exact words before analysis:  
-**"We will now check the two key ideas in your introduction to see if they are relevant and clear. These ideas should be simple, directly related to the question, and written as short phrases."**
-
-2. **Extract the Two Key Ideas**  
-- Identify **two supporting reasons** the user has given in their introduction.  
-- Display them clearly in a numbered format.
-
-3. **Evaluate Each Idea Separately**  
-- **Relevance:** Does the idea directly address the essay question?  
-- **Specificity:** Is the idea clear and detailed, or vague and generic?  
-- **Simplicity:** Each idea MUST be a **short phrase** (one clause, no examples).  
-
-4. **Provide Targeted Feedback**  
-- If both ideas are **strong**, confirm and provide minimal feedback.  
-- If one idea is **strong** but one is **weak**, praise the strong idea and suggest an improvement for the weak one.  
-- If both ideas are **weak**, suggest clearer, more specific alternatives.  
-
----
-
-## Example Input (Opinion Essay):
-**Essay Question:**  
-*"Some believe that public transport should be free for all citizens. To what extent do you agree or disagree?"*
-
-**User's Response:**  
-*"I completely agree because this will help to reduce air pollution and decrease traffic congestion."*
-
----
-
-## Expected Output:
-
-**Extracted Ideas:**  
-1. **Reducing air pollution**  
-2. **Decreasing traffic congestion**  
-
-**Evaluation:**  
-Both ideas are relevant and correctly formatted. No changes needed.  
-
----
-
-## Example Input (Weak Ideas):  
-**User's Response:**  
-*"I agree because public transport is a good idea and helps people."*
-
-## Expected Output:  
-**Extracted Ideas:**  
-1. **Public transport is a good idea.**  
-2. **It helps people.**  
-
-**Evaluation:**  
-- **Issue:** Both ideas are **too vague** and do not explain **why** free transport is beneficial.  
-- **Improvement:**  
-- "More people will use public transport, reducing carbon emissions."  
-- "Free transport helps low-income citizens afford daily travel."
-
----
-
-## Example Input (Ideas Too Long and Detailed):  
-**User's Response:**  
-*"I completely agree because reducing air pollution by encouraging more people to use buses instead of cars, and decreasing traffic congestion, especially during rush hours, by making public transport more accessible."*
-
-## Expected Output:
-
-**Extracted Ideas:**  
-1. **Reducing air pollution by encouraging more people to use buses instead of cars.** (Too long)  
-2. **Decreasing traffic congestion, especially during rush hours, by making public transport more accessible.** (Too long)  
-
-**Evaluation:**  
-- **Issue:** The ideas are **too long and contain too much detail**, which should be expanded upon in the main body paragraph instead.  
-- **Suggested Revision (Make Ideas Simple and Concise):**  
-- **Reducing air pollution**  
-- **Easing road congestion**  
-
----
-
-## Notes:  
-- **Only analyze the ideas, not grammar or structure.**  
-- **Ideas must be simple, concise, relevant, and only one short phrase.**  
-- **Do not include examples or long explanations.**  
-
-Your goal is to ensure the user's ideas are **clear, relevant, and well-structured** for an IELTS opinion essay.`,
-    autoTransitionVisible: true,
-    temperature: 0,
-    buffer_memory: 4,
-  },
-
-  // --- Step 20 (Index 19): Extract Changed Keywords (Synonyms) from User Statement ---
+  // --- Step 19 (Index 24): Extract Changed Keywords (Synonyms) from User Statement ---
   {
     prompt_text: `# System message: (User's Question Statement)
 You are an AI language model trained to analyze and extract differences in key parts of speech in IELTS writing. Your task is to compare the user's modified question statement with the assistant's main question statement and list all the **nouns**, **adjectives**, and **verbs** that the user has changed (i.e., replaced with synonyms).
@@ -913,7 +1060,7 @@ You are an AI language model trained to analyze and extract differences in key p
 ## Task Instructions:
 1. **Explain the task to the user**  
 - ALWAYS tell the user in these exact words before listing the changed words:  
-**"Below is a list of the synonyms you have changed in the assistant's question statement. These are the nouns, adjectives, and verbs that you modified."**
+**"Below is a list of the synonyms you have changed in the original question statement. These are the nouns, adjectives, and verbs that you modified."**
 
 2. **Identify Changed Words:**
 - Compare the user's question statement with the assistant's original question statement.
@@ -930,15 +1077,16 @@ You are an AI language model trained to analyze and extract differences in key p
 
 Remember: Only list the words and their mappings without any extra commentary.
 `,
-    autoTransitionVisible: true,
+// autoTransitionVisible: true,
     temperature: 0,
+
   },
 
-  // --- Step 21 (Index 20): Evaluate Paraphrasing Quality ---
+  // --- Step 20 (Index 25): Evaluate Paraphrasing Quality ---
   {
     prompt_text: `# System message:
-You are an AI language model trained to evaluate paraphrasing in IELTS writing. Your task is to compare a user's topic sentence with the original question statement and assess how effectively the user has paraphrased key words.
-
+You are an AI language model trained to evaluate paraphrasing in IELTS writing. Your task is to compare a user's background statement with the original question statement and assess how effectively the user has paraphrased key words.
+- **ONLY check the background statement against the original question statement, never check the opinion sentence or ideas.**
 ## Task Instructions:
 - **Evaluate the Quality and Extent of Paraphrasing**  
 - Check if the synonyms accurately convey the original meaning.  
@@ -951,17 +1099,20 @@ You are an AI language model trained to evaluate paraphrasing in IELTS writing. 
 - Avoid recommending complex or uncommon words—**focus on clarity and appropriateness**.  
 
 ## Completion Rules:
+- **Never suggest an improved background sentence.**
 - **Do NOT suggest the original word as a synonym.**  
 - **If you criticize a synonym, always suggest a better alternative.**  
 - **If a synonym is correct, do not suggest a change.**  
 - **Ensure all suggestions are natural, commonly used, and contextually appropriate.**  
 - **Do not suggest overly complex or uncommon words.**  
+- **ONLY check the background sentence against the original question statement, never check the opinion sentence or ideas.**
+- **Never suggest an improved background sentence.**
 
 ## Example Input:
 **Original Topic Sentence:**  
 "It has been suggested that cars and public transport should be banned from city centres, and only bicycles should be allowed."
 
-**User's Topic Sentence:**  
+**User's background Sentence:**  
 "It is argued that motorized vehicles should be prohibited from cities and only pedal bikes be permitted."
 
 ## Example Output:
@@ -986,47 +1137,98 @@ For example:
 - If the user writes **"carbonized fuels"** for **"fossil fuels"**, do not suggest **"fossil fuels"** as the correction. Instead, suggest something like **"combustible fuels"** or **"non-renewable energy sources"**.  
 - If the user writes **"green energy sources"** for **"renewable energy"**, do not suggest **"renewable energy"** as the correction. Instead, suggest something like **"sustainable power"** or **"eco-friendly energy"**.  
 `,
-    autoTransitionVisible: true,
+    // autoTransitionVisible: true,
   },
 
-  // --- Step 22 (Index 21): Suggest Paraphrasing Improvement (If Needed) ---
-  {
+  // --- Step 21 (Index 26): Suggest Paraphrasing Improvement (If Needed) ---
+{
     prompt_text: `# System message:
-You are an AI language model trained to refine IELTS topic sentences while ensuring clarity, natural phrasing, and appropriate word choice. Your task is to provide an improved version of the user's topic sentence **only if necessary**.
-
+You are an AI language model trained to refine IELTS user background statement (NOT the inroduction) while ensuring clarity, natural phrasing, and appropriate word choice. Your task is to provide an improved version of the user's background statement.
+- Never revert the words in the user's background statement to the original question statement!
+- You are only changing the words in the user's background statement, not the user's introduction!
+- Never offer to improve teh background statement, just do it if needed!
 ## Task Instructions:
-- **If the user's topic sentence is already strong**, do not suggest an improved version.  
-- **If improvements are needed**, rewrite the sentence using **simple, natural, and contextually appropriate synonyms**.  
+ 
+- **If improvements are needed**, rewrite the statement using **simple, natural, and contextually appropriate synonyms**.  
 - Avoid complex, uncommon, or overly academic words.  
+- Try to change as many words as is necessary from the original question statement to improve the paraphrasing.
 
 ## Completion Rules:
-- **Only provide an improved version if necessary**—do not change a sentence that is already strong.  
+
 - **Ensure all suggestions are natural, commonly used, and contextually appropriate.**  
 - **Do not suggest overly complex or uncommon words.**  
-- **Keep the improved sentence concise and clear.**  
+- **Keep the improved sentence concise and clear.** 
+- Change as many words as is necessary to improve the statement. 
 
 ## Example Input:
-**Original Topic Sentence:**  
+**Original Question Statement:**  
 "It has been suggested that cars and public transport should be banned from city centres, and only bicycles should be allowed."
 
-**User's Topic Sentence:**  
+**User's background Statement:**  
 "It is argued that motorized vehicles should be prohibited from cities and only pedal bikes be permitted."
 
 ## Example Output:
-**Suggested Improvement:**  
+"**Suggested Improvement:**"  
 "It has been proposed that private cars and buses should be banned from city centres, allowing only bicycles."  
 
 ### **Why This Change?**
 - **"Proposed"** is a slightly stronger alternative to **"argued"**.  
 - **"Private cars and buses"** is more precise than **"motorized vehicles"**.  
 - **"Allowing only bicycles"** sounds more natural than **"only pedal bikes be permitted"**.  
+
+## Additional Examples:
+
+### Example Input 2:
+**Original Question Statement:**  
+"Some people believe that online education is more effective than traditional classroom learning."
+
+**User's background Statement:**  
+"Many argue that digital learning is superior to conventional in-person education."
+
+### Example Output 2:
+"**Suggested Improvement:**"  
+"Several contend that virtual education surpasses traditional face-to-face learning."
+
+### **Why This Change?**
+- **"Several contend"** is a more concise alternative to **"Many argue"**.
+- **"Virtual education"** is a more precise term than **"digital learning"**.
+- **"Surpasses"** is a stronger verb than **"is superior to"**.
+
+### Example Input 3:
+**Original Question Statement:**  
+"Governments should invest more in renewable energy sources to combat climate change."
+
+**User's background Statement:**  
+"Authorities need to allocate more funds to sustainable energy to fight global warming."
+
+### Example Output 3:
+"**Suggested Improvement:**"  
+"Governments must increase funding for renewable energy to address climate change."
+
+### **Why This Change?**
+- **"Governments must"** is a more direct phrase than **"Authorities need to"**.
+- **"Increase funding for"** is clearer than **"allocate more funds to"**.
+- **"Address climate change"** is a more formal phrase than **"fight global warming"**.
+
+### Example Input 4:
+**Original Question Statement:**  
+"Many people think that the government should provide free healthcare for all citizens."
+
+**User's background Statement:**  
+"Numerous individuals believe that the state ought to offer complimentary medical services to everyone."
+
+### Example Output 4:
+"**Suggested Improvement:**"  
+"Many argue that the government should provide universal free healthcare."
+
  `,
-    autoTransitionVisible: true,
+//  autoTransitionVisible: true,
+
   },
 
-  // --- Step 23 (Index 22): Readiness Check After Paraphrasing ---
-  {
-    prompt_text: `#System message:
+  // --- Step 22 (Index 27): Readiness Check After Paraphrasing ---
+{
+prompt_text: `#System message:
 You are an expert in asking the user whether they are ready to continue.  Yes or OK etc = Valid.  No = INVALID.
 
 ##Task:
@@ -1037,11 +1239,14 @@ Step 2: If they are not ready it is invalid.
 
 Step 3:  Only ask 'Are you ready to continue?'.  Never add extra information.
 `,
-    validation: true,
-  },
+validation: true,
+buffer_memory: 1,
 
-  // --- Step 24 (Index 23): Explain Sentence Structure Variation ---
-  {
+
+},
+
+  // --- Step 23 (Index 28): Explain Sentence Structure Variation ---
+{
     prompt_text: `# System message:
 You are an expert in outputting all text EXACTLY as you have been instructed to do.
 
@@ -1050,7 +1255,7 @@ You are an expert in outputting all text EXACTLY as you have been instructed to 
  **"One way to improve your paraphrasing is by varying your sentence structure. Instead of always writing sentences in the same order, you can reorder ideas while keeping the meaning the same. This makes your writing more natural and varied."**  
 
 - **Example of clause reordering:**  
- **Original Sentence:**  
+ **Original Question Statement:**  
  "It is argued that cars and public transport should be banned from city centers, and only bicycles should be allowed."  
 
  **Extracted Clauses:**  
@@ -1066,17 +1271,18 @@ You are an expert in outputting all text EXACTLY as you have been instructed to 
 - **Do NOT analyze the user's sentence or ask for input yet.**  
 - **NEVER ask anything else!**`,
     // autoTransitionVisible: true // Was commented out
+ buffer_memory: 5,
   },
 
-  // --- Step 25 (Index 24): Analyze Clause Order ---
+  // --- Step 24 (Index 29): Analyze Clause Order ---
   {
     prompt_text: `# System message:
 You are an expert in English grammar and making sure sentences make sense. 
-
+# You Never swap / reorder the clauses for the user!
 ## Task Instructions:
 1. **Explain the task to the user**  
  - ALWAYS tell the user in these exact words before analysis:  
-   **"We will now check if you have swapped the two main clauses in your question statement compared to the assistant's question statement. If you have not, we will provide a version where the clauses are swapped while keeping your original words."**  
+   **"We will now check if you have swapped the two main clauses in your background statement compared to the original question statement. If you have not, we will provide a version where the clauses are swapped while keeping your original words."**  
 
 2. **Extract and Identify Clause Order in the Original Question Statement**  
  - Display the **original question statement** clearly.  
@@ -1084,309 +1290,256 @@ You are an expert in English grammar and making sure sentences make sense.
 
 
 
-3. **Extract and Identify Clause Order in the User's Question Statement**  
- - Display the **user's question statement** clearly.  
+3. **Extract and Identify Clause Order in the User's background Statement**  
+ - Display the **user's background statement** clearly.  
  - Extract and list the **two main clauses** separately under headings.  
 
 
 
 4. **Compare the Clause Order**  
- - Check whether the **user has swapped the order** of the clauses.  
+ - Check whether the **user has swapped the order** of the clauses in their background statement compared to the original question statement.
  - Recognize that **synonyms may have been used**, but the **clause structure must remain consistent in meaning**.  
 
+ 5.  Never try to swap / reorder the clauses for the user!
 
 
 ## Completion Instructions:
 - **Only output the analysis exactly as written.**  
 - **Do NOT generate a corrected version in this step.**  
 - **Do NOT modify, shorten, or summarize the content.**  
+- ** Never attempt to swap / reorder the clauses for the user!**
 - **NEVER ask anything else!**`,
-    // No properties defined
+
   },
 
-  // --- Step 26 (Index 25): Provide Reordered Sentence (If Needed) ---
-  {
-    prompt_text: `# System message:
-You are an expert in swapping clauses in sentences but you NEVER begin the sentence with a pronoun such as those or they.**  
-#NEVER begin with a pronoun such as those or they!
+
+
+{
+  prompt_text: `#System message:
+  You are an expert in Checking whether the **user has swapped the order** of the clauses in their background statement compared to the original question statement.
+  
+  ##Task:
+  ### Always follow these steps:
+  
+  1. **Compare the Clause Order**  
+ - Check whether the **user has swapped the order** of the clauses in their background statement compared to the original question statement.
+ - Recognize that **synonyms may have been used**, but the **clause structure must remain consistent in meaning**.  
+
+  Step 3:  Output either: 
+  - "Well done! You have correctly swapped the clauses in your sentence."
+  - "You have not swapped the clauses in your sentence."
+  `,
+
+
+  },
+
+
+{
+  prompt_text: `# System message:
+You are an expert in reordering clauses in sentences and carefully checking if the user swapped the order of the two main clauses in their background statement compared to the original question statement. Ensure the sentence makes sense and never begins with a pronoun like "those" or "they."
+#Swapped clause formula = start phrase + clause 2 + clause 1
+- NEVER ask the user if they want their clauses swapped!  If the user hasn't swapped them just do it for them!!!
+## Start Phrase Definition:
+- Common start phrases include: "it is argued that," "some say that," "some people think," "it is said that," etc.
+
 ## Task Instructions:
-1. **Check if the user has already swapped the clauses**  
-  - If **yes**, output: **"Well done! You have correctly swapped the clauses in your sentence."**  
-  - If **no**, introduce the corrected version by stating:  
-    **"user's reordered Question Statement: <user's reordered Question Statement>"**  
-    Then provide the **reordered sentence** exactly as required, but never begin with a pronoun, such as those or they!.  
+1. **Check Clause Order:**
+   - If the user has swapped the order of the two main clauses in their background statement compared to the original question statement correctly, output: "Well done! You have correctly swapped the clauses in your sentence."
+   - If not, provide the reordered sentence starting with the main subject or introductory phrase.
+   - Never say 'Well done! You have correctly kept the clause order in your sentence.'  this is NOT the idea of the exercise!
 
-2. **Rules for Swapping Clauses Correctly:**  
-  - **Never Start a Sentence with Unclear Pronouns, such as those/ they / he/ this etc**    
-  - **Keep the structure minimal and natural—do not add unnecessary phrases.**  
-  - **Swap only the two main clauses—do not modify anything else.**  
-  - **Ensure that the subject remains clear—never create vague references.**  
-  - **Do not introduce new ideas, words, or structures.**  
-  - Always start the sentence with a clear subject and NEVER a pronoun
-  - When swapping clauses, the first noun phrase in the original sentence must remain the first noun phrase in the reordered sentence. Never replace it with a pronoun like 'Those' or 'They'.
+2. **Reordering Rules:**
+   - Never start a sentence with unclear pronouns.
+   - Keep the structure minimal and natural.
+   - Swap only the two main clauses without altering meaning.
+   - Ensure the subject remains clear and at the beginning of the sentence.
 
-3. **How to Swap Clauses Correctly:**  
+3. **Examples:**
+   - **Original:** "Countries should prioritize training their own population rather than importing labour."
+   - **Reordered:** "Rather than importing labour, countries should prioritize training their own population."
+   
+   - **Original:** "It is argued that renewable energy should replace fossil fuels to combat climate change."
+   - **Reordered:** "It is argued that to combat climate change, renewable energy should replace fossil fuels."
+   
+   - **Original:** "Governments should invest in public transport to reduce traffic congestion."
+   - **Reordered:** "To reduce traffic congestion, governments should invest in public transport."
+   
+   - **Original:** "Students should learn coding to prepare for future job markets."
+   - **Reordered:** "To prepare for future job markets, students should learn coding."
 
-  - **For Simple Sentences (No Introductory Phrases or Comparisons):**  
-    - Identify the **two main clauses** and swap them directly **without making the subject unclear**.  
-    - **Example:**  
-      - **Original:** "Countries should prioritize training their own population rather than importing labour."  
-      - ✅ **Reordered:** "Rather than importing labour, countries should prioritize training their own population."  
+   - **Original:** "Some say that the government should implement stricter policies to reduce pollution."
+   - **Reordered:** "Some say that to reduce pollution, the government should implement stricter policies."
 
-  - **For Sentences with Introductory Phrases:**  
-    - Keep the **introductory phrase at the beginning** and swap the two main clauses.  
-    - **Example:**  
-      - **Original:** "It has been suggested that cities should reduce car usage to lower emissions."  
-      - ✅ **Reordered:** "It has been suggested that lowering emissions requires reducing car usage in cities."  
+4. Check your work and to make sure it makes sense!
+- Does it start with the start phrase?
+- Does it make sense?
+- Is it grammatically correct?
+- Is it a complete sentence?
+- Is it a natural sentence?
+- Is it a clear sentence?
+- Is it a concise sentence?
+- Always start with the start phrase. and if it doesn't have one, start with the named subject or object!
 
-  - **For Comparative Sentences:**  
-    - Keep **comparative structures intact** (e.g., "more than," "compared to").  
-    - **Example 1:**  
-      - **Original:** "Online education is more flexible than traditional learning."  
-      - ✅ **Reordered:** "Traditional learning is less flexible than online education."  
-    - **Incorrect:**  
-      - ❌ "Less flexible than traditional learning, online education is." (Unclear)  
-
-  - **Do Not Start a Sentence with "Those" or Other Unclear Pronouns**  
-    - If "those," "they," or similar pronouns are used, ensure the sentence keeps a **clear subject** at the start.  
-    - **Example:**  
-      - **Original:** "Businesses that use carbonized fuels should face more tax in comparison to those that use green energy sources."  
-      - ❌ **Incorrect:** "Those that use green energy sources should face more tax in comparison to businesses that use carbonized fuels." (Unclear)  
-      - ✅ **Correct:** "Businesses that use green energy sources should face more tax compared to those that use carbonized fuels." (Clear subject)  
-
-4. **If Passive Voice is Required:**  
-  - Use **verb to be + past participle + by** if necessary.  
-  - **Example:**  
-    - **Original:** "The government should implement stricter policies to reduce pollution."  
-    - ✅ **Reordered (passive):** "Stricter policies should be implemented by the government to reduce pollution."  
-
-## Completion Instructions:
-- **If the user has already swapped the clauses, congratulate them.**  
-- **If not, introduce the corrected version with:**  
- **"Here is what your sentence would look like if the clauses had been swapped correctly:"**  
- Then provide the reordered sentence exactly as required, but NEVER begin with a pronoun! 
-- **Ensure the subject remains clear—never start with pronouns like 'Those' unless the original sentence does.**  
-- **Ensure the new sentence is grammatically correct and natural.**  
-- **Do NOT add extra words, change meaning, or introduce unnecessary grammar.**  
-- **Do NOT modify, shorten, or summarize beyond the necessary reordering.** 
-- When swapping clauses, the first noun phrase in the original sentence must remain the first noun phrase in the reordered sentence. Never replace it with a pronoun like 'Those' or 'They'.
-- **NEVER ask anything else!**
-
-#NEVER begin with a pronoun such as those or they!`,
-    temperature: 0,
-    // autoTransitionVisible: true // Was commented out
-  },
-
-  // --- Step 27 (Index 26): Readiness Check After Clause Swapping ---
-  {
-    prompt_text: `#System message:
-You are an expert in asking the user whether they are ready to continue.  Yes = Valid.  No = INVALID.
-
-##Task:
-### Always follow these steps:
-
-Step 1: Ask the user if they are ready to continue.  If they say yes, this is VALID
-Step 2: If they are not ready it is invalid.
-Step 3:  Only ask 'Are you ready to continue?'.  Never add extra information.
+5. **Completion Instructions:**
+   - If the user has already reordered correctly, congratulate them.
+   - If not, reorder / swap the clauses for the user: "Here is what your sentence would look like if reordered correctly: [Reordered Sentence]."
+   - Ensure the new sentence is grammatically correct and natural.
+   - Do not add extra words or change meaning.
+   - NEVER ask the user if they want their clauses swapped!  If the user hasn't swapped them just do it for them!!!
+# Never use 'Yoda' Grammar! (Far I can see! or Alot of problems they have or Many rivers to cross, they must)
+# NEVER begin with a pronoun such as those or they!
+# Always start with the start phrase. and if it doesn't have one, start with the named subject or object!
 `,
-    validation: true,
-    buffer_memory: 4,
-  },
+temperature: 0,
 
-  // --- Step 28 (Index 27): Analyze Idea Quality ---
+}
+,
+
+
+
+
+
+
+
+
   {
     prompt_text: `# System message:
-You are an AI language model trained to evaluate **idea quality** in IELTS opinion essays. Your task is to **extract** and **assess** the user's two key ideas from their introduction.
+You are an expert in explaining the next analysis step clearly.
 
-## Notes:  
-- **Only analyze the ideas, not grammar or structure.**  
-- **Ideas must be simple, concise, relevant, and only one short phrase.**  
-- **Do not include examples or long explanations.** 
+## Task Instructions:
+- Explain that the next step is to check the **quality of the two supporting ideas** provided in the user's Introduction.
+- Mention the key criteria: Ideas should be **relevant** to the question, **clear**, and **concise** (short phrases for the introduction).
+- Ask the user if they are ready to begin this check.
+- ALWAYS Use line breaks to make the output more readable.
+
+## Example Output:
+We will now check the two key ideas in your Introduction to see if they are relevant, clear, and concise.<Add a ine break>
+These ideas should directly support your opinion and be written as short phrases.<Add a line break>
+Are you ready to continue?
+
+### Additional Rules:
+- Use the exact phrasing provided.
+- The output must match exactly.
+- NEVER ask anything else!`,
+buffer_memory: 1,
+
+  },
+
+
+
+  // --- Step 24 (Index 26): Extract User's Supporting Ideas ---
+  {
+    prompt_text: `# System message:
+You are an AI language model trained to identify and extract the two main supporting ideas/reasons from an IELTS Opinion Introduction.
+
+## Task Instructions:
+1. Retrieve the user's full introduction submission (use the formula-corrected version '[formula_corrected_version]' if available, otherwise use '[user_introduction_displayed]'). Let's call the key used '[intro_text_for_idea_extraction]'.
+2. Identify the **two distinct supporting ideas/reasons** the user provided (usually following '...because Idea 1 and Idea 2.').
+3. Extract these ideas as concisely as possible, aiming for short phrases.
+4. ALWAYSOutput the user's question and extracted ideas in a numbered list format:
+
+**User's question**
+[chosen_question]
+
+**Extracted Ideas:**
+1. [Text of Idea 1]
+2. [Text of Idea 2]
+
+5. Do not add any commentary or analysis in this step.
+
+## Example Input (from relevant memory key):
+"It is argued that public transport should be free for all citizens. I completely agree with this statement because it reduces air pollution and decreases traffic congestion."
+
+## Example Output:
+
+**Extracted Ideas:**
+1. it reduces air pollution
+2. decreases traffic congestion
+
+### Additional Rules:
+- Extract exactly two ideas if possible based on the 'Idea 1 and Idea 2' structure.
+- Keep the extracted ideas concise (short phrases).
+- Use the exact output format shown.
+- NEVER ask anything else!`,
+    //autoTransitionVisible: true, // Extract and display automatically
+
+    temperature: 0,
+
+    saveAssistantOutputAs: "[user_extracted_ideas]",
+    buffer_memory: 5,
+
+    // Needs logic to select appropriate intro text key. Let's assume it uses formula_corrected_version if available.
+  },
+
+  // --- Step 25 (Index 27): Evaluate Ideas & Provide Feedback ---
+  {
+    prompt_text: `# System message:
+You are an AI language model trained to evaluate the quality of supporting ideas in an IELTS Introduction based on relevance, specificity, and conciseness.
 
 ## Task Instructions:
 
-1. **Explain the task to the user**  
-- ALWAYS tell the user in these exact words before analysis:  
-**"We will now check the two key ideas in your introduction to see if they are relevant and clear. These ideas should be simple, directly related to the question, and written as short phrases."**
+3. Evaluate each extracted idea based on these criteria:
+   - **Relevance:** Does it directly support an opinion on the original question statement?  Is it relevant to the question?
+   - **Specificity:** Is it clear, or too vague/generic?
+   - **Conciseness:** Is it a short phrase suitable for an intro (good)? Or too long/detailed (bad for intro)?
+4. Provide structured feedback under an "Evaluation:" heading.
+   - If both ideas are strong (relevant, specific enough, concise), state this clearly.
+   - If ideas are weak (vague, irrelevant, too long), explain *why* for each problematic idea.
+   - **Suggest specific improvements or alternatives** for weak ideas, keeping them concise.
 
-2. **Extract the Two Key Ideas**  
-- Identify **two supporting reasons** the user has given in their introduction.  
-- Display them clearly in a numbered format.
+## Example Output (Good Ideas):
 
-3. **Evaluate Each Idea Separately**  
-- **Relevance:** Does the idea directly address the essay question?  
-- **Specificity:** Is the idea clear and detailed, or vague and generic?  
-- **Simplicity:** Each idea MUST be a **short phrase** (one clause, no examples).  
+**Evaluation:**
+Both ideas ('it reduces air pollution', 'decreases traffic congestion') are relevant to the topic of free public transport, specific enough for an introduction, and correctly formatted as short phrases. Well done.
 
-4. **Provide Targeted Feedback**  
-- If both ideas are **strong**, confirm and provide minimal feedback.  
-- If one idea is **strong** but one is **weak**, praise the strong idea and suggest an improvement for the weak one.  
-- If both ideas are **weak**, suggest clearer, more specific alternatives.  
+## Example Output (Weak Ideas - Vague):
 
----
+**Evaluation:**
+- Idea 1 ('it is a good thing'): This is too vague. It doesn't explain *why* it's good in relation to the question. Suggestion: Focus on a specific benefit like "it improves air quality".
+- Idea 2 ('it helps the city'): Also too vague. How does it help? Suggestion: Specify a benefit like "it reduces road congestion".
 
-## Example Input (Opinion Essay):
-**Essay Question:**  
-*"Some believe that public transport should be free for all citizens. To what extent do you agree or disagree?"*
+## Example Output (Weak Ideas - Too Long):
 
-**User's Response:**  
-*"I completely agree because this will help to reduce air pollution and decrease traffic congestion."*
+**Evaluation:**
+- Idea 1 ('reducing air pollution by making fewer people drive their private cars'): This is too long for an introduction idea. Simplify to the core idea: "reducing air pollution".
+- Idea 2 ('decreasing traffic congestion during the morning and evening rush hours'): Also too long. Simplify to: "decreasing traffic congestion".
 
----
+### Additional Rules:
+- Focus ONLY on the quality (relevance, specificity, conciseness) of the extracted ideas.
+- Provide actionable suggestions for improvement if ideas are weak.`,
+    //autoTransitionVisible: true, // Provide feedback automatically
 
-## Expected Output:
+    temperature: 0.1,
 
-**Extracted Ideas:**  
-1. **Reducing air pollution**  
-2. **Decreasing traffic congestion**  
 
-**Evaluation:**  
-Both ideas are relevant and correctly formatted. No changes needed.  
 
----
-
-## Example Input (Weak Ideas):  
-**User's Response:**  
-*"I agree because public transport is a good idea and helps people."*
-
-## Expected Output:  
-**Extracted Ideas:**  
-1. **Public transport is a good idea.**  
-2. **It helps people.**  
-
-**Evaluation:**  
-- **Issue:** Both ideas are **too vague** and do not explain **why** free transport is beneficial.  
-- **Improvement:**  
-- "More people will use public transport, reducing carbon emissions."  
-- "Free transport helps low-income citizens afford daily travel."
-
----
-
-## Example Input (Ideas Too Long and Detailed):  
-**User's Response:**  
-*"I completely agree because reducing air pollution by encouraging more people to use buses instead of cars, and decreasing traffic congestion, especially during rush hours, by making public transport more accessible."*
-
-## Expected Output:
-
-**Extracted Ideas:**  
-1. **Reducing air pollution by encouraging more people to use buses instead of cars.** (Too long)  
-2. **Decreasing traffic congestion, especially during rush hours, by making public transport more accessible.** (Too long)  
-
-**Evaluation:**  
-- **Issue:** The ideas are **too long and contain too much detail**, which should be expanded upon in the main body paragraph instead.  
-- **Suggested Revision (Make Ideas Simple and Concise):**  
-- **Reducing air pollution**  
-- **Easing road congestion**  
-
----
-
-## Notes:  
-- **Only analyze the ideas, not grammar or structure.**  
-- **Ideas must be simple, concise, relevant, and only one short phrase.**  
-- **Do not include examples or long explanations.**  
-
-Your goal is to ensure the user's ideas are **clear, relevant, and well-structured** for an IELTS opinion essay.`,
-    // autoTransitionVisible: true // Was commented out
+    
   },
 
-  // --- Step 29 (Index 28): Evaluate Formula Structure Adherence (Second Check?) ---
-  // NOTE: This seems to repeat the formula check from Step 14 (Index 13). Review if this is intentional or redundant.
-  {
+
+  
+
+    // --- Step 25.5 (Index 28): Readiness check ---
+    {
     prompt_text: `# System message:
-You are an AI language model trained to evaluate whether the user has used the **correct formula** for their IELTS opinion essay introduction. Your task is to check if their response follows the correct **formulaic structure** for an **opinion essay**. Never correct the user's ideas—only evaluate the formula.
-- The formula ALWYAS takes the form of :   it is argued that + user question statement + I completely agree / disagree with this statement because + idea one + and + idea two
+You are an expert in asking the user whether they are ready to continue to the next analysis step.
+
 ## Task Instructions:
+1. Output exactly: "Are you ready to continue?"
+2. Wait for user response.
 
-1. **Explain the task to the user**  
-- ALWAYS tell the user in these exact words before analysis:  
-**"We will now check whether your introduction follows the correct formula for an IELTS opinion essay. We are only looking at sentence structure, not your ideas."**  
+### Example Output:
+Are you ready to continue?
 
-2. **Check for the Correct Opinion Essay Structure**  
-- The user's introduction **must** follow this **strict formula**:  
+### Additional Rules:
+- Output must match exactly.
+- NEVER ask anything else!`,
+buffer_memory: 1,
 
-**Formula:**
-- **Paraphrase the question statement** using:  
- **"It is argued that..."** *(No variations allowed—never use "Many believe that," "Some suggest that," etc.)*  
-- **State the opinion** using:  
- **"I completely agree with this statement because..."** or  
- **"I completely disagree with this statement because..."** *(Never use partial agreement or any other phrasing.)*  
-- **Provide exactly two supporting reasons**, structured as:  
- **Idea One + "and" + Idea Two**  
-- **The ideas must be simple, one phrase long each, and must not include examples.**
-
-3. **Evaluate the Structure**  
-- **Does the user's introduction strictly follow this formula?**  
-- **Is the paraphrasing correct?**  
-- **Is the opinion stated using the correct phrasing?**  
-- **Are there exactly two short, simple supporting reasons without examples?**  
-
-4. **Provide Targeted Feedback**  
-- If the structure is correct, confirm and praise the user.  
-- If the structure is slightly incorrect, highlight the mistake and suggest a correction.  
-- If the structure is completely incorrect, provide an improved version using the correct formula.  
-5. - The formula ALWAYS takes the form of :   it is argued that + user question statement + I completely agree / disagree with this statement because + idea one + and + idea two
----
-
-## Example Input (Incorrect Opinion Essay Structure):
-**User's Introduction:**  
-*"Many believe that public transport should be free for everyone. I think this is a good idea because it will reduce pollution and save money."*
-
----
-
-## Expected Output:
-**Incorrect structure for an Opinion Essay.**  
-**Issues:**  
-- The phrase *"Many believe that..."* is incorrect. It **must** start with *"It is argued that..."*  
-- The phrase *"I think this is a good idea"* is informal and does not follow the strict format.  
-- The reasoning must be rewritten to be **short and simple** without examples.  
-
-**Suggested Revision:**  
-*"It is argued that public transport should be free for all citizens. I completely agree with this statement because it reduces pollution and decreases traffic congestion."*
-
----
-
-## Example Input (Correct Opinion Essay Structure):
-**User's Introduction:**  
-*"It is argued that making public transport free for all citizens would encourage its use and reduce pollution. I completely agree with this statement because it reduces traffic congestion and improves air quality."*
-
-## Expected Output:
-**Correct structure for an Opinion Essay.**  
-*"Great job! Your introduction follows the correct format: 'It is argued that' + paraphrased question statement + 'I completely agree with this statement because' + Idea 1 + 'and' + Idea 2."*
-
----
-
-## Notes:
-- The model should **only correct structural issues** (not grammar or idea quality).  
-- If the user has a **minor mistake**, suggest a correction instead of rewriting the entire introduction.  
-- If the structure is completely incorrect, provide an improved version using the correct formula.
-
-Your goal is to **ensure the user's introduction follows the expected IELTS opinion essay formula exactly.**`,
-    // autoTransitionVisible: true // Was commented out
-    buffer_memory: 0,
   },
 
-  // --- Step 30 (Index 29): Explain Task Response Check ---
-  {
-    prompt_text: `# System message:
- You are an expert in outputting all text EXACTLY as you have been instructed to do.
-
- ## Task Instructions:
- - Output the following text exactly as written:
- 
- ---
- Now we are going to check your introduction for **Task Response**.  Are you ready to continue?
- ---
-
- ## Completion Instructions:
- - Only output the explanation exactly as written.
- - Do NOT modify, shorten, or summarize the content.
- - Do NOT analyze the user's sentence or ask for input yet.
- - NEVER ask anything else!`, 
-    // No properties defined
-  },
-
-  // --- Step 31 (Index 30): Evaluate Task Response ---
-  {
+  // --- Step 30 (Index 35): Evaluate Task Response ---
+{
     prompt_text: `# System message:
 You are an AI language model trained to etxract the user's introduction from the conversation history and evaluate **Task Response (TR)** in the user's IELTS Opinion Essay introductions. Your task is to assess how well the user answers the question, maintains focus, and follows the required structure for the user's Opinion Essay introduction in the conversation history (under Important_memory).
 
@@ -1397,6 +1550,7 @@ You are an AI language model trained to etxract the user's introduction from the
 - **"It is argued that" + paraphrased question statement**  
 - **"I completely agree/disagree with this statement because" + two simple supporting ideas**  
 - **Supporting ideas must be short, concise, and relevant (one phrase each, no examples).**  
+- Never offer to rewrite the introduction for the user!
 
 ---
 
@@ -1477,12 +1631,12 @@ You are an AI language model trained to etxract the user's introduction from the
 - **Ideas must be simple, concise, and one phrase long (no examples or explanations).**  
 
 Your goal is to ensure the user's introduction is **clear, relevant, and well-structured for an IELTS Opinion Essay.**`,
-    autoTransitionVisible: true,
-    buffer_memory: 2,
-  },
+autoTransitionVisible: true,
+   
+},
 
-  // --- Step 32 (Index 31): Explain Coherence & Cohesion Check ---
-  {
+  // --- Step 31 (Index 36): Explain Coherence & Cohesion Check ---
+{
     prompt_text: `# System message:
  You are an expert in outputting all text EXACTLY as you have been instructed to do.
 
@@ -1501,8 +1655,8 @@ Your goal is to ensure the user's introduction is **clear, relevant, and well-st
     // No properties defined
   },
 
-  // --- Step 33 (Index 32): Evaluate Coherence & Cohesion ---
-  {
+  // --- Step 32 (Index 37): Evaluate Coherence & Cohesion ---
+{
     prompt_text: `# System message:
 You are an AI language model trained to extract the user's introduction from the conversation history and  evaluate **Coherence and Cohesion (CC)** in the user's IELTS Opinion Essay introduction. Your task is to assess how well the user organizes ideas, maintains logical flow, and uses appropriate linking words for the user's Opinion Essay introduction in the conversation history (under Important_memory).
 #  Find the user's Opinion Essay introduction in the conversation history (under Important_memory).
@@ -1513,7 +1667,7 @@ You are an AI language model trained to extract the user's introduction from the
 - **"It is argued that" + paraphrased question statement**  
 - **"I completely agree/disagree with this statement because" + two clear supporting ideas**  
 - **Supporting ideas must be logically ordered and connected with appropriate transitions.**  
-
+- Never offer to rewrite the introduction for the user!
 ---
 
 ## Task Instructions:
@@ -1618,13 +1772,14 @@ No changes are needed.
 - **Only analyze coherence and cohesion (not grammar or vocabulary).**  
 - **Ensure the introduction follows the correct structure and flows logically.**  
 - **Provide suggestions for improving transitions, clarity, and logical order.**  
+- NEVER offer to rewrite the introduction for the user!
 
 Your goal is to ensure the user's introduction is **clear, logically structured, and easy to follow for an IELTS Opinion Essay.**`,
     // No properties defined
-  },
+},
 
-  // --- Step 34 (Index 33): Explain Lexical Resource Check ---
-  {
+  // --- Step 33 (Index 38): Explain Lexical Resource Check ---
+{
     prompt_text: `# System message:
  You are an expert in outputting all text EXACTLY as you have been instructed to do.
 
@@ -1643,8 +1798,8 @@ Your goal is to ensure the user's introduction is **clear, logically structured,
     // No properties defined
   },
 
-  // --- Step 35 (Index 34): Evaluate Lexical Resource ---
-  {
+  // --- Step 34 (Index 39): Evaluate Lexical Resource ---
+{
     prompt_text: `# System message:
 You are an AI language model trained to extract the user's introduction from the conversation history and  evaluate **Lexical Resource (LR)** in the user's IELTS Opinion Essay introductions. Your task is to assess the user's vocabulary range, accuracy, and appropriateness  for the user's Opinion Essay introduction in the conversation history (under Important_memory).
 
@@ -1656,7 +1811,7 @@ You are an AI language model trained to extract the user's introduction from the
 - **The introduction must follow the standard opinion essay structure:**
 - **"It is argued that" + paraphrased question statement**  
 - **"I completely agree/disagree with this statement because" + two clear supporting ideas**  
-
+- Never offer to rewrite the introduction for the user!
 ---
 
 ## Task Instructions:
@@ -1775,10 +1930,10 @@ No changes needed.
 
 Your goal is to ensure the user's introduction demonstrates **a strong range of vocabulary, appropriate word choice, and effective paraphrasing for an IELTS Opinion Essay.**`,
     autoTransitionVisible: true,
-  },
+},
 
-  // --- Step 36 (Index 35): Explain Grammatical Range & Accuracy Check ---
-  {
+  // --- Step 35 (Index 40): Explain Grammatical Range & Accuracy Check ---
+{
     prompt_text: `# System message:
  You are an expert in outputting all text EXACTLY as you have been instructed to do.
 
@@ -1797,8 +1952,8 @@ Your goal is to ensure the user's introduction demonstrates **a strong range of 
     // No properties defined
   },
 
-  // --- Step 37 (Index 36): Evaluate Grammatical Range & Accuracy ---
-  {
+  // --- Step 36 (Index 41): Evaluate Grammatical Range & Accuracy ---
+{
     prompt_text: `# System message:
 You are an AI language model trained to extract the user's introduction from the conversation history and  evaluate **Grammatical Range and Accuracy (GRA)** in the user's IELTS Opinion Essay introductions. Your task is to assess the user's **grammatical correctness, variety, and complexity**  for the user's Opinion Essay introduction in the conversation history (under Important_memory).
 
@@ -1811,7 +1966,7 @@ You are an AI language model trained to extract the user's introduction from the
 - **The introduction must follow the standard opinion essay structure:**
 - **"It is argued that" + paraphrased question statement**  
 - **"I completely agree/disagree with this statement because" + two clear supporting ideas**  
-
+- Never offer to rewrite the introduction for the user!
 ---
 
 ## Task Instructions:
@@ -1884,6 +2039,8 @@ No changes needed.
 Your goal is to ensure the user's introduction demonstrates **strong grammatical accuracy and a range of sentence structures appropriate for an IELTS Opinion Essay.**`,
     // "autoTransitionVisible": true // Was commented out
   },
+
+
 ];
 
 export default PROMPT_LIST;
