@@ -35,7 +35,42 @@ type PromptType = {
 // D:\vercel\intro_groq m6\app\api\chat\prompts.ts
 export const PROMPT_LIST: PromptType[] = [
 
+  
+  //      {
+  //         prompt_text: `#System message:
+  //     Ask the user what their favorite dish is.`,
+  //     saveUserInputAs: "123",
+  
+     
 
+  //       },
+  //       {
+  //         prompt_text: `#System message:
+  //     Ask the user what their favorite type of book is.`,
+  // autoTransitionHidden: true,
+  // important_memory: true,
+  //       },
+  //       {
+  //         prompt_text: `#System message:
+  //     Ask the user what their favorite animal is.`,
+     
+      
+  //       },
+  
+  //   {
+  //      prompt_text: `#System message:
+  //   Only output this text:  "Variable is:  {123}."
+    
+  //   Never output anything else!`,
+    
+  
+  //    },
+  //    {
+  //      prompt_text: `#System message:
+  //   Ask the user what their favorite  star is.`,
+  
+    
+  //    },
   
 
 
@@ -59,6 +94,7 @@ export const PROMPT_LIST: PromptType[] = [
       - NEVER ask anything else!
       `,
     validation: customValidationInstructionForQuestion,
+   
   },
 
   // --- Step 1 (Index 1): Select Opinion Question ---
@@ -154,12 +190,12 @@ export const PROMPT_LIST: PromptType[] = [
      - "It has been suggested that cars and public transport should be banned from city centres, and only bicycles should be allowed."  = question statement
      - "To what extent do you agree or disagree?" = task instruction
   3. **Do not add any extra text, explanations, or commentary.**
-     - Only output exactly: "User's Chosen Question: **<Chosen Question>**."
+     - Only output exactly: "This is your chosen question: **<Chosen Question>**."
   4.  Never output a different question or invent your own.  ALWAYS use the question chosen by the user!
   5. ALWAYS remember **<Chosen Question>** = Question Statement + task instruction
   
   ### Example Output:
-  User's Chosen Question: **It has been suggested that cars and public transport should be banned from city centres, and only bicycles should be allowed.
+  This is your chosen question: **It has been suggested that cars and public transport should be banned from city centres, and only bicycles should be allowed.
   To what extent do you agree or disagree?**
   
   ### Additional Rules:
@@ -172,8 +208,9 @@ export const PROMPT_LIST: PromptType[] = [
   - Do not deviate or add any extra content.
   - NEVER ask anything else!
   `,
+  temperature: 0,
     autoTransitionVisible: true,
-    important_memory: true,
+    // important_memory: true,
   },
 
   // --- Step 4 (Index 4): Ask for Introduction ---
@@ -214,14 +251,14 @@ export const PROMPT_LIST: PromptType[] = [
   
   ## Task Instructions:
   1. **Output the user's introduction using the exact format below:**
-     - "User's Introduction: **<User Introduction>**."
+     - "**User's Introduction**: <User Introduction>."
   2. **Ensure that the output includes both the user's paraphrasedquestion statement and the user's ideas exactly as provided.**
   3. **Do not add any extra text, explanations, or commentary.**
-     - Only output exactly: "User's Introduction: **<User Introduction>**."
+     - Only output exactly: "**User's Introduction**: <User Introduction>."
   4. Never output a different introduction or modify /add to the user's.  ALWAYS use the introduction exactly as written by the user!
   
   ### Example Output:
-  User's Introduction: **Violent video games are seen as a harmless form of entertainment by some, while others think they promote violence.
+  **User's Introduction**: **Violent video games are seen as a harmless form of entertainment by some, while others think they promote violence.
   I think that video games are ok because they keep children occupied and kids know the difference between reality and games.**
   
   ### Additional Rules:
@@ -242,18 +279,18 @@ You are an AI assistant trained to retrieve and output specific information exac
 ## Task Instructions:
 1.  Retrieve the **exact IELTS question chosen by the user** (including both the statement and the task instruction like "To what extent...") from the conversation history or memory (e.g., key \`[original_question]\`).
 2.  Output this question using the **exact format** below, with no modifications:
-    **User's Chosen Question:** <The full chosen question text>
+    **User's Chosen Question**: <The full chosen question text>
 
 ### Example Output:
-User's Chosen Question: **It has been suggested that cars and public transport should be banned from city centres, and only bicycles should be allowed.
-To what extent do you agree or disagree?**
+**User's Chosen Question**: It has been suggested that cars and public transport should be banned from city centres, and only bicycles should be allowed.
+To what extent do you agree or disagree?
 
 ### Additional Rules:
 - Output **ONLY** the text in the specified format ("User's Chosen Question: ...").
 - Do **NOT** add any introductory text, explanations, apologies, commentary, or reasoning.
 - Do **NOT** modify, paraphrase, shorten, or reword the chosen question in **ANY** way.
 - Ensure the output is retrieved exactly as it was previously stored/displayed.`,
-  autoTransitionVisible: true,
+autoTransitionVisible: true,
   important_memory: true,
     temperature: 0,
   saveAssistantOutputAs: "[chosen_question]",
@@ -271,7 +308,7 @@ You are an AI language model trained to extract the main question statement from
 - 'Discuss both views and give your opinion.'
 - 'What are the advantages and disadvantages?'
 3. **Output only the extracted question statement** in the exact format:
-- "Question Statement: **<Question Statement>**"
+- "**Question Statement**: <Question Statement>"
 4. **Do not output any additional text** or include any content from the user's introduction.
 5. **Always follow the exact format provided.**
 - Verify your output matches the structure exactly.
@@ -281,7 +318,7 @@ You are an AI language model trained to extract the main question statement from
 It has been suggested that cars and public transport should be banned from city centres, and only bicycles should be allowed. To what extent do you agree or disagree?
 
 ## Expected Output:
-Question Statement: **'It has been suggested that cars and public transport should be banned from city centres, and only bicycles should be allowed.'**
+**Question Statement**: 'It has been suggested that cars and public transport should be banned from city centres, and only bicycles should be allowed.'
 
 ## Use the actual Question Statement NOT the example!
 
@@ -312,7 +349,7 @@ You are an AI language model trained to extract the background statement (paraph
 1. **Identify the background statement** within the user's introduction (found in the conversation history under from Important_memory ).
 2. **Ignore any opinions, explanations, or extra commentary** that the user has included.
 3. **Output only the extracted background statement** in the exact format:
-- "User's background Statement: **<User background Statement>**"
+- "**User's background Statement**: <User background Statement>"
 4. **Do not output any additional text** or include any content from the rest of the introduction.
 5. **Always follow the exact format provided.**
 - Verify your output matches the structure exactly.
@@ -324,7 +361,7 @@ I think that video games are ok because they keep children occupied and kids kno
 
 ## Expected Output:
 
--Good: User's background Statement: **"Violent video games are seen as a harmless form of entertainment by some, while others think they promote violence."**
+-Good: **User's background Statement**: "Violent video games are seen as a harmless form of entertainment by some, while others think they promote violence."
 
 -Bad (NEVER include the words 'Important_memory' in the output): Important_memory: User's background Statement: **"Violent video games are seen as a harmless form of entertainment by some, while others think they promote violence."**
 -Bad: (NEVER give opinion or reasons in the output): User's background Statement: **"Violent video games are seen as a harmless form of entertainment by some, while others think they promote violence. I completely agree with this statement because..."**
@@ -335,19 +372,19 @@ I think that video games are ok because they keep children occupied and kids kno
 "Some people argue that technology has made life easier, but others believe it has made life more complicated. I believe technology is beneficial because it saves time and increases productivity."
 
 ### Expected Output 2:
--Good: User's background Statement: **"Some people argue that technology has made life easier, but others believe it has made life more complicated."**
+-Good: **User's background Statement**: "Some people argue that technology has made life easier, but others believe it has made life more complicated."
 
 ### Example Input 3:
 "Many people think that the government should invest more in public transport. I agree because it reduces traffic congestion and pollution."
 
 ### Expected Output 3:
--Good: User's background Statement: **"Many people think that the government should invest more in public transport."**
+-Good: **User's background Statement**: "Many people think that the government should invest more in public transport."
 
 ### Example Input 4:
 "Some believe that education should be free for everyone. I completely agree with this statement because it provides equal opportunities and promotes social equality."
 
 ### Expected Output 4:
--Good: User's background Statement: **"Some believe that education should be free for everyone."**
+-Good: **User's background Statement**: "Some believe that education should be free for everyone."
 
 ### Additional Rules:
 - Never include the words 'Important_memory' in the output
@@ -361,46 +398,92 @@ I think that video games are ok because they keep children occupied and kids kno
 - ALWAYS look in conversation history under Important_memory for the user's introduction!
 
 `,
-    // autoTransitionVisible: true, // Was commented out, keeping as is
+autoTransitionVisible: true,   // autoTransitionVisible: true, // Was commented out, keeping as is
 important_memory: true,
 temperature: 0,
 saveAssistantOutputAs: "[user_background_statement]",
 },
 
+{
+  prompt_text: `# System message:
+You are an AI language model trained to identify and extract the two main supporting ideas/reasons from an IELTS Opinion Introduction.
+
+## Task Instructions:
+1. Retrieve the user's full introduction.
+2. Identify the **two distinct supporting ideas/reasons** the user provided (usually following '...because Idea 1 and Idea 2.').
+3. Extract these ideas as concisely as possible, aiming for short phrases.
+4. ALWAYS Output the user's question and extracted ideas in a numbered list format:
+
+
+
+**Extracted Ideas:**
+1. [Text of Idea 1]
+2. [Text of Idea 2]
+
+5. Do not add any commentary or analysis in this step.
+
+
+
+## Example Output:
+
+**Extracted Ideas:**
+1. it reduces air pollution
+2. decreases traffic congestion
+
+### Additional Rules:
+- Extract exactly two ideas if possible based on the 'Idea 1 and Idea 2' structure.
+- Keep the extracted ideas concise (short phrases).
+- Use the exact output format shown.
+- NEVER ask anything else!`,
+  //autoTransitionVisible: true, // Extract and display automatically
+
+  autoTransitionVisible: true,   // autoTransitionVisible: true, // Was commented out, keeping as is
+important_memory: true,
+temperature: 0,
+
+  saveAssistantOutputAs: "[user_extracted_ideas]",
+
+
+  // Needs logic to select appropriate intro text key. Let's assume it uses formula_corrected_version if available.
+},
+
+
+
 // ----------------------------------------------->>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
   // NOTE: Consider removing or standardizing this separator comment.
 
   // --- Step 9 (Index 9): Consolidate Extracted Data ---
-  {
-    prompt_text: `# System message:
-You are an Expert in outputting the exact text you have been told to.  You never output anything else.
+//   {
+//     prompt_text: `# System message:
+// You are an Expert in outputting the exact text you have been told to.  You never output anything else.
 
-## Task Instructions:
-1. Output this text exactly and NEVER change anything:
-    - "User's Introduction: **{[user_introduction]}**"  
-    - "User's Chosen Question: **{[chosen_question]}**"  
-    - "Original Question Statement: **{[original_question_statement]}**"  
-    - "User's background Statement: **{[user_background_statement]}**" 
-2. Output this text **exactly as they are **, one after the other, each on a new line.
-3. Do **NOT** add any extra text, explanations, commentary, or formatting (like bullet points or extra labels) yourself. Simply output the concatenated content from the memory keys.
+// ## Task Instructions:
+// 1. Output this text exactly and NEVER change anything:
+//     - "User's Introduction: **{[user_introduction]}**"  
+//     - "User's Chosen Question: **{[chosen_question]}**"  
+//     - "Original Question Statement: **{[original_question_statement]}**"  
+//     - "User's background Statement: **{[user_background_statement]}**" 
+//     - "User's Extracted Ideas: **{[user_extracted_ideas]}**"
+// 2. Output this text **exactly as they are **, one after the other, each on a new line.
+// 3. Do **NOT** add any extra text, explanations, commentary, or formatting (like bullet points or extra labels) yourself. Simply output the concatenated content from the memory keys.
 
-### Example Output (Illustrative - This is the EXACT desired output format):
-User's Chosen Question: **Companies that rely on fossil fuels should face higher taxes compared to those that use renewable energy.\nTo what extent do you agree or disagree?** <line break>
-Original Question Statement: **Companies that rely on fossil fuels should face higher taxes compared to those that use renewable energy.\nTo what extent do you agree or disagree?** <line break>
-User's Introduction: **Businesses that use fuels from the ground should be increased tax compared to those that use green fuels. I think this is right because fuels on the ground heat the planet and cause people illness.** <line break> 
-User's background Statement: **Businesses that use fuels from the ground should be increased tax compared to those that use green fuels.**
+// ### Example Output (Illustrative - This is the EXACT desired output format):
+// User's Chosen Question: **Companies that rely on fossil fuels should face higher taxes compared to those that use renewable energy.\nTo what extent do you agree or disagree?** <line break>
+// Original Question Statement: **Companies that rely on fossil fuels should face higher taxes compared to those that use renewable energy.\nTo what extent do you agree or disagree?** <line break>
+// User's Introduction: **Businesses that use fuels from the ground should be increased tax compared to those that use green fuels. I think this is right because fuels on the ground heat the planet and cause people illness.** <line break> 
+// User's background Statement: **Businesses that use fuels from the ground should be increased tax compared to those that use green fuels.**
 
-### Additional Rules:
-- The output must **only** contain the exact text retrieved from the specified memory keys, in the specified order, each starting on a new line.
-- Do not add any extra characters, labels, or formatting not present in the retrieved memory values.
-- Output this text exactly and never output anything else!`,
-    //autoTransitionVisible: true, // Was commented out, keeping as is
-    important_memory: true, // This consolidated context is vital
-    saveAssistantOutputAs: "[consolidated_context]", // Standardized key
-    temperature: 0, // Ensure exact retrieval and concatenation
-    // validation: true,
+// ### Additional Rules:
+// - The output must **only** contain the exact text retrieved from the specified memory keys, in the specified order, each starting on a new line.
+// - Do not add any extra characters, labels, or formatting not present in the retrieved memory values.
+// - Output this text exactly and never output anything else!`,
+//     //autoTransitionVisible: true, // Was commented out, keeping as is
+//     important_memory: true, // This consolidated context is vital
+//     saveAssistantOutputAs: "[consolidated_context]", // Standardized key
+//     temperature: 0, // Ensure exact retrieval and concatenation
+//     // validation: true,
 
-  },
+//   },
 
   // --- Step 10 (Index 10): Readiness Check for Analysis ---
   {
@@ -417,8 +500,7 @@ User's background Statement: **Businesses that use fuels from the ground should 
   ### Additional Rules:
   - Output must match exactly.
   - NEVER ask anything else!`,
-    validation: true, // Standard Yes/No
-    buffer_memory: 1,
+buffer_memory: 1,
 
   },
 
@@ -446,7 +528,7 @@ Are you ready to check this?
 - Use the exact phrasing provided in the Example Output.
 - The output must match exactly.
 - NEVER ask anything else!`,
-buffer_memory: 3,
+
     // validation: true, // Remains commented out
 },
 
@@ -539,39 +621,56 @@ Your introduction broken down by formula components:
 - Do **NOT** add any extra text, commentary, greetings, or explanations.
 - Use "[Component Missing]" accurately if a distinct part corresponding to the formula component cannot be identified based on the rules.
 - Ensure the output format (bracketed labels, new lines, extracted text) matches the examples exactly.`,
-saveAssistantOutputAs: "[step14]",
+saveAssistantOutputAs: "[user_introduction_breakdown]",
 important_memory: true,
+autoTransitionVisible: true,
 },
 
 
-{ // Index 14: Display Breakdown
+// { // Index 14: Display Breakdown
+//   prompt_text: `# System message:
+// You are an Expert in outputting the exact text below .
+
+// ## Task Instructions:
+// 1. Output this text exactly and NEVER change anything:
+//   - "IELTS introduction Breakdown: **{[step14]}**"  
+ 
+// 2. Output this text **exactly as they are **, one after the other, each on a new line.
+// 3. Do **NOT** add any extra text, explanations, commentary, or formatting (like bullet points or extra labels) yourself. Simply output the concatenated content from the memory keys.
+
+
+// ### Additional Rules:
+// - The output must **only** contain the exact text retrieved from the specified memory keys, in the specified order, each starting on a new line.
+// - Do not add any extra characters, labels, or formatting not present in the retrieved memory values.
+// - Output this text exactly and never output anything else!
+// - Do not add any extra text, explanations, commentary, or formatting (like bullet points or extra labels) yourself. Simply output the concatenated content from the memory keys.
+// - ONLY output "IELTS introduction Breakdown: **{[user_introduction_breakdown]}**"  
+// `,
+
+//   //autoTransitionVisible: true, // Was commented out, keeping as is
+//   // important_memory: true, // This consolidated context is vital
+
+//   temperature: 0, 
+
+
+// },
+{
   prompt_text: `# System message:
-You are an Expert in outputting the exact text below .
+You are an expert in asking the user whether they are ready to continue to the next analysis step.
 
 ## Task Instructions:
-1. Output this text exactly and NEVER change anything:
-  - "IELTS introduction Breakdown: **{[step14]}**"  
- 
-2. Output this text **exactly as they are **, one after the other, each on a new line.
-3. Do **NOT** add any extra text, explanations, commentary, or formatting (like bullet points or extra labels) yourself. Simply output the concatenated content from the memory keys.
+1. Output exactly: "Are you ready to continue with the next step?"
+2. Wait for user response.
 
+### Example Output:
+Are you ready to continue?
 
 ### Additional Rules:
-- The output must **only** contain the exact text retrieved from the specified memory keys, in the specified order, each starting on a new line.
-- Do not add any extra characters, labels, or formatting not present in the retrieved memory values.
-- Output this text exactly and never output anything else!
-- Do not add any extra text, explanations, commentary, or formatting (like bullet points or extra labels) yourself. Simply output the concatenated content from the memory keys.
-- ONLY output "IELTS introduction Breakdown: **{[step14]}**"  
-`,
-
-  //autoTransitionVisible: true, // Was commented out, keeping as is
-  // important_memory: true, // This consolidated context is vital
-
-  temperature: 0, 
-
+- Output must match exactly.
+- NEVER ask anything else!`,
+buffer_memory: 1,
 
 },
-
 
 { // Index 15: Evaluate Start Phrase
   prompt_text: `# System message:
@@ -653,7 +752,7 @@ Start phrase used: 'Some might say that'
 - Output **must match exactly** one of the specified formats.
 - Do NOT add any extra conversational text, greetings, or explanations.`,
   temperature: 0,
-
+  autoTransitionVisible: true,
 }
 ,
 
@@ -707,7 +806,7 @@ Statement used: None
 - Output must match exactly one of the specified formats.
 - Do not include greetings or extra explanations.`,
   temperature: 0,
- 
+  autoTransitionVisible: true,
 }
 ,
 
@@ -784,7 +883,7 @@ Opinion phrase used: 'I think this is a good idea because'
 - No paraphrases allowed.
 - Do not add greetings or explanations.`,
   temperature: 0,
-
+  autoTransitionVisible: true,
 }
 
 ,
@@ -878,7 +977,7 @@ User's Idea 2: do some other stuff.
 - Do **not** output anything except the expected structure format.`,
 
   temperature: 0,
-  important_memory: true,
+  autoTransitionVisible: true,
   
 
 }
@@ -896,7 +995,7 @@ You are an AI language model trained to rewrite an IELTS introduction to fit the
 ## Task Instructions:
 1.  Check the feedback from the previous step (saved as '[formula_feedback_errors]').
 2.  **If the previous feedback indicates the structure was CORRECT** (i.e., contains "✅ Correct structure"):
- - Output nothing. Remain silent.
+ - Output '✅Your idea structure is correct!'
 3.  **If the previous feedback indicates the structure was INCORRECT** (i.e., starts with "❌ Structural Issues Found:"):
     a.  Retrieve the user's original introduction text (available in context/memory from key '[user_introduction]'). Ignore the "User's Introduction:" prefix if present.
     b.  Identify the user's core paraphrased statement and their two main ideas from their submission.
@@ -930,10 +1029,15 @@ It is argued that + kids today know more than adults. + I completely agree with 
 - Only generate output if a correction is necessary based on prior feedback ([formula_feedback_errors]). Otherwise, output nothing.
 - Preserve the user's original meaning and ideas when creating the corrected sentence components.
 - Ensure the final output string **exactly** matches the structure and formatting shown in the example, including the "+" separators.
-- Do not add any extra explanations or conversational text.`,
+- Do not add any extra explanations or conversational text.
+- **If the previous feedback indicates the structure was CORRECT** (i.e., contains "✅ Correct structure"):
+ - Output '✅Your idea structure is correct!'
+`,
   autoTransitionVisible: true,
-  saveAssistantOutputAs: "[formula_corrected_version_breakdown]",
-  temperature: 0.1,
+
+  temperature: 0,
+  buffer_memory: 1,
+  
 },
 
 // --- Step 15 (Index 20): Readiness Check After Correction/Formula ---
@@ -954,6 +1058,7 @@ Are you ready to continue?
 - NEVER ask anything else!`,
 buffer_memory: 1,
 
+
 },
 
 // xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
@@ -966,13 +1071,14 @@ You are an expert in outputting all text EXACTLY as you have been instructed to 
 
 ## Task Instructions:
 - Inform the user that the next stage is focused on **checking the paraphrasing** of the main question statement.  
-- Explain that the **first step** to writing effective IELTS introductions is to **paraphrase properly**.  
-- Ask the user if they are **ready to begin** this part.  
+- Explain that the **first step** to writing effective IELTS introductions is to **paraphrase properly**. 
+- Explain that you are now going to check if you have paraphrased the main question statement correctly.
+
 
 ## Example Output:
 "The next stage is checking your paraphrasing of the main question statement.  
-The first step to writing effective IELTS introductions is to paraphrase properly.  
-Are you ready to begin?"  
+The first step to writing effective IELTS introductions is to paraphrase properly.
+We are now going check if you have paraphrased the main question statement correctly."  
 
 ## Additional Rules:
 - **Use the exact phrasing as shown.**  
@@ -981,7 +1087,9 @@ Are you ready to begin?"
 - **Do not deviate or add any extra content.**  
 - **NEVER ask anything else!**  
 `,
-buffer_memory: 6,
+buffer_memory: 1,
+autoTransitionVisible: true,
+
 
 
     // No properties defined, assuming defaults or controlled elsewhere
@@ -990,17 +1098,17 @@ buffer_memory: 6,
   {
     prompt_text: `# System message:
 You are an expert in outputting all text EXACTLY as you have been instructed to do.
-#Never output the [chosen_question] or [user_introduction] in this step!
-#Never confuse the user background statement with the user's introduction!
+# Never output the [chosen_question] or [user_introduction] in this step!
+# Never confuse the user background statement with the user's introduction!
 
 ## Task Instructions:
 - Only ever output the original question statement and the user's background statement in the exact format below.
 "**Original Question Statement:** [original_question_statement]"<line break>
-"**User's background Statement:** [user_background_statement]"<line break>
+"**Your background Statement:** [user_background_statement]"<line break>
 
 ## Example Output:
 "**Original Question Statement:** [original_question_statement]"<line break>
-"**User's background Statement:** [user_background_statement]"<line break>
+"**Your background Statement:** [user_background_statement]"<line break>
 ## Additional Rules:
 - **Use the exact phrasing as shown.**  
 - **Do not include any additional instructions or commentary.**  
@@ -1008,6 +1116,7 @@ You are an expert in outputting all text EXACTLY as you have been instructed to 
 - **Do not deviate or add any extra content.**  
 - **NEVER ask anything else!**  
 `,
+autoTransitionVisible: true,
 
 
 
@@ -1015,6 +1124,8 @@ You are an expert in outputting all text EXACTLY as you have been instructed to 
 
     // No properties defined, assuming defaults or controlled elsewhere
   },
+
+
 
  
 
@@ -1043,13 +1154,40 @@ Below is the original Question Statement. We are now going to extract the key pa
 - List words under the correct bold heading.
 - Use JSON array format for the lists of words.
 - Do not include extra explanations or comments beyond the initial sentence.`,
-    //autoTransitionVisible: true,
+    autoTransitionVisible: true,
     temperature: 0,
 
 
 
 
   
+  },
+
+  {
+    prompt_text: `# System message:
+You are an expert in outputting all text EXACTLY as you have been instructed to do.
+
+## Task Instructions:
+- Output the following to add a break between the previous step and the next one:__________________________________________________________________________
+
+
+## Example Output:
+__________________________________________________________________________
+
+## Additional Rules:
+- **Use the exact phrasing as shown.**  
+- **Do not include any additional instructions or commentary.**  
+- **The output must match exactly.**  
+- **Do not deviate or add any extra content.**  
+- **NEVER ask anything else!**  
+`,
+buffer_memory: 1,
+// autoTransitionVisible: true,
+model: "gpt-4o-mini-2024-07-18",
+
+
+
+    // No properties defined, assuming defaults or controlled elsewhere
   },
 
   // --- Step 19 (Index 24): Extract Changed Keywords (Synonyms) from User Statement ---
@@ -1077,11 +1215,36 @@ You are an AI language model trained to analyze and extract differences in key p
 
 Remember: Only list the words and their mappings without any extra commentary.
 `,
-// autoTransitionVisible: true,
+autoTransitionVisible: true,
     temperature: 0,
 
   },
+  {
+    prompt_text: `# System message:
+You are an expert in outputting all text EXACTLY as you have been instructed to do.
 
+## Task Instructions:
+- Output the following to add a break between the previous step and the next one: ------------------------------------------------------------------------------
+
+
+## Example Output:
+------------------------------------------------------------------------------
+
+## Additional Rules:
+- **Use the exact phrasing as shown.**  
+- **Do not include any additional instructions or commentary.**  
+- **The output must match exactly.**  
+- **Do not deviate or add any extra content.**  
+- **NEVER ask anything else!**  
+`,
+buffer_memory: 1,
+autoTransitionVisible: true,
+model: "gpt-4o-mini-2024-07-18",
+
+
+
+    // No properties defined, assuming defaults or controlled elsewhere
+  },
   // --- Step 20 (Index 25): Evaluate Paraphrasing Quality ---
   {
     prompt_text: `# System message:
@@ -1137,9 +1300,34 @@ For example:
 - If the user writes **"carbonized fuels"** for **"fossil fuels"**, do not suggest **"fossil fuels"** as the correction. Instead, suggest something like **"combustible fuels"** or **"non-renewable energy sources"**.  
 - If the user writes **"green energy sources"** for **"renewable energy"**, do not suggest **"renewable energy"** as the correction. Instead, suggest something like **"sustainable power"** or **"eco-friendly energy"**.  
 `,
-    // autoTransitionVisible: true,
+    autoTransitionVisible: true,
   },
+  {
+    prompt_text: `# System message:
+You are an expert in outputting all text EXACTLY as you have been instructed to do.
 
+## Task Instructions:
+- Output the following to add a break between the previous step and the next one: ------------------------------------------------------------------------------
+
+
+## Example Output:
+------------------------------------------------------------------------------
+
+## Additional Rules:
+- **Use the exact phrasing as shown.**  
+- **Do not include any additional instructions or commentary.**  
+- **The output must match exactly.**  
+- **Do not deviate or add any extra content.**  
+- **NEVER ask anything else!**  
+`,
+buffer_memory: 1,
+
+model: "gpt-4o-mini-2024-07-18",
+
+
+
+    // No properties defined, assuming defaults or controlled elsewhere
+  },
   // --- Step 21 (Index 26): Suggest Paraphrasing Improvement (If Needed) ---
 {
     prompt_text: `# System message:
@@ -1222,7 +1410,7 @@ You are an AI language model trained to refine IELTS user background statement (
 "Many argue that the government should provide universal free healthcare."
 
  `,
-//  autoTransitionVisible: true,
+ autoTransitionVisible: true,
 
   },
 
@@ -1241,6 +1429,7 @@ Step 3:  Only ask 'Are you ready to continue?'.  Never add extra information.
 `,
 validation: true,
 buffer_memory: 1,
+fallbackIndex:6
 
 
 },
