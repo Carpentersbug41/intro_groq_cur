@@ -1,0 +1,97 @@
+---
+description: important-memory
+globs: 
+alwaysApply: false
+---
+1. The Goal & Problem
+Goal: To ensure that when the AI provides an important piece of information or asks a crucial question (marked with # ), the user's immediate response to that specific message is always kept in the conversation history, even when the overall history needs to be shortened due to buffer limits.
+Problem: Standard buffering methods (like keeping the last N messages) could easily discard the user's response to an important assistant message if the buffer size was small. This would cause the AI to lose critical context. For example:
+# Assistant: What is your main goal? (Important)
+User: I want to book a flight. (Crucial context)
+Assistant: Okay, booking a flight.
+... (more messages) ...
+If the buffer was small, User: I want to book a flight. might get trimmed, and the AI would forget the user's goal.
+2. The Core Idea: Prioritization
+Instead of treating all messages the same for buffering, we decided to prioritize certain messages.
+Prioritized messages are exempt from the normal buffer size calculation. They are always kept.
+Messages that are not prioritized ("Other" messages) are the only ones subject to trimming based on the bufferSize.
+3. Implementation Details (Inside manageBuffer in app/api/chat/bufferUtils.ts)
+The logic is implemented within the manageBuffer function:
+Separate System Prompt: The system prompt is always handled separately and kept. The prioritization logic works on the rest of the conversation array.
+Identify Prioritized Indices:
+We loop through the conversation array (which excludes the system prompt).
+A Set called prioritizedIndices stores the relative index (within the conversation array) of messages that should always be kept.
+Key Logic - Check for # Assistant: Inside the loop, we check if the current message (conversation[i]) is from the assistant and starts with # .
+If it is, we add its index i to prioritizedIndices.
+Key Logic - Check for Next User: Immediately after finding an important assistant message at index i, we perform another check:
+Is there a message at the next index (i + 1)?
+Is the message at i + 1 from the user?
+Does the user message at i + 1 NOT start with # (to avoid prioritizing #OK messages this way)?
+If all these conditions are true, we add the index i + 1 (the user's response) to prioritizedIndices as well.
+#OK User Prioritization: We also explicitly check for user messages starting with #OK and add their indices to prioritizedIndices to ensure transition steps are preserved correctly.
+Identify "Other" Indices: We create a list of indices that were not added to prioritizedIndices. These are the "Other" messages.
+Calculate Buffer Space for Others: We calculate how many "Other" messages we can keep: availableBufferForOthers = max(0, bufferSize - numPrioritized). If bufferSize is 2 and we have 4 prioritized messages, availableBufferForOthers becomes 0.
+Keep Recent Others: We take the availableBufferForOthers most recent indices from the "Other" list. If availableBufferForOthers is 0, we keep none of the "Other" messages.
+Reconstruct Final History:
+Combine the indices of all prioritized messages and the kept "Other" message indices.
+Filter the original conversation array to include only messages whose indices are in this combined set.
+Prepend the system prompt back to the filtered conversation.
+4. Code Changes (Focusing on the core logic in bufferUtils.ts)
+The crucial change was adding the check for the next user message inside the check for the important assistant message:
+
+
+
+// ... inside manageBuffer function ...
+    console.log("[BUFFER DEBUG R6] Identifying prioritized indices...");
+
+    // Identify prioritized messages (#Assistant, User after #Assistant, #OK User)
+    for (let i = 0; i < conversation.length; i++) {
+        const currentMsg = conversation[i];
+        const isAssistant = currentMsg.role === 'assistant';
+        const isUser = currentMsg.role === 'user';
+        const content = currentMsg.content || '';
+
+        const isImportantAssistant = isAssistant && content.startsWith('# ');
+        const isOkUser = isUser && content.startsWith('#OK ');
+
+        if (isImportantAssistant) {
+            prioritizedIndices.add(i);
+            console.log(`[BUFFER DEBUG R6] Prioritized index ${i} (#Assistant: "${content.substring(0, 20)}...")`);
+            // --- START OF KEY CHANGE ---
+            // NEW R6: Also prioritize the *next* message if it's a user message AND doesn't start with #
+            if (i + 1 < conversation.length && conversation[i + 1].role === 'user' && !conversation[i+1].content?.startsWith('#')) {
+                prioritizedIndices.add(i + 1);
+                console.log(`[BUFFER DEBUG R6] Prioritized index ${i+1} (User following #Assistant)`);
+            }
+            // --- END OF KEY CHANGE ---
+        } else if (isOkUser) { // Keep #OK User messages
+            prioritizedIndices.add(i);
+             console.log(`[BUFFER DEBUG R6] Prioritized index ${i} (#OK User)`);
+        }
+    }
+    console.log(`[BUFFER DEBUG R6] Total prioritized indices (relative to conversation): ${prioritizedIndices.size} -> ${JSON.stringify(Array.from(prioritizedIndices))}`);
+
+    const otherIndices: number[] = [];
+// ... rest of buffer calculation and reconstruction ...
+
+
+5. Example
+Consider bufferSize = 2 and this history (indices relative to conversation after system prompt):
+0: User: Hi
+1: Assistant: Hello
+2: # Assistant: What is your goal?
+3: User: Book a flight.
+4: Assistant: Where to?
+5: #OK User: Got it
+Analysis:
+Prioritized Indices:
+Index 2 (# Assistant: What is your goal?)
+Index 3 (User: Book a flight. - because it follows index 2 and is a non-# user message)
+Index 5 (#OK User: Got it)
+Total Prioritized: 3
+Other Indices: 0 (User: Hi), 1 (Assistant: Hello), 4 (Assistant: Where to?)
+availableBufferForOthers = max(0, bufferSize(2) - numPrioritized(3)) = max(0, -1) = 0.
+Kept Other Indices: [] (None)
+Final Kept conversation Indices: [2, 3, 5]
+Final History (with System): [System, Message 2, Message 3, Message 5] - The crucial User: Book a flight. is kept.
+Summary: By adding the specific check to prioritize the user message following an important assistant message, we ensure that this vital contextual pair remains in the history, preventing context loss caused by buffer trimming.

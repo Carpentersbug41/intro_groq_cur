@@ -166,7 +166,7 @@ export function ChatWindow(props: {
       : "bg-gray-100 text-gray-900 self-start rounded-lg max-w-[80%]";
 
     return (
-      <div key={index} className={`p-3 mb-2 ${bubbleClasses} break-words`}>
+      <div key={index} className={`p-3 mb-2 text-sm ${bubbleClasses} break-words`}>
         {isUser ? <p>{msg.content}</p> : <ReactMarkdown>{msg.content}</ReactMarkdown>}
       </div>
     );
@@ -174,9 +174,9 @@ export function ChatWindow(props: {
 
   return (
     <div className="w-full max-w-2xl mx-auto flex flex-col bg-white text-gray-900 p-4 rounded-lg shadow-md">
-      {/* Header and Video remain the same */}
+      {/* Header */}
        <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-200">
-        <h2 className="text-xl font-semibold">{titleText}</h2>
+        <h2 className="text-lg font-semibold">{titleText}</h2>
         <button
           onClick={handleNewChat}
           className={`bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md text-sm ${isResetting || isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
@@ -200,7 +200,7 @@ export function ChatWindow(props: {
         </div>
       )}
 
-      {/* Message Container remains the same */}
+      {/* Message Container */}
       <div
         ref={messageContainerRef}
         className="flex flex-col mb-3 p-3 space-y-3 overflow-y-auto border border-gray-200 rounded-md bg-gray-50"
@@ -213,19 +213,18 @@ export function ChatWindow(props: {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="flex items-center">
-        {/* --- ADD REF TO INPUT --- */}
         <input
-          ref={inputRef} // Assign the ref here
+          ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={placeholder}
-          className="flex-grow p-2 mr-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-grow p-2 mr-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           disabled={isSubmitting || isResetting}
-          autoFocus // Optional: helps ensure focus on initial load sometimes
+          autoFocus
         />
         <button
           type="submit"
-          className={`bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition duration-150 ease-in-out ${isSubmitting || isResetting ? "opacity-50 cursor-not-allowed" : ""}`}
+          className={`bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition duration-150 ease-in-out text-sm ${isSubmitting || isResetting ? "opacity-50 cursor-not-allowed" : ""}`}
           disabled={isSubmitting || isResetting}
         >
           {isSubmitting ? "Sending..." : "Send"}

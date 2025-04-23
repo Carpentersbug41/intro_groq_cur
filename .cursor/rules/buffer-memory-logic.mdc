@@ -1,0 +1,58 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Buffer Memory Logic (Revision 7)
+The buffer_memory property within a prompt definition in prompts.ts controls how many of the most recent messages are guaranteed to be kept in the conversation history sent to the language model, in addition to certain core prioritized messages.
+Core Logic (Implemented in manageBuffer function in app/api/chat/bufferUtils.ts):
+Separate System Prompt: The first message, if it has role: "system", is always kept and treated separately.
+Identify Core Priority Messages: The function iterates through the rest of the conversation history (conversation) and identifies messages that must be kept regardless of the buffer size:
+Any assistant message whose content starts with # .
+The single user message immediately following an assistant message that starts with # .
+Identify Most Recent Messages: The function identifies the indices of the N most recent messages in the conversation history, where N is the value of the buffer_memory setting for the current prompt (e.g., if buffer_memory: 2, it identifies the last 2 messages).
+Combine Indices: It creates a final set of indices to keep by combining:
+The indices of all Core Priority messages.
+The indices of the N most recent messages.
+(Using a Set automatically handles duplicates if a message is both Core Priority and Recent).
+Filter History: The original conversation history is filtered, keeping only the messages whose indices are in the combined set.
+Re-add System Prompt: The System prompt (if separated in step 1) is added back to the beginning of the filtered history.
+Return Final History: This potentially trimmed history, containing the System prompt, all Core Priority messages, and the N most recent messages, is returned and used for the next API call.
+In essence: buffer_memory: N ensures that, in addition to the essential # Assistant/User pairs needed for context, the absolute last N turns of the conversation are preserved, preventing the model from losing track of the immediate past, while older, non-prioritized messages might be trimmed.
+Simplified Code Snippet (bufferUtils.ts - manageBuffer):
+
+// Simplified illustration of Revision 7 logic within manageBuffer
+
+// ... (Separate system prompt) ...
+
+const corePriorityIndices = new Set<number>();
+const conversationLength = conversation.length;
+
+// Identify Core Priority (#Asst + next User)
+for (let i = 0; i < conversationLength; i++) {
+    const isImportantAssistant = conversation[i].role === 'assistant' && conversation[i].content?.startsWith('# ');
+    if (isImportantAssistant) {
+        corePriorityIndices.add(i); // Keep #Asst
+        // Keep next User if applicable
+        if (i + 1 < conversationLength && conversation[i + 1].role === 'user' && !conversation[i+1].content?.startsWith('#')) {
+            corePriorityIndices.add(i + 1);
+        }
+    }
+}
+
+// Identify N most recent indices (N = bufferSize)
+const recentIndices = new Set<number>();
+const startIndex = Math.max(0, conversationLength - bufferSize);
+for (let i = startIndex; i < conversationLength; i++) {
+    recentIndices.add(i);
+}
+
+// Combine Core Priority and Recent
+const allKeptConversationIndices = new Set([...corePriorityIndices, ...recentIndices]);
+
+// Filter conversation based on combined indices
+const finalConversation = conversation.filter((_, index) => allKeptConversationIndices.has(index));
+
+// Re-add system prompt and return
+const finalHistory = systemPrompt ? [systemPrompt, ...finalConversation] : finalConversation;
+return finalHistory;

@@ -42,6 +42,7 @@ type PromptType = {
   buffer_memory?: number; // Set the history buffer size *before* this step runs.
   saveUserInputAs?: string; // Key to save the *user's* input under in namedMemory (after validation).
   saveAssistantOutputAs?: string; // Key to save this step's *assistant* output under in namedMemory.
+  appendTextAfterResponse?: string; // Optional: Static text to append after the LLM's response for this step.
 
   // --- Optional/Future Use ---
   wait_time?:number; // (Not implemented) Potential delay.
@@ -69,6 +70,7 @@ type PromptType = {
         *   `buffer_memory` adjusts the history size before the call.
         *   `saveAssistantOutputAs` determines if/how the LLM's response is saved.
         *   `important_memory` flags the response for buffer preservation.
+        *   `appendTextAfterResponse` adds static text to the LLM response *before* transitions are processed.
         *   `autoTransitionHidden`/`autoTransitionVisible` flags trigger the transition logic (`autoTransitionUtils.ts`) *after* this step executes successfully.
         *   `chaining` (potentially) triggers `chainUtils.ts`.
 6.  **State Update:** After processing the step (and any transitions), the backend calculates the `nextIndexAfterProcessing` and the `indexGeneratingFinalResponse`. These, along with any updated memory/buffer size, are saved back into the session state, ready for the next user input.
@@ -82,7 +84,7 @@ Imagine `PROMPT_LIST` like this (simplified):
   // Index 0: Greeting
   { prompt_text: "Hello! Welcome. Are you ready?" , validation: true, fallbackIndex: 0 },
   // Index 1: Ask Question
-  { prompt_text: "Great! What is your favorite color?", saveAssistantOutputAs: "question_text", validation: true, fallbackIndex: 1, saveUserInputAs: "user_color_response" },
+  { prompt_text: "Great! What is your favorite color?", saveAssistantOutputAs: "question_text", validation: true, fallbackIndex: 1, saveUserInputAs: "user_color_response", appendTextAfterResponse: "---" },
   // Index 2: Acknowledge & Use Memory
   { prompt_text: "Interesting that you chose {user_color_response}. Thanks!", autoTransitionVisible: true }, // Uses memory
   // Index 3: Goodbye
@@ -91,7 +93,7 @@ Imagine `PROMPT_LIST` like this (simplified):
 ```
 
 -   Turn 1: Runs index 0. Asks "Are you ready?". Needs validation.
--   Turn 2: User says "Yes". Validated against index 0 rules. Runs index 1. Asks about color. Saves user input as "user\_color\_response". Needs validation.
+-   Turn 2: User says "Yes". Validated against index 0 rules. Runs index 1. LLM generates "What is your favorite color?". `appendTextAfterResponse` adds "---". User sees "What is your favorite color?\n---". Saves user input as "user\_color\_response". Needs validation.
 -   Turn 3: User says "Blue". Validated against index 1 rules. Runs index 2. Uses `{user_color_response}` memory, says "Interesting... Blue. Thanks!". Has `autoTransitionVisible`.
 -   Turn 3 (cont.): Because of `autoTransitionVisible` on index 2, it immediately runs index 3. Outputs "Okay, goodbye!".
 -   End.
@@ -107,5 +109,6 @@ This file is critical. By adding, removing, or modifying the `PromptType` object
 -   How much history is kept (`buffer_memory`).
 -   Whether steps happen automatically (`autoTransition`).
 -   Which LLM model or settings are used per step.
+-   Whether static text is appended to responses (`appendTextAfterResponse`).
 
 Therefore, editing `prompts.ts` is the primary method for designing and altering the chat application's conversational logic.

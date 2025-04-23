@@ -9,7 +9,7 @@ type PromptConfig = {
     //saveAsNamedMemory?: string; // Remove old combined key
     saveUserInputAs?: string; // Keep: Key for user input
     saveAssistantOutputAs?: string; // Keep: Key for assistant output
-    important_memory?: boolean;
+    important_memory?: boolean; // <-- RE-ADDED
     buffer_memory?: number | string;
     // Add other potential prompt config properties if they become relevant here
     [key: string]: any; // Allow other properties
@@ -27,7 +27,7 @@ type PromptConfig = {
  * @returns {string} The prompt text with all recognized placeholders replaced.
  */
 export function injectNamedMemory(promptText: string, namedMemory: NamedMemory | null | undefined): string {
-    console.log("[MEMORY DEBUG] Original prompt text before injection:", promptText ? promptText.substring(0, 100) + "..." : "[EMPTY]");
+    // console.log("[MEMORY DEBUG] Original prompt text before injection:", promptText ? promptText.substring(0, 100) + "..." : "[EMPTY]"); // Less verbose
 
     // Return immediately if the input prompt text is empty or nullish
     if (!promptText) {
@@ -54,26 +54,24 @@ export function injectNamedMemory(promptText: string, namedMemory: NamedMemory |
     const newText = promptText.replace(placeholderRegex, (match, p1) => {
         // Extract the key from the placeholder (e.g., "answerquestion" from "{answerquestion}")
         const memoryKey = p1.trim();
-        console.log(`[MEMORY DEBUG] Found placeholder: {${memoryKey}}`);
+        // console.log(`[MEMORY DEBUG] Found placeholder: {${memoryKey}}`); // Less verbose
 
         // Check if the key exists as a property in the namedMemory object
         // Using Object.prototype.hasOwnProperty.call is safer than a direct check (namedMemory[memoryKey])
         // against potential prototype pollution or inherited properties.
         // Also check if the value is not null or undefined.
         if (Object.prototype.hasOwnProperty.call(namedMemory, memoryKey) && namedMemory[memoryKey] != null) {
+            // console.log(`[MEMORY DEBUG] Injecting named memory for key: ${memoryKey}`); // Less verbose
             // If the key exists and has a value, inject it
-            console.log(`[MEMORY DEBUG] Injecting named memory for key: ${memoryKey}`);
             // Ensure the injected value is returned as a string
             return String(namedMemory[memoryKey]);
         } else {
-            // If the key is not found or its value is null/undefined, insert an empty string
-            console.warn(`[MEMORY DEBUG] No value found in namedMemory for key: ${memoryKey}. Inserting empty string.`);
+            // console.warn(`[MEMORY DEBUG] No value found in namedMemory for key: ${memoryKey}. Inserting empty string.`); // Keep Warning
             return ""; // Insert empty string for the placeholder
         }
     });
 
-    // Log the final text after all replacements for debugging purposes
-    console.log("[MEMORY DEBUG] Final prompt text after injection:", newText ? newText.substring(0, 100) + "..." : "[EMPTY]");
+    // console.log("[MEMORY DEBUG] Final prompt text after injection:", newText ? newText.substring(0, 100) + "..." : "[EMPTY]"); // Less verbose
     return newText; // Return the processed text
 }
 
@@ -139,12 +137,9 @@ export function saveUserInputToMemoryIfNeeded(
         const memoryKey = promptConfig.saveUserInputAs;
         // No need for existence check on currentNamedMemory if it's guaranteed to be an object beforehand
         currentNamedMemory[memoryKey] = userMessage;
-        console.log(`[MEMORY DEBUG] Saved user input to namedMemory["${memoryKey}"]`);
-        // Add verbose logging if needed:
-        // console.log(`>>> [MEMORY DEBUG] currentNamedMemory after saving user input: ${JSON.stringify(currentNamedMemory)}`);
+        // console.log(`[MEMORY DEBUG] Saved user input to namedMemory["${memoryKey}"]`); // Less verbose
     } else {
-        // Optional: Add a log if the key is not present
-        // console.log(`[MEMORY DEBUG] No saveUserInputAs configured for this prompt.`);
+        // console.log(`[MEMORY DEBUG] No saveUserInputAs configured for this prompt.`); // Less verbose
     }
 }
 
@@ -175,22 +170,21 @@ export function processAssistantResponseMemory(
     // Check the correct key: saveAssistantOutputAs
     if (promptConfig.saveAssistantOutputAs) {
         const memoryKey = promptConfig.saveAssistantOutputAs;
-        console.log(`>>> [MEMORY DEBUG] Before saving assistant output for key "${memoryKey}" (index ${promptIndex}): typeof currentNamedMemory = ${typeof currentNamedMemory}, Value = ${JSON.stringify(currentNamedMemory)}`);
+        // console.log(`>>> [MEMORY DEBUG] Before saving assistant output for key "${memoryKey}" (index ${promptIndex}): typeof currentNamedMemory = ${typeof currentNamedMemory}, Value = ${JSON.stringify(currentNamedMemory)}`); // Less verbose
         // No need for existence check on currentNamedMemory if guaranteed to be object
         currentNamedMemory[memoryKey] = assistantContent; // Save the *original* non-prefixed content
-        console.log(`[MEMORY DEBUG] Saved assistant output to namedMemory["${memoryKey}"] = "${currentNamedMemory[memoryKey]}"`);
-        console.log(`>>> [MEMORY DEBUG] After saving assistant output (index ${promptIndex}): typeof currentNamedMemory = ${typeof currentNamedMemory}, Value = ${JSON.stringify(currentNamedMemory)}`);
+        // console.log(`[MEMORY DEBUG] Saved assistant output to namedMemory["${memoryKey}"] = "${currentNamedMemory[memoryKey]}"`); // Less verbose
+        // console.log(`>>> [MEMORY DEBUG] After saving assistant output (index ${promptIndex}): typeof currentNamedMemory = ${typeof currentNamedMemory}, Value = ${JSON.stringify(currentNamedMemory)}`); // Less verbose
     } else {
-        console.log(`[MEMORY DEBUG] No saveAssistantOutputAs configured for prompt index ${promptIndex}.`); // Log uses new key name
+        // console.log(`[MEMORY DEBUG] No saveAssistantOutputAs configured for prompt index ${promptIndex}.`); // Less verbose
     }
 
     // 2. Prefix for important memory if configured
     if (promptConfig.important_memory) {
-        console.log(`[IMPORTANT MEMORY] Prompt index ${promptIndex} requires important memory. Prepending prefix.`);
-        finalContent = `Important_memory: ${assistantContent}`; // Prepend prefix to the content being returned/used further
-        console.log("[DEBUG] finalContent after prefix:", finalContent.substring(0, 100) + "...");
+        console.log(`[IMPORTANT MEMORY] Prompt index ${promptIndex} requires important memory. Prepending '#' prefix.`);
+        finalContent = `# ${assistantContent}`; // Prepend '#' and a space to the content being returned/used further
     } else {
-        console.log(`[IMPORTANT MEMORY] Prompt index ${promptIndex} does not require important memory prefix.`);
+        // console.log(`[IMPORTANT MEMORY] Prompt index ${promptIndex} does not require important memory prefix.`); // Less verbose
         // finalContent remains the original assistantContent
     }
 

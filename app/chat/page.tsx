@@ -7,8 +7,8 @@ import { ErrorBoundary } from "@/components/ErrorBoundary"; // Adjust path if ne
 export default function ChatIELTSPage() {
   // Empty state content to show if no messages exist yet
   const InfoCard = (
-    <div className="p-4 bg-gray-50 border border-gray-200 rounded-md">
-      <h1 className="text-xl font-semibold mb-2">IELTS Introduction Practice</h1>
+    <div className="p-4 bg-gray-50 border border-gray-200 rounded-md text-sm">
+      <h1 className="text-lg font-semibold mb-2">IELTS Introduction Practice</h1>
       <p className="text-gray-700">
         This chatbot helps students practice <strong>IELTS writing introduction Part 2</strong> by providing structured feedback.
       </p>

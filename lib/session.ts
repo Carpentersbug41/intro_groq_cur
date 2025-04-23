@@ -11,7 +11,7 @@ import { ReadonlyRequestCookies } from 'next/dist/server/web/spec-extension/adap
 import { sessionOptions, SessionData as OriginalSessionCookieData } from './sessionConfig'; // Adjust path if needed
 
 // --- Define the default buffer size constant HERE ---
-const DEFAULT_BUFFER_SIZE = 8;
+const DEFAULT_BUFFER_SIZE = 12;
 
 // --- Use the imported type directly --- 
 // Remove the redundant interface definition:

@@ -334,17 +334,31 @@ export async function handleNonStreamingFlow(
           ...currentHistory.filter((entry) => entry.role !== "system"),
       ];
     historyForLLM = manageBuffer(historyForLLM, currentBufferSize);
-    // --- START EDIT: Log the history AFTER buffering ---
-    console.log("[DEBUG] History AFTER manageBuffer (Size:", currentBufferSize, ") for Main LLM Call (Index:", currentIndex, "):", JSON.stringify(historyForLLM, null, 2));
-    // --- END EDIT ---
+
+    // --- PAYLOAD PREP DEBUG LOG (Existing) ---
+    console.log(`>>> [PAYLOAD PREP DEBUG] History BEING USED for payload (Index: ${currentIndex}, Size: ${historyForLLM.length}):`);
+    console.log(JSON.stringify(historyForLLM.map(m => ({ role: m.role, content: (m.content ?? '').substring(0, 70) + '...' })), null, 2));
+    // --- END PAYLOAD PREP DEBUG LOG ---
 
       // --- Main LLM Call ---
       const mainPayload = {
       model: getModelForCurrentPrompt(currentIndex),
       temperature: currentPromptObj?.temperature ?? 0,
-      messages: historyForLLM,
+      messages: historyForLLM, // Assigning the buffered history
       };
-      // console.log("[DEBUG] Main Payload to LLM (index", currentIndex, "):", JSON.stringify(mainPayload, null, 2));
+
+    // --- START NEW DEBUG LOG ---
+    console.log(">>> [POST-ASSIGN DEBUG] Content of mainPayload.messages IMMEDIATELY after assignment:");
+    console.log(JSON.stringify(mainPayload.messages.map(m => ({ role: m.role, content: (m.content ?? '').substring(0, 70) + '...' })), null, 2));
+    // --- END NEW DEBUG LOG ---
+
+      // --- START API PAYLOAD LOG (MODIFIED) ---
+      console.log(`\n--- START API PAYLOAD (MAIN - Index: ${currentIndex}) ---`);
+      // console.log(JSON.stringify(mainPayload.messages, null, 2)); // <<< Comment out the stringify version
+      console.log("Simple log of mainPayload.messages structure:", mainPayload.messages); // <<< Log the raw object/array
+      console.log(`--- END API PAYLOAD (MAIN - Index: ${currentIndex}) ---\n`);
+      // --- END START API PAYLOAD LOG ---
+
       const rawAssistantContent = await fetchApiResponseWithRetry(mainPayload);
     const assistantContentCleaned = cleanLlmResponse(rawAssistantContent);
 
@@ -373,12 +387,18 @@ export async function handleNonStreamingFlow(
 
     // --- History Context *After* Main LLM Call (for transitions) ---
       let historyAfterLLM = [
-      ...historyForLLM,
+      ...historyForLLM, // Use the history that was *actually sent* to the API
       { role: "assistant", content: baseAssistantResponse } // Use base response here
       ];
-    if (currentPromptObj.important_memory) {
-          historyAfterLLM = insertImportantMemory(historyAfterLLM, baseAssistantResponse); // Call the helper moved into this file
-      }
+
+    // --- New Step: Append Static Text if Configured ---
+    let contentForTransitions = baseAssistantResponse; // Start with the processed response
+    if (currentPromptObj.appendTextAfterResponse) {
+      console.log(`[DEBUG] Appending static text for prompt index ${currentIndex}: "${currentPromptObj.appendTextAfterResponse}"`);
+      // Add two spaces and a newline before the appended text for Markdown hard break
+      contentForTransitions += "  \n" + currentPromptObj.appendTextAfterResponse;
+    }
+    // --- End New Step ---
 
     // --- Step 5: Process Transitions ---
     const executedPromptIndex = currentIndex; // The index that just generated the main response
@@ -386,7 +406,7 @@ export async function handleNonStreamingFlow(
     // Call the refactored transition processing function
     const transitionResult = await processTransitions({
         initialHistory: historyAfterLLM,
-        initialContent: baseAssistantResponse,
+        initialContent: contentForTransitions, // Pass content with appended text
         executedPromptIndex: executedPromptIndex,
         initialNamedMemory: currentNamedMemory, // Pass memory *after* main call processing
         initialBufferSize: currentBufferSize, // Pass buffer size *after* main call update
