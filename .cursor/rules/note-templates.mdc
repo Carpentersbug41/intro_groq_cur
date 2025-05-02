@@ -1,0 +1,28 @@
+---
+description: template notes
+globs: 
+alwaysApply: false
+---
+literals \
+Make sure this is in place{}
+name the variables properly
+The variable {[key_variable]}
+
+---
+
+Okay, here's a quick note summarizing how we got the line breaks to work reliably, especially in prompts like Index 21 and 22:
+Problem:
+The Language Model (LLM) was inconsistently rendering single newline characters (\n) specified in the prompts. Sometimes it would output the literal \n text, and other times it would just ignore the command, resulting in text running together on one line.
+Using custom tags like <line break> also proved unreliable, sometimes working and sometimes being ignored or output literally.
+This issue was particularly noticeable in prompts where variable substitution ({[variable]}) was happening before the output formatting, suggesting the combination of substitution and single newline formatting was fragile.
+Solution:
+We switched from requesting a single line break (\n) to requesting a double line break (\n\n), which effectively creates a paragraph break or a blank line between text segments.
+We updated the relevant prompts (Index 21 and 22) to:
+Explicitly use \n\n in the task instructions where the break was required (e.g., "...statement 1 text...\n\n...statement 2 text...").
+Modify the Example Output to visually show the text separated by a blank line.
+Add strong, clear instructions in the System message, Task Instructions, and Additional Rules emphasizing the mandatory requirement of using \n\n and achieving the visual separation shown in the example.
+Result:
+Using \n\n proved to be a more robust way to force the desired visual separation between lines/paragraphs in the final output, overcoming the LLM's apparent difficulty with single newlines in these specific contexts.
+
+
+

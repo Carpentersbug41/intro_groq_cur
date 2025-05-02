@@ -1,0 +1,60 @@
+# IELTS Chatbot Validation Layer Explanation
+
+The core principle of the validation layer is to check a user's input *after* it's submitted, based on the requirements set by the *previous prompt* that elicited that input.
+
+## File Breakdown and Roles in Validation
+
+1.  **Prompt Definition Files (`discussion_prompts.ts`, `ads_type1.ts`, `prompts.ts`)**
+    *   **Role:** Configuration
+    *   **Details:**
+        *   Each prompt object within these arrays defines the validation behavior for the *next* user input.
+        *   `validation` property:
+            *   `true`: General validation needed.
+            *   `string`: Custom instruction for the validation LLM (e.g., `"Validate user response for readiness (yes/no type answer)"`).
+            *   `false` / absent: No validation needed.
+        *   `fallbackIndex` property: Specifies the prompt index to jump back to if validation *fails*.
+
+2.  **`app/api/chat/nonStreamingFlow.ts`**
+    *   **Role:** Orchestration & Core Logic
+    *   **Details:**
+        *   Reads `promptIndexThatAskedLastQuestion` from the session data to know which prompt's rules apply to the current user input.
+        *   Retrieves the prompt object for `promptIndexThatAskedLastQuestion`.
+        *   If the retrieved prompt object has `validation` set, it triggers validation for the *current* user message.
+        *   Calls `validateInput` (from `openaiApiUtils.ts`) to perform the check.
+        *   **Handles Validation Result:**
+            *   **Valid Input:** Proceeds with the normal flow (generating the response for the *next* `currentIndex`) and calls `saveUserInputToMemoryIfNeeded` (from `memoryUtils.ts`).
+            *   **Invalid Input:** Initiates fallback logic:
+                *   Calls `RollbackOnValidationFailure` (from `promptUtils.ts`) using the `fallbackIndex` to determine the target prompt.
+                *   Executes the target fallback prompt (may involve another LLM call) OR generates a retry message using `generateRetryMessage` (from `openaiApiUtils.ts`).
+                *   Sets `isStorable = false` to potentially prevent saving the invalid interaction.
+
+3.  **`app/api/chat/openaiApiUtils.ts` (Assumed Content)**
+    *   **Role:** Implementation of Validation & Retry
+    *   **Details:** (Based on function usage)
+        *   `validateInput(userInput, promptContext, customInstruction)`: Likely makes a dedicated LLM call to evaluate if the `userInput` meets the criteria defined by `promptContext` and `customInstruction`, returning `true` or `false`.
+        *   `generateRetryMessage(invalidInput, promptContext, history)`: Likely uses an LLM call to create a user-friendly message asking the user to retry, explaining the expected input based on `promptContext`.
+
+4.  **`app/api/chat/promptUtils.ts` (Assumed Content)**
+    *   **Role:** Fallback Logic Implementation
+    *   **Details:** (Based on function usage)
+        *   `RollbackOnValidationFailure(failedPromptIndex)`: Looks up the `fallbackIndex` in the prompt definition at `failedPromptIndex` and returns the calculated target index for the conversation flow.
+
+5.  **`app/api/chat/memoryUtils.ts`**
+    *   **Role:** Saving Validated Input
+    *   **Details:**
+        *   Contains `saveUserInputToMemoryIfNeeded`.
+        *   This function is called by `nonStreamingFlow.ts` only *after* the input passes validation (if required).
+
+## Summary Flow
+
+1.  User submits input.
+2.  `nonStreamingFlow.ts` retrieves the index of the prompt that asked the last question (`promptIndexThatAskedLastQuestion`) from the session.
+3.  It checks the definition of that previous prompt in the relevant prompt file (`ads_type1.ts`, etc.).
+4.  If `validation` is specified, `nonStreamingFlow.ts` calls `validateInput` (likely in `openaiApiUtils.ts`) with the current user input and context.
+5.  **If valid:** `nonStreamingFlow.ts` saves the input using `saveUserInputToMemoryIfNeeded` (in `memoryUtils.ts`) and proceeds to generate the *next* response.
+6.  **If invalid:** `nonStreamingFlow.ts` determines the fallback index using `RollbackOnValidationFailure` (likely in `promptUtils.ts`), then either executes the fallback prompt or generates a retry message using `generateRetryMessage` (likely in `openaiApiUtils.ts`).
+7.  Session state (`promptIndexThatAskedLastQuestion`, `currentIndex`) is updated accordingly for the next turn.
+
+## Other Files
+
+*   `bufferUtils.ts`, `chainUtils.ts`, `config.ts`/`autoTransitionUtils.ts`, `namedMemoryUtils.ts`: These handle other aspects like conversation history management, chaining prompts, automatic transitions, and named memory injection, which operate alongside the validation process but are not the core validation logic itself.

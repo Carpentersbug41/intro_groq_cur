@@ -1,5 +1,5 @@
 ---
-description: #global_rules
+description: #Global
 globs: 
 alwaysApply: false
 ---

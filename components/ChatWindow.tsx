@@ -5,6 +5,9 @@ import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ReactMarkdown from "react-markdown";
 
+// --- Define Essay Types ---
+type EssayType = "opinion" | "ads_type1" | "discussion"; // Or import from a shared types file
+
 function customTrim(str: string) {
   return str.replace(/^[\s\u00A0\u200B]+|[\s\u00A0\u200B]+$/g, "");
 }
@@ -33,6 +36,8 @@ export function ChatWindow(props: {
   const [input, setInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  // --- ADD STATE FOR ESSAY TYPE ---
+  const [selectedEssayType, setSelectedEssayType] = useState<EssayType>("opinion"); // Default to 'opinion'
 
   const messageContainerRef = useRef<HTMLDivElement | null>(null);
   // --- ADD REF FOR INPUT ---
@@ -85,13 +90,25 @@ export function ChatWindow(props: {
     try {
       const messagesToSend = [...messages, userMessage];
       const requestBody = {
-        messages: messagesToSend,
-        stream: false,
+        // --- PASS essayType to backend ---
+        essayType: selectedEssayType,
+        messages: messagesToSend, // Keep existing structure if backend expects 'messages' key
+        // Alternatively, backend might expect just { message, history, essayType }
+        // Adjust this based on your exact backend route's expectations
+        // Example if backend expects { message, history, essayType }:
+        // message: trimmedInput,
+        // history: messages, // Send previous messages if needed
+        // essayType: selectedEssayType,
+        stream: false, // Assuming you don't want streaming responses based on current code
       };
 
       console.log("📤 Sending request to backend:", JSON.stringify(requestBody, null, 2));
 
-      const res = await fetch(endpoint, {
+      // --- Ensure endpoint usage is correct ---
+      // If your main chat endpoint is different from '/api/chat', use `endpoint` prop
+      const targetEndpoint = endpoint || '/api/chat'; // Use prop or default
+
+      const res = await fetch(targetEndpoint, { // Use targetEndpoint
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -172,6 +189,38 @@ export function ChatWindow(props: {
     );
   }
 
+  // --- Helper to create Radio Buttons ---
+  const renderEssayTypeSelector = () => {
+    const essayTypes: { value: EssayType; label: string }[] = [
+      { value: "opinion", label: "Opinion Essay" },
+      { value: "ads_type1", label: "Adv/Disadv (Type 1)" },
+      { value: "discussion", label: "Discussion Essay" },
+    ];
+
+    return (
+      <div className="mb-3 p-2 border border-gray-200 rounded-md bg-gray-50">
+        <label className="block text-sm font-medium text-gray-700 mb-1">Select Essay Type:</label>
+        <div className="flex space-x-4">
+          {essayTypes.map((type) => (
+            <label key={type.value} className="inline-flex items-center text-sm">
+              <input
+                type="radio"
+                name="essayType"
+                value={type.value}
+                checked={selectedEssayType === type.value}
+                onChange={() => setSelectedEssayType(type.value)}
+                disabled={isSubmitting || isResetting || messages.length > 0} // Disable after chat starts or during processing
+                className="form-radio h-4 w-4 text-blue-600 transition duration-150 ease-in-out disabled:opacity-50"
+              />
+              <span className={`ml-2 ${isSubmitting || isResetting || messages.length > 0 ? "text-gray-400" : "text-gray-800"}`}>{type.label}</span>
+            </label>
+          ))}
+        </div>
+         {messages.length > 0 && <p className="text-xs text-gray-500 mt-1">Start a new chat to change the essay type.</p>}
+      </div>
+    );
+  };
+
   return (
     <div className="w-full max-w-2xl mx-auto flex flex-col bg-white text-gray-900 p-4 rounded-lg shadow-md">
       {/* Header */}
@@ -199,6 +248,9 @@ export function ChatWindow(props: {
           />
         </div>
       )}
+
+      {/* --- ADD ESSAY TYPE SELECTOR --- */}
+      {renderEssayTypeSelector()}
 
       {/* Message Container */}
       <div

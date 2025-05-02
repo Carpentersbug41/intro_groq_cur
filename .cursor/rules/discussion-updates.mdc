@@ -1,0 +1,91 @@
+---
+description: #how_to_update_discussionprompt.ts
+globs: 
+alwaysApply: false
+---
+# Summary Comparison: `discussion_prompts.ts` vs. Opinion Template
+
+This report highlights the main functional differences between the Discussion essay flow and the Opinion essay template.
+
+---
+
+### Phase 1: Initial Setup (Indices 0-2)
+
+*   **Index 0 (Ready Check):** Synced. Both ask if the user is ready. Flags match.
+*   **Index 1 (Select Question):** Synced. Both select and display the respective question type. Flags match (`autoTransitionVisible`).
+*   **Index 2 (Confirm/Display):** **FUNCTIONAL DIFFERENCE.**
+    *   **Opinion:** Asks user to confirm the chosen question (requires input, has validation/fallback).
+    *   **Discussion:** Skips confirmation, immediately redisplays the chosen question (uses `autoTransitionVisible`).
+    *   **Result:** Discussion flow is more streamlined here. Flags differ appropriately.
+
+---
+
+### Phase 2: Getting User Introduction (Indices 3-4 range)
+
+*   **FUNCTIONAL DIFFERENCE:** Due to the divergence at Index 2, these steps are shifted.
+    *   **Opinion (Index 3):** Displays the *confirmed* question.
+    *   **Opinion (Index 4):** Asks the user to write the introduction.
+    *   **Discussion (Index 3):** Asks the user to write the introduction.
+    *   **Discussion (Index 4):** Displays the user's *submitted* introduction.
+    *   **Result:** The sequence of *when* the intro is requested differs. Flags differ accordingly.
+
+---
+
+### Phase 3: Displaying/Extracting Initial Content (Indices 5-9 range)
+
+*   **FUNCTIONAL DIFFERENCE:** Both flows display/extract key information after the user submits their intro, but *what* they display/extract differs due to the essay types.
+    *   **Opinion:** Displays User Intro (5), Displays Chosen Q Again (6), Extracts Original Statement (OQS) (7), Extracts User Paraphrase (BGS) (8), Extracts User Ideas (9).
+    *   **Discussion:** Displays User Intro (4), Displays Chosen Q Again (5), Extracts *Discussion* Statement (DQS) (6), Extracts User's Paraphrased *Views* (BGS) (7), Extracts User *Reasons* (8).
+    *   **Result:** The *purpose* of extraction/display aligns with the essay type needs. Flags (`autoTransitionVisible`, `important_memory`, `saveAssistantOutputAs`, `temperature`) are generally similar for comparable actions (displaying, saving), but the specific memory keys (`[oqs]`/`[dqs]`, `[bgs]`, `[user_extracted_ideas]`) differ.
+
+---
+
+### Phase 4: Formula Check (Indices 10-19 range approx.)
+
+*   **STRUCTURE DIFFERENCE:** Both flows check the introduction structure, but the formulas differ significantly.
+    *   **Opinion:** Checks a 6-part formula ("It is argued that..." + Statement + "I agree/disagree because..." + Idea1 + "and" + Idea2).
+    *   **Discussion:** Checks an 11-part, two-sentence formula (Sentence 1: "Some people believe..." + View1 + "while..." + View2. Sentence 2: "This essay will argue although..." + Weaker View + Stronger View + "because" + Reason1 + "and" + Reason2).
+    *   **Result:** Prompts for explaining, breaking down, evaluating, and correcting the structure are tailored to these different formulas. While the *section's goal* is the same, the individual steps and their content are different. Flags are generally similar for analogous steps (e.g., `autoTransitionVisible` for evaluation steps).
+
+---
+
+### Phase 5: Paraphrasing Check (Indices 20-26 range approx.)
+
+*   **CONTENT DIFFERENCE:** Both flows check paraphrasing, but focus on different elements.
+    *   **Opinion:** Focuses on paraphrasing the single main question statement.
+    *   **Discussion:** Focuses on paraphrasing the *two contrasting views* presented in the question.
+    *   **Result:** The steps (Explain, Display, Extract Keywords, Evaluate, Suggest) are parallel, but the content being analyzed and the feedback provided differ. Flags within this section are mostly consistent between flows.
+
+---
+
+### Phase 6: Clause Reordering (Indices 27-31 range approx.)
+
+*   **CONTENT DIFFERENCE:** Both flows check/demonstrate clause reordering, but apply it differently.
+    *   **Opinion:** Reorders clauses within the single paraphrased statement.
+    *   **Discussion:** Reorders the two distinct *views* within the first sentence.
+    *   **Result:** Parallel steps (Explain, Analyze, Evaluate/Provide), but different application. Flags mostly consistent.
+
+---
+
+### Phase 7: Idea/Reason Quality Check (Indices 32-35 range approx.)
+
+*   **CONTENT DIFFERENCE:** Both check the supporting points, but their link to the intro differs.
+    *   **Opinion:** Checks if the two *ideas* support the agree/disagree stance.
+    *   **Discussion:** Checks if the two *reasons* support the favoured *view* stated in sentence 2.
+    *   **Result:** Parallel steps (Explain, Display, Evaluate), similar criteria (relevance, clarity, conciseness), but evaluation context differs slightly. Flags mostly consistent.
+
+---
+
+### Phase 8: Scoring & End (Indices 36-End range approx.)
+
+*   **CONTENT DIFFERENCE:** Both provide band scores for TR, CC, LR, GRA based only on the introduction.
+    *   **Result:** The scoring *criteria* within each prompt reflect the specific requirements of the Opinion vs. Discussion formula. The final message prompt is identical. Flags are consistent (`autoTransitionVisible` for scoring prompts).
+
+---
+
+### Overall Conclusion:
+
+*   The initial steps (0-1) are functionally synced.
+*   A key divergence occurs at Index 2, where the Opinion flow asks for question confirmation, while Discussion skips this.
+*   Subsequent sections (Formula Check, Paraphrasing, Clause Reordering, Idea Quality, Scoring) have parallel *themes* but contain functionally different prompts tailored to the specific structural and content requirements of Opinion vs. Discussion essays.
+*   While flags are often similar for analogous actions (e.g., `autoTransitionVisible` on evaluation steps), the differences in prompt content and flow mean a direct flag-for-flag copy after Index 1 is inappropriate. Aligning flags should only be done where the *function* of the prompt is truly identical.

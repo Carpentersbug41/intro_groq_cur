@@ -1,0 +1,209 @@
+---
+description: #prompt formation questions
+globs: 
+alwaysApply: false
+---
+# IELTS Introduction Type Configuration Checklist
+
+This checklist outlines the specific information needed to configure the prompt sequence for a new IELTS essay introduction type, based on the patterns observed in the Opinion and Discussion types.
+
+---
+
+## 1. Essay Type Identification
+
+**Q1:** What is the exact name of this essay type (e.g., "Opinion", "Discussion", "Problem/Solution")?
+> Answer:
+
+---
+
+## 2. Sample Questions
+
+**Q2:** What is the list of sample questions specific to this essay type? (Include the full question and any trailing instruction like "To what extent..." or "Discuss both views...").
+> Answer:
+> - Question 1: ...
+> - Question 2: ...
+> - ...
+
+---
+
+## 3. Core Statement Extraction
+
+**Q3:** What are the instructional phrases (e.g., "To what extent do you agree or disagree?", "Discuss both views and give your opinion.") that should be *removed* from the full question to get the core statement(s)?
+> Answer:
+> - Phrase 1: ...
+> - Phrase 2: ...
+> - ...
+
+**Q4:** What is the specific label to use when displaying this extracted core statement (e.g., "Question Statement", "Original Discussion Question Statement")?
+> Answer:
+
+**Q5:** What memory key should be used to save this extracted core statement (e.g., `[oqs]`, `[original_question_statement]`)?
+> Answer:
+
+---
+
+## 4. User Paraphrase Extraction
+
+**Q6:** How should the user's paraphrase of the core question statement(s) be extracted from their full introduction? (e.g., "Extract first sentence", "Extract sentence(s) before the opinion/thesis statement").
+> Answer:
+
+**Q7:** What is the specific label to use when displaying the user's extracted paraphrase (e.g., "User's background Statement", "User's Paraphrased Views Statement")?
+> Answer:
+
+**Q8:** What memory key should be used to save the user's extracted paraphrase (e.g., `[bgs]`, `[user_paraphrased_views_statement]`)?
+> Answer:
+
+---
+
+## 5. Formula Explanation
+
+**Q9:** What is the specific text explaining the structural formula check for this essay type? (Detail the exact formula, components, required phrases, sentence structure if applicable).
+> Answer:
+
+---
+
+## 6. Formula Breakdown
+
+**Q10:** What are the names/labels of the distinct structural components for this essay type's formula (e.g., "[User's Start Phrase]", "[User's View 1 Paraphrase]", "[User's Opinion Phrase]", "[User's Reason 1 Weaker View]")? (List all components in order).
+> Answer:
+> 1. Component 1 Label: ...
+> 2. Component 2 Label: ...
+> 3. ...
+
+**Q11:** What is the specific logic/prompt instructions for segmenting the user's introduction text into these named components? (Define *how* to split the user's text).
+> Answer:
+
+**Q12:** What memory key should be used to save the user's introduction breakdown (e.g., `[user_introduction_breakdown]`)? (Suggest keeping consistent if possible).
+> Answer:
+
+---
+
+## 7. Formula Evaluation (Multi-Step)
+
+**Q13:** How many distinct evaluation steps are needed for this formula?
+> Answer:
+
+**For *each* evaluation step (Step 1, Step 2, ... up to the number in Q13):**
+
+**Q14 (Step N):** Which formula component(s) (using labels from Q10) are evaluated in this step?
+> Answer (Step N):
+
+**Q15 (Step N):** What is the exact evaluation criteria for each component checked in this step? (e.g., Check for presence? Exact match? Variations allowed? Pattern?).
+> Answer (Step N):
+
+**Q16 (Step N):** What is the exact feedback structure and text for this step? (Provide text for correct/ideal, acceptable variation (if any), missing, incorrect, including recommendations).
+> Answer (Step N):
+> - **Correct/Ideal Feedback:** ...
+> - **Acceptable Variation Feedback:** ...
+> - **Missing Feedback:** ...
+> - **Incorrect Feedback:** ...
+
+---
+
+## 8. Formula Correction
+
+**Q17:** What is the exact target formula/structure (including required phrases and sentence structure) to use when generating the *corrected* introduction?
+> Answer:
+
+**Q18:** What is the specific logic/prompt instructions for identifying the user's core ideas/views from their (potentially flawed) breakdown to insert into the corrected formula?
+> Answer:
+
+**Q19:** What is the exact format for displaying the corrected introduction breakdown (e.g., using '+', including Sentence 1/2 labels if applicable)?
+> Answer:
+
+**Q20:** How should the system determine if a correction is needed? (e.g., Based on flags/outputs from the evaluation steps Q14-Q16).
+> Answer:
+
+---
+
+## 9. Paraphrasing Check Explanation & Display
+
+**Q21:** What component(s) are the focus of the paraphrasing check? (e.g., the single core statement, the two core views from Sentence 1).
+> Answer:
+
+**Q22:** What is the exact text explaining the paraphrasing check stage? (Should mention the focus from Q21).
+> Answer:
+
+**Q23:** Which memory key holds the original statement(s) (from Q5) to display for comparison? What label should be used?
+> Answer: Key: `...`, Label: "..."
+
+**Q24:** Which memory key holds the user's paraphrase (from Q8) to display for comparison? What label should be used?
+> Answer: Key: `...`, Label: "..."
+
+**Q25:** What formatting should separate the original and user statements during display (e.g., single line break, double line break `\n\n`)?
+> Answer:
+
+---
+
+## 10. Paraphrasing Evaluation & Suggestion
+
+**Q26:** What is the specific logic/prompt instructions for evaluating the *quality* of the user's paraphrase? (Align with focus from Q21).
+> Answer:
+
+**Q27:** What is the required starting phrase and structure for the suggested "Higher Band Example" paraphrase? (e.g., "It is argued that...", "Some say that... while others argue that...").
+> Answer:
+
+**Q28:** What specific logic/prompt instructions should guide the generation of this example paraphrase? (Use original from Q5, match structure from Q27).
+> Answer:
+
+---
+
+## 11. Clause Reordering (Opinion Specific Feature)
+
+**Q29:** Does this essay type involve a clause reordering check/explanation? (Yes/No)
+> Answer:
+
+**(If Yes to Q29):**
+
+**Q30:** What specific logic/prompt instructions are needed to analyze and compare the clause order between the original (Q5) and user paraphrase (Q8)?
+> Answer:
+
+**Q31:** What specific logic/prompt instructions are needed to report whether the user swapped clauses? What is the exact text for "swapped" vs "not swapped"?
+> Answer:
+
+**Q32:** What specific logic/prompt instructions are needed to generate the correctly reordered sentence (starting with a specific phrase like "It is argued that...") if the user did *not* swap clauses?
+> Answer:
+
+---
+
+## 12. Idea/Reason Quality Check
+
+**Q33:** What is the exact text explaining the check for the quality of the user's supporting ideas/reasons?
+> Answer:
+
+**Q34:** What specific logic/prompt instructions should guide the evaluation of the user's supporting ideas/reasons? (Specify criteria: relevance *to what?*, specificity, conciseness).
+> Answer:
+
+---
+
+## 13. Band Score Criteria (TR, CC, LR, GRA)
+
+**Q35:** What are the specific band descriptors and rationale guidelines for the Task Response (TR) evaluation for this essay type's introduction?
+> Answer: (Provide Band 9-4 descriptors and rationale focus)
+
+**Q36:** What are the specific band descriptors and rationale guidelines for the Coherence and Cohesion (CC) evaluation for this essay type's introduction?
+> Answer: (Provide Band 9-4 descriptors and rationale focus)
+
+**Q37:** What are the specific band descriptors and rationale guidelines for the Lexical Resource (LR) evaluation for this essay type's introduction (considering formula constraints)?
+> Answer: (Provide Band 9-4 descriptors and rationale focus)
+
+**Q38:** What are the specific band descriptors and rationale guidelines for the Grammatical Range and Accuracy (GRA) evaluation for this essay type's introduction (considering formula structure)?
+> Answer: (Provide Band 9-4 descriptors and rationale focus)
+
+---
+
+## 14. Flow Control / Prompt Properties
+
+**Q39:** For which prompt indices should `autoTransitionVisible` be `true`? (List indices).
+> Answer: Indices: ...
+
+**Q40:** What is the `buffer_memory` value for each prompt index where it's needed? (List index: value pairs, e.g., 10: 1, 14: 1, ...).
+> Answer: ...
+
+**Q41:** For which prompt indices should `appendTextAfterResponse` be used? (List indices. Confirm text if it varies from "...").
+> Answer: Indices: ... (Text: "...")
+
+**Q42:** How should `validation` and `fallbackIndex` be configured, particularly for readiness checks and the final step? (Specify rules or index: value pairs).
+> Answer: ...
+
+---

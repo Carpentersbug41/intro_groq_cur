@@ -1,0 +1,71 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Notes on Refining Adv/Disadv Type 1 Prompt Sequence (Indexes 11, 13, 15-19)
+
+**Goal:** To create a robust prompt sequence for analyzing user-submitted IELTS Advantages/Disadvantages Type 1 introductions against a specific structural formula.
+
+**Initial Problem:** The first version of prompts 11, 13, and 15-19 was incorrectly based on an *Opinion essay* formula (e.g., "It is argued that...", "I agree/disagree because...").
+
+**Core Formula (Adv/Disadv Type 1):**
+`[Paraphrased Statement] + " the main benefits of this are " + [Advantage 1] + " and " + [Advantage 2] + "; however, the main drawbacks are " + [Disadvantage 1] + " and " + [Disadvantage 2] + "."`
+
+**Refinement Steps & Reasoning:**
+
+1.  **Correction of Core Formula (Prompts 11, 13, 15-19):**
+    *   **Change:** Replaced all references to the Opinion essay formula with the correct Adv/Disadv Type 1 formula structure and components. This involved updating:
+        *   The explanation of the formula (Prompt 11).
+        *   The components expected during the breakdown (Prompt 13).
+        *   The evaluation criteria for each step (Prompts 15-18).
+        *   The reconstruction logic for the suggested correction (Prompt 19).
+    *   **Reasoning:** The primary requirement was to analyze against the *correct* essay type formula. The initial prompts were fundamentally flawed for this purpose.
+
+2.  **Refinement of Evaluation Output Format (Prompts 16 & 18):**
+    *   **Initial Output (Problem):** The initial evaluation prompts (after correcting the formula) provided a single summary verdict (✅ Correct / ❌ Issues) for the entire section (Advantages or Disadvantages). This lacked granularity.
+    *   **Change:** Modified Prompts 16 (Advantages) and 18 (Disadvantages) to display a status marker (`✅`/`❌`) *directly next to each individual component* being evaluated (e.g., `Advantages Intro Phrase: <text> [✅]`). The overall section summary (✅/❌) is now determined by the status of *all* its constituent components.
+    *   **Reasoning:** Provides clearer, immediate feedback to the user on exactly which parts of their structure met the formula requirements and which did not, improving diagnostic value.
+
+3.  **Elimination of Internal Reasoning from Output (Prompts 16 & 18):**
+    *   **Problem:** The intermediate versions of Prompts 16 & 18 were outputting the model's internal checks and reasoning steps alongside the final formatted evaluation, making the output cluttered and confusing for the user.
+    *   **Change:** Added explicit instructions within the prompts (e.g., "Internal Steps (Do NOT output these)", "Final Output Construction (ONLY output this structure)", "CRITICAL: Output ONLY the final evaluation...") to strictly guide the LLM to produce *only* the intended user-facing formatted output.
+    *   **Reasoning:** User experience requires clean, direct output. Internal reasoning should guide the model's process but not be part of the final response.
+
+4.  **Stricter Evaluation Criteria for Intro Phrases (Prompts 16 & 18):**
+    *   **Problem:** The evaluation logic was too lenient in matching the required introductory phrases (e.g., "the main benefits are", "the main drawbacks are"). It incorrectly accepted phrases like "it is bad because" as valid.
+    *   **Change:** Tightened the matching criteria within the prompt instructions for Check 1 (Intro Phrase). Explicitly listed acceptable phrases and added examples of unacceptable ones (e.g., `"Phrases like 'it is bad because' are NOT acceptable."`). Updated the corresponding error message requirements and examples.
+    *   **Reasoning:** To ensure the formula check is accurate and enforces the specific structural requirements of the target introduction type, preventing overly general or incorrect phrases from passing the check.
+
+---
+
+## Advice for Future LLM Generating Similar Prompt Sequences
+
+Based on the iterative refinement process documented above, here is some advice when generating prompts for analyzing text against specific structural formulas:
+
+1.  **Verify the Core Formula First:** Before writing *any* analysis prompts, double-check and confirm the **exact** structural formula, its components, and required keywords/phrases for the specific task or text type. An incorrect base formula invalidates the entire analysis sequence.
+2.  **Prioritize Clear, Granular Feedback:** Design evaluation prompts (like 16 & 18) to provide immediate, specific feedback for *each* component being checked. Using status markers (`✅`/`❌`) next to the extracted text is highly effective for user clarity.
+3.  **Isolate User Output from Internal Process:** Explicitly instruct the model on what constitutes the *final* user-facing output. Use clear delimiters or sections within the prompt (e.g., "Internal Steps (Do NOT output)", "Final Output Format (ONLY Output This)") to prevent the model from leaking its internal thought process, intermediate checks, or variable names.
+4.  **Be Explicit and Strict with Criteria:** When checking for specific keywords or phrases (like transition or introductory phrases), define the matching criteria clearly and strictly. Provide examples of both acceptable and *unacceptable* variations to guide the model's evaluation logic accurately. Avoid vague terms like "approximate" without defining the bounds of acceptable approximation.
+5.  **Use Concrete Examples:** Include multiple, diverse examples within the prompt instructions (especially for breakdown and evaluation steps) to demonstrate the desired input-to-output transformation and handling of edge cases (e.g., missing components, incorrect phrasing). Ensure examples accurately reflect *all* aspects of the instructions, including the final output format.
+6.  **Iterative Refinement is Key:** Recognize that the first draft of a prompt sequence may not be perfect. Anticipate the need for refinement based on actual outputs, focusing on clarity, accuracy, and adherence to the desired format. Use feedback (like the user interaction documented here) to identify and fix flaws in prompt logic or instruction clarity.
+
+By following these guidelines, you can create more robust, accurate, and user-friendly prompt sequences for structural text analysis.
+
+---
+
+**Note on Ensuring Literal Output Including Formatting (e.g., Bold Markdown in Prompt 21):**
+
+*   **Problem:** The LLM initially failed to output literal markdown formatting (`**bold**`) even when explicitly included in the target text and mentioned in instructions. Attempts to make instructions overly literal or simplistic also failed.
+*   **Successful Strategy:** Structuring the prompt with distinct sections:
+    1.  `# System message:` (Defining the AI's role - e.g., expert in exact output).
+    2.  `## Task Instructions:` (Clearly stating the task - e.g., "Output the text provided in the 'Exact Output' section below," explicitly mentioning preservation of markdown/line breaks).
+    3.  `## Exact Output:` (Containing the **literal string** to be outputted, including all necessary formatting characters like `**` and `\n\n`).
+    4.  `### Additional Rules:` (Reinforcing the requirement for exact, literal output without modification).
+*   **Reasoning:** This structure clearly separates the *instructions for the LLM* from the *literal content the LLM must output*. By placing the target string within a dedicated `## Exact Output:` block and instructing the LLM to reproduce *that specific block* literally, it prevents the LLM from interpreting the formatting characters within the target string as instructions for itself. The surrounding instructions prime the LLM for a task requiring high fidelity reproduction.
+
+**Advice for Future LLM:** When needing precise, literal output that includes formatting characters, use a prompt structure that clearly isolates the literal target string from the instructions directing the LLM *how* to handle that string. The `System message / Task Instructions / Exact Output / Rules` pattern proved effective here.
+
+---
+
+

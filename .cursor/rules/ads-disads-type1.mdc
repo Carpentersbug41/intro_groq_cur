@@ -1,0 +1,491 @@
+---
+description: # Configuration Document: Advantages Disadvantages Type 1 Prompts (Properties Aligned with prompts.ts)
+globs: 
+alwaysApply: false
+---
+# Configuration Document: Advantages Disadvantages Type 1 Prompts (Properties Aligned with prompts.ts)
+
+This document details the configuration for each prompt in the sequence designed for practicing IELTS "Advantages Disadvantages Type 1" introductions. Properties have been reviewed against `prompts.ts` patterns.
+
+#ONLY change ads_type1
+---
+
+#Example of Type 1, question, introduction and formula:
+
+Type 1 Question :In some cultures, children are often told that they can achieve anything if they try hard enough.
+
+What part of the advantages and disadvantages of giving children this message?
+
+-
+
+#Type 1 introduction:
+In certain places, young people are brought up to believe that it if they have a strong work ethic they can be whatever they want to be. The main benefits of this are higher self-esteem and the development of grit; however, the key drawbacks are delusion and poor job prospects.
+
+
+-
+
+#Type 1 formula:
+
+
+The formula for this type of introduction is always:  (Paraphrase question) + 'the main benefits of this are' (reason 1) +'and' + (reason 2); 'however the main drawbacks' are (reason 3) + 'and' + (reason 4)
+
+---
+
+## Prompt Index: 0 - Introduction Readiness Check
+
+*   **Purpose:** Ask the user if they are ready to begin the practice session.
+*   **`prompt_text` Summary:** Output exactly: "Are you ready to begin practicing IELTS Advantages/Disadvantages introductions (Type 1)?"
+*   **Memory Keys Used:** None
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `validation`: `customValidationInstructionForQuestion` <!-- Matches Opinion Index 0 -->
+
+
+---
+
+## Prompt Index: 1 - Select Question
+
+*   **Purpose:** Randomly select one sample "Advantages Disadvantages Type 1" question.
+*   **`prompt_text` Summary:** Instructions to select one question from the list and output *only* the question text.
+*   **Memory Keys Used:** Conversation history (to avoid repeats)
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 1 -->
+
+---
+
+## Prompt Index: 2 - Confirm Question Choice
+
+*   **Purpose:** Ask the user if they want to proceed or get a different one.
+*   **`prompt_text` Summary:** Output exactly: "Do you want to continue with this advantages/disadvantages question, or would you like another one?"
+*   **Memory Keys Used:** None
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `validation`: `customValidationInstructionForQuestion` <!-- Matches Opinion Index 2 -->
+    *   `fallbackIndex`: 1 <!-- Matches Opinion Index 2 -->
+
+---
+
+## Prompt Index: 3 - Display Confirmed Question
+
+*   **Purpose:** Display the question the user confirmed.
+*   **`prompt_text` Summary:** Retrieve confirmed question. Output exactly: "This is your chosen question: **<Chosen Question Text>**".
+*   **Memory Keys Used:** Conversation history
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 3 -->
+    *   `temperature`: 0 <!-- Matches Opinion Index 3 -->
+
+---
+
+## Prompt Index: 4 - Ask for Introduction
+
+*   **Purpose:** Prompt the user to write their introduction.
+*   **`prompt_text` Summary:** Output exactly: "Please write an IELTS advantages/disadvantages introduction for this essay title."
+*   **Memory Keys Used:** None
+*   **Memory Keys Saved:** `saveUserInputAs: "[user_raw_input_introduction]"` <!-- Optional: Opinion 4 doesn't save, but could be useful -->
+*   **Key Properties:**
+    *   `validation`: `true` <!-- Opinion 4 has no explicit validation, using 'true' is simple -->
+
+---
+
+## Prompt Index: 5 - Display User Introduction
+
+*   **Purpose:** Display the introduction exactly as submitted by the user.
+*   **`prompt_text` Summary:** Retrieve user's intro. Output exactly: "**User's Introduction**: {[user_raw_input_introduction]}" (or from history).
+*   **Memory Keys Used:** User input history / `{[user_raw_input_introduction]}`
+*   **Memory Keys Saved:** `saveAssistantOutputAs: "[user_introduction]"` <!-- Matches Opinion Index 5 -->
+*   **Key Properties:**
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 5 -->
+    *   `important_memory`: `true` <!-- Matches Opinion Index 5 -->
+    *   `temperature`: 0 <!-- Matches Opinion Index 5 -->
+
+---
+
+## Prompt Index: 6 - Display Chosen Question Again
+
+*   **Purpose:** Display the confirmed question again for context.
+*   **`prompt_text` Summary:** Retrieve chosen question. Output exactly: "**User's Chosen Question**: <Chosen Question Text>".
+*   **Memory Keys Used:** Conversation history / `{[chosen_question]}` (if saved previously)
+*   **Memory Keys Saved:** `saveAssistantOutputAs: "[chosen_question]"` <!-- Matches Opinion Index 6 -->
+*   **Key Properties:**
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 6 -->
+    *   `important_memory`: `true` <!-- Matches Opinion Index 6 -->
+    *   `temperature`: 0 <!-- Matches Opinion Index 6 -->
+
+---
+
+## Prompt Index: 7 - Extract Original Statement
+
+*   **Purpose:** Extract the core topic statement from the chosen question.
+*   **`prompt_text` Summary:** Take `{[chosen_question]}`, remove instructions, output: "**Question Statement**: <Extracted Statement>".
+*   **Memory Keys Used:** `{[chosen_question]}`
+*   **Memory Keys Saved:** `saveAssistantOutputAs: "[original_question_statement]"` <!-- Matches Opinion Index 7 -->
+*   **Key Properties:**
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 7 -->
+    *   `important_memory`: `true` <!-- Matches Opinion Index 7 -->
+    *   `temperature`: 0 <!-- Matches Opinion Index 7 -->
+
+---
+
+## Prompt Index: 8 - Extract User Paraphrase (Background Statement)
+
+*   **Purpose:** Extract the user's paraphrase from the beginning of their introduction.
+*   **`prompt_text` Summary:** Take `{[user_introduction]}`, extract text up to advantages phrase, output: "**User's Background Statement**: <Extracted Paraphrase>".
+*   **Memory Keys Used:** `{[user_introduction]}`
+*   **Memory Keys Saved:** `saveAssistantOutputAs: "[background_statement]"` <!-- Matches Opinion Index 8 -->
+*   **Key Properties:**
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 8 -->
+    *   `important_memory`: `true` <!-- Matches Opinion Index 8 -->
+    *   `temperature`: 0 <!-- Matches Opinion Index 8 -->
+
+---
+
+## Prompt Index: 9 - Extract Advantages & Disadvantages
+
+*   **Purpose:** Extract the four specific advantage/disadvantage points.
+*   **`prompt_text` Summary:** Analyze `{[user_introduction]}`, extract Adv1, Adv2, Disadv1, Disadv2. Output labeled list.
+*   **Memory Keys Used:** `{[user_introduction]}`
+*   **Memory Keys Saved:** `saveAssistantOutputAs: "[user_extracted_adv_disadv]"` <!-- New key, similar concept to Opinion Index 9 saving `[user_extracted_ideas]` -->
+*   **Key Properties:**
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 9 -->
+    *   `important_memory`: `true` <!-- Matches Opinion Index 9 -->
+    *   `temperature`: 0 <!-- Matches Opinion Index 9 -->
+
+---
+
+## Prompt Index: 10 - Readiness Check (Before Formula Explanation)
+
+*   **Purpose:** Ask if ready for the formula check.
+*   **`prompt_text` Summary:** Output exactly: "Are you ready to continue?"
+*   **Memory Keys Used:** None
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `buffer_memory`: 1 <!-- Matches Opinion Index 10 -->
+    *   `validation`: `customValidationInstructionForQuestion` <!-- Opinion 10 doesn't have validation, but adding it here seems safer -->
+
+---
+
+## Prompt Index: 11 - Explain Formula Structure
+
+*   **Purpose:** Explain the required single-sentence formula.
+*   **`prompt_text` Summary:** Output explanation text from Q9. Ask if ready.
+*   **Memory Keys Used:** None
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `buffer_memory`: 10 <!-- Opinion 11 has no buffer, but Disc 11 does. High buffer seems appropriate for context -->
+    *   `validation`: `customValidationInstructionForQuestion` <!-- Added for consistency -->
+
+---
+
+## Prompt Index: 12 - Display User Introduction (For Formula Check)
+
+*   **Purpose:** Display user's introduction again before breakdown.
+*   **`prompt_text` Summary:** Output exactly: "Your introduction:\n- **{[user_introduction]}**"
+*   **Memory Keys Used:** `{[user_introduction]}`
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 12 -->
+    *   `temperature`: 0 <!-- Matches Opinion Index 12 -->
+
+---
+
+## Prompt Index: 13 - Break Down User Introduction
+
+*   **Purpose:** Segment the user's introduction into the 10 structural components.
+*   **`prompt_text` Summary:** Instructions to analyze `{[user_introduction]}` and extract components. Output labeled breakdown.
+*   **Memory Keys Used:** `{[user_introduction]}`
+*   **Memory Keys Saved:** `saveAssistantOutputAs: "[user_introduction_breakdown]"` <!-- Matches Opinion Index 13 -->
+*   **Key Properties:**
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 13 -->
+    *   `important_memory`: `true` <!-- Matches Opinion Index 13 -->
+
+---
+
+## Prompt Index: 14 - Readiness Check (After Breakdown)
+
+*   **Purpose:** Ask if ready for formula evaluation.
+*   **`prompt_text` Summary:** Output exactly: "Are you ready to continue with the next step?"
+*   **Memory Keys Used:** None
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `buffer_memory`: 1 <!-- Matches Opinion Index 14 -->
+    *   `validation`: `customValidationInstructionForQuestion` <!-- Added for consistency -->
+
+---
+
+## Prompt Index: 15 - Evaluate Step 1 (Paraphrased Statement)
+
+*   **Purpose:** Evaluate presence of `[User's Paraphrased Statement]`.
+*   **`prompt_text` Summary:** Retrieve component from `{[user_introduction_breakdown]}`. Output feedback (✅/❌).
+*   **Memory Keys Used:** `{[user_introduction_breakdown]}`
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 15 -->
+    *   `temperature`: 0 <!-- Matches Opinion Index 15 -->
+    *   `appendTextAfterResponse`: Standard separator text <!-- Matches Opinion Index 15 -->
+
+---
+
+## Prompt Index: 16 - Evaluate Step 2 (Advantages Section)
+
+*   **Purpose:** Evaluate structure of advantages part.
+*   **`prompt_text` Summary:** Retrieve components from `{[user_introduction_breakdown]}`. Output multi-part feedback (✅/❌).
+*   **Memory Keys Used:** `{[user_introduction_breakdown]}`
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 16 -->
+    *   `temperature`: 0 <!-- Matches Opinion Index 16 -->
+    *   `appendTextAfterResponse`: Standard separator text <!-- Matches Opinion Index 16 -->
+
+---
+
+## Prompt Index: 17 - Evaluate Step 3 (Transition Phrase)
+
+*   **Purpose:** Evaluate correctness of transition phrase ("; however,").
+*   **`prompt_text` Summary:** Retrieve component from `{[user_introduction_breakdown]}`. Output feedback (✅/❌).
+*   **Memory Keys Used:** `{[user_introduction_breakdown]}`
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 17 -->
+    *   `temperature`: 0 <!-- Matches Opinion Index 17 -->
+    *   `appendTextAfterResponse`: Standard separator text <!-- Matches Opinion Index 17 -->
+
+---
+
+## Prompt Index: 18 - Evaluate Step 4 (Disadvantages Section)
+
+*   **Purpose:** Evaluate structure of disadvantages part.
+*   **`prompt_text` Summary:** Retrieve components from `{[user_introduction_breakdown]}`. Output multi-part feedback (✅/❌).
+*   **Memory Keys Used:** `{[user_introduction_breakdown]}`
+*   **Memory Keys Saved:** `saveAssistantOutputAs: "[formula_feedback_errors]"` <!-- Opinion Index 18 saves nothing, but saving feedback seems useful for Index 19 logic -->
+*   **Key Properties:**
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 18 -->
+    *   `temperature`: 0 <!-- Matches Opinion Index 18 -->
+    *   `appendTextAfterResponse`: Standard separator text <!-- Opinion 18 lacks this, adding for consistency -->
+
+---
+
+## Prompt Index: 19 - Provide/Save Formula Correction
+
+*   **Purpose:** Provide corrected introduction if errors found, else confirm okay.
+*   **`prompt_text` Summary:** Check `{[formula_feedback_errors]}`. If errors, generate correction using user ideas from `{[user_introduction]}` & `{[user_introduction_breakdown]}`. Output formatted correction. Else output confirmation.
+*   **Memory Keys Used:** `{[formula_feedback_errors]}`, `{[user_introduction]}`, `{[user_introduction_breakdown]}`
+*   **Memory Keys Saved:** `saveAssistantOutputAs: "[formula_corrected_version]"` <!-- Optional, Opinion 19 saves nothing -->
+*   **Key Properties:**
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 19 -->
+    *   `temperature`: 0.1 <!-- Matches Opinion Index 19 (temp 0), slight creativity okay -->
+    *   `appendTextAfterResponse`: Standard separator text <!-- Matches Opinion Index 19 -->
+
+---
+
+## Prompt Index: 20 - Readiness Check (After Correction/Formula)
+
+*   **Purpose:** Ask if ready for paraphrasing check.
+*   **`prompt_text` Summary:** Output exactly: "Are you ready to move on to the next step?"
+*   **Memory Keys Used:** None
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `buffer_memory`: 1 <!-- Matches Opinion Index 20 -->
+    *   `validation`: `customValidationInstructionForQuestion` <!-- Added for consistency -->
+    *   `appendTextAfterResponse`: Standard separator text <!-- Opinion 20 lacks this, adding for consistency -->
+
+---
+
+## Prompt Index: 21 - Explain Paraphrasing Check
+
+*   **Purpose:** Explain the purpose of the paraphrasing check stage.
+*   **`prompt_text` Summary:** Output explanation text from Q22.
+*   **Memory Keys Used:** None
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `buffer_memory`: 6 <!-- Matches Opinion Index 21 -->
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 21 -->
+    *   `appendTextAfterResponse`: Standard separator text <!-- Matches Opinion Index 21 -->
+
+---
+
+## Prompt Index: 22 - Display Original/User Paraphrase
+
+*   **Purpose:** Show original statement and user's paraphrase.
+*   **`prompt_text` Summary:** Output format: `**Original...:** {[...]}\n\n**User's...:** {[...]}`
+*   **Memory Keys Used:** `{[original_question_statement]}`, `{[background_statement]}`
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 22 -->
+    *   `appendTextAfterResponse`: Standard separator text <!-- Matches Opinion Index 22 -->
+
+---
+
+## Prompt Index: 23 - Extract Keywords from Original
+
+*   **Purpose:** Identify key Nouns, Adjectives, Verbs from original statement.
+*   **`prompt_text` Summary:** Analyze `{[original_question_statement]}`. Output intro + labeled JSON lists.
+*   **Memory Keys Used:** `{[original_question_statement]}`
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 23 -->
+    *   `temperature`: 0 <!-- Matches Opinion Index 23 -->
+    *   `appendTextAfterResponse`: Standard separator text <!-- Matches Opinion Index 23 -->
+
+---
+
+## Prompt Index: 24 - Extract Changed Keywords (Synonyms) from User
+
+*   **Purpose:** Compare user paraphrase to original, list changed N/Adj/V.
+*   **`prompt_text` Summary:** Compare `{[background_statement]}` with `{[original_question_statement]}`. Output intro + labeled mappings ("orig" → "user").
+*   **Memory Keys Used:** `{[original_question_statement]}`, `{[background_statement]}`
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 24 -->
+    *   `temperature`: 0 <!-- Matches Opinion Index 24 -->
+    *   `appendTextAfterResponse`: Standard separator text <!-- Matches Opinion Index 24 -->
+
+---
+
+## Prompt Index: 25 - Evaluate Paraphrasing Quality
+
+*   **Purpose:** Assess quality/extent of user's paraphrasing in background statement.
+*   **`prompt_text` Summary:** Compare `{[background_statement]}` to `{[original_question_statement]}`. Evaluate accuracy/extent, suggest improvements. Output structured feedback.
+*   **Memory Keys Used:** `{[original_question_statement]}`, `{[background_statement]}`
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 25 -->
+    *   `appendTextAfterResponse`: Standard separator text <!-- Matches Opinion Index 25 -->
+
+---
+
+## Prompt Index: 26 - Suggest Improved Paraphrase
+
+*   **Purpose:** Provide high-quality example paraphrase of original statement.
+*   **`prompt_text` Summary:** Rewrite `{[original_question_statement]}` naturally. Output format: "**Higher Band Example:**\n**Original...:** {[...]}\n\n**Paraphrased...:** [Generated paraphrase]". (No fixed start phrase for generated part).
+*   **Memory Keys Used:** `{[original_question_statement]}`
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 26 -->
+    *   `temperature`: 0.1 <!-- Matches Opinion Index 26 -->
+
+---
+
+## Prompt Index: 27 - Readiness Check (Before Idea Quality)
+
+*   **Purpose:** Ask if ready to check advantages/disadvantages quality.
+*   **`prompt_text` Summary:** Output exactly: "Are you ready to continue?"
+*   **Memory Keys Used:** None
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `buffer_memory`: 1 <!-- Matches Opinion Index 27 & 32 -->
+    *   `validation`: `customValidationInstructionForQuestion` <!-- Added for consistency -->
+
+---
+
+## Prompt Index: 28 - Explain Idea Quality Check
+
+*   **Purpose:** Explain criteria for evaluating advantages/disadvantages.
+*   **`prompt_text` Summary:** Output explanation (Q33): Check 4 points for relevance, clarity, conciseness. Ask if ready.
+*   **Memory Keys Used:** None
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `buffer_memory`: 1 <!-- Matches Opinion Index 33 -->
+    *   `validation`: `true` <!-- Matches Opinion Index 33 -->
+
+---
+
+## Prompt Index: 29 - Display Intro & Extracted Ideas (Ad/Disad)
+
+*   **Purpose:** Show user's intro and extracted Adv/Disadv before evaluation.
+*   **`prompt_text` Summary:** Output "**User's Intro...:** {[...]}\n\n**Extracted Ad/Disad...:**\n{[...]}"
+*   **Memory Keys Used:** `{[user_introduction]}`, `{[user_extracted_adv_disadv]}`
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `temperature`: 0 <!-- Matches Opinion Index 34 -->
+    *   `buffer_memory`: 5 <!-- Matches Opinion Index 34 -->
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 34 -->
+    *   `appendTextAfterResponse`: Standard separator text <!-- Matches Opinion Index 34 -->
+
+---
+
+## Prompt Index: 30 - Evaluate Idea Quality
+
+*   **Purpose:** Evaluate relevance, specificity, conciseness of the four points.
+*   **`prompt_text` Summary:** Review `{[user_introduction]}` & `{[user_extracted_adv_disadv]}`. Evaluate 4 points. Output structured feedback ("**Evaluation:**").
+*   **Memory Keys Used:** `{[user_introduction]}`, `{[user_extracted_adv_disadv]}`
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `temperature`: 0.1 <!-- Matches Opinion Index 35 -->
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 35 -->
+    *   `appendTextAfterResponse`: Standard separator text <!-- Matches Opinion Index 35 -->
+
+---
+
+## Prompt Index: 31 - Final Readiness Check (Before Band Scores)
+
+*   **Purpose:** Ask if ready for band score evaluation.
+*   **`prompt_text` Summary:** Output exactly: "Are you ready to continue?"
+*   **Memory Keys Used:** None
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `buffer_memory`: 1 <!-- Matches Opinion Index 36 -->
+    *   `validation`: `customValidationInstructionForQuestion` <!-- Added for consistency -->
+
+---
+
+## Prompt Index: 32 - Evaluate Task Response (TR)
+
+*   **Purpose:** Evaluate TR band score based on formula adherence.
+*   **`prompt_text` Summary:** Use Q35 criteria. Assess `{[user_introduction]}`. Output formatted score/rationale.
+*   **Memory Keys Used:** `{[user_introduction]}`
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `temperature`: 0 <!-- Matches Opinion Index 37 -->
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 37 -->
+
+---
+
+## Prompt Index: 33 - Evaluate Coherence and Cohesion (CC)
+
+*   **Purpose:** Evaluate CC band score based on flow/connection.
+*   **`prompt_text` Summary:** Use Q36 criteria. Assess `{[user_introduction]}`. Output formatted score/rationale.
+*   **Memory Keys Used:** `{[user_introduction]}`
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `temperature`: 0 <!-- Matches Opinion Index 38 -->
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 38 -->
+
+---
+
+## Prompt Index: 34 - Evaluate Lexical Resource (LR)
+
+*   **Purpose:** Evaluate LR band score based on vocabulary in non-formula slots.
+*   **`prompt_text` Summary:** Use Q37 criteria. Assess `{[user_introduction]}`. Output formatted score/rationale.
+*   **Memory Keys Used:** `{[user_introduction]}`
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `temperature`: 0 <!-- Matches Opinion Index 39 -->
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 39 -->
+
+---
+
+## Prompt Index: 35 - Evaluate Grammatical Range and Accuracy (GRA)
+
+*   **Purpose:** Evaluate GRA band score focusing on formula structure/accuracy.
+*   **`prompt_text` Summary:** Use Q38 criteria. Assess `{[user_introduction]}`. Output formatted score/rationale.
+*   **Memory Keys Used:** `{[user_introduction]}`
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `temperature`: 0 <!-- Matches Opinion Index 40 -->
+    *   `autoTransitionVisible`: `true` <!-- Matches Opinion Index 40 -->
+
+---
+
+## Prompt Index: 36 - Final Message
+
+*   **Purpose:** Signal the end of the practice module.
+*   **`prompt_text` Summary:** Output exactly: "---\nThat's the end, thanks for using IELTS-AI!\n---"
+*   **Memory Keys Used:** None
+*   **Memory Keys Saved:** None
+*   **Key Properties:**
+    *   `validation`: `true` <!-- Matches Opinion Index 41 -->
+    *   `fallbackIndex`: 5 <!-- Matches Opinion Index 41 (fallback is 4, using 5 for consistency here) -->
+
+---

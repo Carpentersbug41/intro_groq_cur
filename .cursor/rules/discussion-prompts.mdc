@@ -1,0 +1,94 @@
+---
+description: Discussion_prompt_formula
+globs: 
+alwaysApply: false
+---
+# IELTS-AI **Discussion Essay – Introduction Module**
+
+---
+
+## 1  Purpose  
+Replicate the current **Opinion-introduction** training flow, but for **Task 2 Discussion essays** (“Discuss both views and give your opinion”).  
+Anywhere the prompts now say **“Opinion”** they must be mirrored with the **Discussion** logic below.
+
+---
+
+## 2  Required 2-Sentence Formula  
+
+| Sentence | Function | **Exact fixed words + slots** |
+|----------|----------|--------------------------------|
+| **1** | Paraphrase both views | **Some say that** {view-1 paraphrase} **while others argue that** {view-2 paraphrase}. |
+| **2** | Opinion + road-map | **This essay will argue that although** {re-paraphrased view-you-agree-with-less} {reason 1}, {re-paraphrased view-you-agree-with-more} {reason 2}. |
+
+### Constraints  
+* Exactly **two sentences**, **40 – 60 words** total.  
+* In sentence 2 the clause after **although** states the view you support **less**; the next clause gives the view you support **more**.  
+* Attach **one concise reason** to each clause (`reason 1`, `reason 2`).  
+* No hooks, background chatter, or copied task wording.
+
+### Copy-and-paste pattern (LLM-friendly)  
+
+Some say that + {paraphrased view1} + while others argue that + {paraphrased view2}.
+This essay will argue that although + {re - paraphrased weaker_view} + {reason1}, {re-paraphrased stronger_view} + {reason2}.
+
+
+
+---
+
+## 3  Band-9 Model Example  
+
+**Question**  
+*Some people work for the same organization all their working life, while others think that it is better to work for different organizations. Discuss both views and give your own opinion.*
+
+**Band-9 Introduction**  
+> **Some say that** it is more beneficial to be employed with the same company all their lives, **while others argue that** it is better to work for a variety of companies. **This essay will argue that although** working for just one employer gives you more financial and other benefits, working at several different places provides an employee with more experience.
+
+*(54 words, 2 sentences)*
+
+---
+
+## 4  Module Steps to Mirror  
+
+| Element to change (from Opinion flow) | Discussion-specific requirement |
+|---------------------------------------|---------------------------------|
+| **Start-phrase validation** | Must be **“Some say that”** |
+| **Paraphrased-statement span** | From after the start phrase up to **“while others argue that”** |
+| **Connector inside sentence 1** | Must be **“while others argue that”** |
+| **Opinion phrase validation** | Must start **“This essay will argue that although”** |
+| **Auto-rewrite & feedback** | Use the Discussion formula above |
+
+_All other mechanics (question selection, readiness checks, clause-ordering practice, band-score feedback, etc.) stay unchanged._
+
+---
+
+## 5  Sample Discussion-type Questions  
+
+1. **Some people think it is better to raise children in the city, while others believe the countryside is more suitable.**  
+   *Discuss both views and give your opinion.*
+
+2. **Modern technology has brought people closer together, while others believe it has pushed them further apart.**  
+   *Discuss both viewpoints and provide your opinion.*
+
+3. **Some argue that newspapers are the best way to stay informed about current events, while others prefer other forms of media.**  
+   *Discuss both views and give your opinion.*
+
+4. **Violent video games are seen as a harmless form of entertainment by some, while others believe they encourage violent behavior.**  
+   *Discuss both perspectives and provide your view.*
+
+5. **Older employees contribute more to a company’s success, while others argue that younger employees are more important.**  
+   *Consider both viewpoints and give your opinion.*
+
+6. **Some believe companies should focus on producing durable goods, while others feel they should prioritize affordability.**  
+   *Discuss both sides and provide your opinion.*
+
+7. **Investing in new medicines is the best way to tackle public health issues, while others believe promoting a healthy lifestyle is more effective.**  
+   *Discuss both views and give your opinion.*
+
+8. **Children below the age of 12 should not be allowed to own mobile phones, while others believe they are useful tools for children of all ages.**  
+   *Discuss both views and provide your opinion.*
+
+9. **Some argue that governments should invest heavily in the education of young people, while others think this is not a good use of resources.**  
+   *Discuss both perspectives and provide your view.*
+
+10. **It is often said that younger generations can learn valuable life lessons from older generations, while others believe they should seek advice from their peers.**  
+    *Discuss both views and give your opinion.*

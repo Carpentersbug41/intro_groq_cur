@@ -8,6 +8,7 @@ export interface SessionData {
   conversationHistory?: { role: string; content: string }[];
   namedMemory: { [key: string]: string };
   currentBufferSize: number;
+  promptIndexThatAskedLastQuestion?: number | null;
 }
 
 // Define session options

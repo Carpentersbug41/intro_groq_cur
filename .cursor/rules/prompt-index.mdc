@@ -1,0 +1,443 @@
+---
+description: #prompt-introduction-indexes
+globs: 
+alwaysApply: false
+---
+# `prompts.ts` (Opinion Essay) - Flow Template
+
+---
+
+## Index 0: Readiness Check
+
+*   **Purpose:** Ask if the user is ready to begin the Opinion Essay practice.
+*   **Flags/Properties:**
+    *   `validation: customValidationInstructionForQuestion` (Requires a 'yes'/'ok' type answer)
+*   **Output Snippet:** "Are you ready to begin practicing IELTS opinion introductions?"
+
+---
+
+## Index 1: Select Question
+
+*   **Purpose:** Randomly select and output *one* Opinion Essay question.
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true` (Triggers immediate transition processing; this output will be the *start* of the combined response for the turn)
+*   **Output Snippet:** "Companies that rely on fossil fuels... To what extent do you agree or disagree?" (Example)
+
+---
+
+## Index 2: Confirm Question Choice
+
+*   **Purpose:** Ask the user if they want to proceed with the selected question or get a new one. *Requires user input.*
+*   **Flags/Properties:**
+    *   `validation: customValidationInstructionForQuestion` (Requires 'continue'/'yes' or 'another'/'no' type answer)
+    *   `fallbackIndex: 1` (If validation fails (e.g., user says "no"), go back to Index 1 to select another question)
+*   **Output Snippet:** "Do you want to continue with this question, or would you like another one?"
+
+---
+
+## Index 3: Display Confirmed Question
+
+*   **Purpose:** Display the question the user *confirmed* they want to use.
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true` (Triggers transition processing)
+    *   `temperature: 0` (Ensures exact reproduction of the question text)
+*   **Output Snippet:** "This is your chosen question: **<Chosen Question>**."
+
+---
+
+## Index 4: Ask for Introduction
+
+*   **Purpose:** Prompt the user to write their introduction for the chosen question. *Requires user input.*
+*   **Flags/Properties:**
+    *   *(None directly affecting auto-transitions, memory saving, etc.)*
+*   **Output Snippet:** "Please write an IELTS introduction for this essay title."
+
+---
+
+## Index 5: Display User Introduction
+
+*   **Purpose:** Display the introduction the user just submitted.
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true` (Triggers transition processing)
+    *   `important_memory: true` (Marks the output with `# ` for potential buffer priority)
+    *   `temperature: 0` (Ensures exact reproduction of user's text)
+    *   `saveAssistantOutputAs: "[user_introduction]"` (Saves this displayed intro to named memory)
+*   **Output Snippet:** "**User's Introduction**: <User Introduction>."
+
+---
+
+## Index 6: Display Chosen Question Again
+
+*   **Purpose:** Retrieve and display the user's chosen question (likely from memory).
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true` (Triggers transition processing)
+    *   `temperature: 0` (Ensures exact reproduction)
+    *   `saveAssistantOutputAs: "[chosen_question]"` (Saves the retrieved question to memory - potentially redundant if already saved, but ensures it's there)
+    *   `important_memory: true` (Marks output with `# `)
+*   **Output Snippet:** "**User's Chosen Question**: <The full chosen question text>"
+
+---
+
+## Index 7: Extract Original Question Statement (OQS)
+
+*   **Purpose:** Extract only the core statement part of the chosen question (excluding "To what extent...").
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true`
+    *   `important_memory: true`
+    *   `temperature: 0`
+    *   `saveAssistantOutputAs: "[oqs]"` (Saves the extracted statement)
+*   **Output Snippet:** "**Question Statement**: '<Extracted Statement>'"
+
+---
+
+## Index 8: Extract User's Paraphrased Statement (BGS)
+
+*   **Purpose:** Extract the user's attempt at paraphrasing the question statement (typically the first part of their intro).
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true`
+    *   `important_memory: true`
+    *   `temperature: 0`
+    *   `saveAssistantOutputAs: "[bgs]"` (Saves the user's paraphrased part)
+*   **Output Snippet:** "**User's background Statement**: <User background Statement>"
+
+---
+
+## Index 9: Extract User's Ideas
+
+*   **Purpose:** Extract the two supporting ideas from the user's introduction.
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true`
+    *   `important_memory: true`
+    *   `temperature: 0`
+    *   `saveAssistantOutputAs: "[user_extracted_ideas]"`
+*   **Output Snippet:** "**Extracted Ideas:**\n1. [Idea 1]\n2. [Idea 2]"
+
+---
+
+## Index 10: Readiness Check (Before Formula)
+
+*   **Purpose:** Ask "Are you ready to continue?". *Requires user input.*
+*   **Flags/Properties:**
+    *   `buffer_memory: 1` (Sets buffer for next steps)
+*   **Output Snippet:** "Are you ready to continue?"
+
+---
+
+## Index 11: Explain Formula Structure Check
+
+*   **Purpose:** Explain the standard structural formula for an Opinion Essay introduction and state that the next step is to check the user's intro against it.
+*   **Flags/Properties:**
+    *   *(None directly affecting auto-transitions, memory saving, validation etc. for this specific step)*
+*   **Output Snippet:** "Now, let's check if your Introduction follows the correct structural formula... The specific phrases we look for are: **"It is argued that..." + [Paraphrased Question Statement] + "I completely agree/disagree with this statement because..." + [Idea 1] + "and" + [Idea 2].** Are you ready to check this?"
+
+---
+
+## Index 12: Display User Introduction (For Formula Check)
+
+*   **Purpose:** Display the user's submitted introduction again, specifically for the formula check context.
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true` (Display and immediately move to the next step)
+    *   `temperature: 0` (Ensure exact reproduction)
+*   **Output Snippet:** "Your introduction:\n-  **{[user_introduction]}**"
+
+---
+
+## Index 13: Break Down User Introduction Components
+
+*   **Purpose:** Analyze the user's introduction and attempt to segment it into the 6 standard formula components (Start Phrase, Paraphrased Statement, Opinion Phrase, Idea 1, Connector, Idea 2).
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true`
+    *   `important_memory: true` (Marks the breakdown output with `# `)
+    *   `saveAssistantOutputAs: "[user_introduction_breakdown]"` (Saves the generated breakdown)
+*   **Output Snippet:** "Your introduction broken down by formula components:\n**[User's Start Phrase]:** ...\n**[User's Paraphrased Statement]:** ...\n..." (Outputs the 6 components with labels)
+
+---
+
+## Index 14: Readiness Check (After Breakdown)
+
+*   **Purpose:** Ask "Are you ready to continue with the next step?". *Requires user input.*
+*   **Flags/Properties:**
+    *   `buffer_memory: 1` (Sets buffer for next steps)
+*   **Output Snippet:** "Are you ready to continue with the next step?"
+
+---
+
+## Index 15: Evaluate Start Phrase
+
+*   **Purpose:** Check if the `[User's Start Phrase]` component from the breakdown matches the required "It is argued that...".
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true`
+    *   `temperature: 0`
+    *   `appendTextAfterResponse: "..."` (Adds separator line)
+*   **Output Snippet:** "Start phrase used: '...' \n✅ **Start Phrase:** Correct." or "❌ **Start Phrase:** Incorrect/Missing..." (Provides feedback and recommendation)
+
+---
+
+## Index 16: Evaluate Paraphrased Statement Presence
+
+*   **Purpose:** Check if the `[User's Paraphrased Statement]` component from the breakdown is present (not "[Component Missing]").
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true`
+    *   `temperature: 0`
+    *   `appendTextAfterResponse: "..."`
+*   **Output Snippet:** "Statement used: '...' \n✅ **User's Paraphrased Statement:** Present." or "❌ **User's Paraphrased Statement:** Missing..."
+
+---
+
+## Index 17: Evaluate Opinion Phrase
+
+*   **Purpose:** Check if the `[User's Opinion Phrase]` component from the breakdown matches *exactly* "I completely agree/disagree with this statement because...".
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true`
+    *   `temperature: 0`
+    *   `appendTextAfterResponse: "..."`
+*   **Output Snippet:** "Opinion phrase used: '...' \n✅ **Opinion Phrase:** Correct." or "❌ **Opinion Phrase:** Incorrect/Missing..."
+
+---
+
+## Index 18: Evaluate Ideas Structure (Idea 1 + Connector + Idea 2)
+
+*   **Purpose:** Check the structure of the ideas part: Is `[User's Idea 1]` present? Is `[User's Connector]` exactly "and"? Is `[User's Idea 2]` present?
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true`
+    *   `temperature: 0`
+    *   *(No `appendTextAfterResponse`)*
+*   **Output Snippet:** "User's Idea 1: ...\nUser's Connector: ...\nUser's Idea 2: ...\n✅ **Correct structure:**..." or "❌ **Structural Issues Found:**..." (Lists specific missing/incorrect parts)
+
+---
+
+## Index 19: Provide & Save Correction (Formula)
+
+*   **Purpose:** If structural errors were found in steps 15-18, generate a corrected introduction sentence using the user's ideas, fitting the perfect formula. Display the corrected sentence broken down by components. If no errors, state structure is correct.
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true`
+    *   `temperature: 0`
+    *   `appendTextAfterResponse: "..."`
+    *   *(No explicit save flag, but implies using previous breakdown)*
+*   **Output Snippet:** "**Suggested Revision (Corrected Formula):**\n..." (Shows formula and corrected sentence breakdown) or "✅Your idea structure is correct!"
+
+---
+
+## Index 20: Readiness Check (After Correction/Formula Check)
+
+*   **Purpose:** Ask "Are you ready to continue?". *Requires user input.*
+*   **Flags/Properties:**
+    *   `buffer_memory: 1`
+*   **Output Snippet:** "Are you ready to continue?"
+
+---
+
+## Index 21: Explain Paraphrasing Check
+
+*   **Purpose:** Explain that the next stage checks paraphrasing of the question statement, and that this is the first step to a good intro.
+*   **Flags/Properties:**
+    *   `buffer_memory: 6`
+    *   `autoTransitionVisible: true`
+    *   `appendTextAfterResponse: "..."`
+*   **Output Snippet:** "The next stage is checking your paraphrasing of the main question statement..."
+
+---
+
+## Index 22: Display Original and User Paraphrased Statements
+
+*   **Purpose:** Display the Original Question Statement (`[oqs]`) and the User's background Statement (`[bgs]`) side-by-side for comparison.
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true`
+    *   `appendTextAfterResponse: "..."`
+*   **Output Snippet:** "**Original Question Statement:** {[oqs]}\n**Your background Statement:** {[bgs]}"
+
+---
+
+## Index 23: Extract Keywords from Original Statement (OQS)
+
+*   **Purpose:** Extract key nouns, adjectives, and verbs from the Original Question Statement (`[oqs]`) to identify words that could be paraphrased.
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true`
+    *   `temperature: 0`
+    *   `appendTextAfterResponse: "..."`
+*   **Output Snippet:** "Above is the original Question Statement... \n**Nouns:** [...] \n**Adjectives:** [...] \n**Verbs:** [...]"
+
+---
+
+## Index 24: Extract Changed Keywords (Synonyms) from User Statement (BGS)
+
+*   **Purpose:** Compare the user's background statement (`[bgs]`) to the original (`[oqs]`) and list the nouns, adjectives, and verbs the user *changed*.
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true`
+    *   `temperature: 0`
+    *   `appendTextAfterResponse: "..."`
+*   **Output Snippet:** "Below is a list of the synonyms you have changed... \n**Nouns:** ["original" → "changed", ...] \n**Adjectives:** [...] \n**Verbs:** [...]"
+
+---
+
+## Index 25: Evaluate Paraphrasing Quality
+
+*   **Purpose:** Assess the accuracy and extent of the user's paraphrasing in their background statement (`[bgs]`) compared to the original (`[oqs]`), suggesting improvements for weak synonyms without repeating original words.
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true`
+    *   `appendTextAfterResponse: "..."`
+*   **Output Snippet:** "### **Accuracy Check:**\n...\n### **Paraphrasing Extent:**\n..." (Provides detailed feedback on word choice and extent)
+
+---
+
+## Index 26: Suggest Improved Paraphrase (Starting with "It is argued that...")
+
+*   **Purpose:** Provide a single, high-quality example paraphrase of the *original* question statement (`[oqs]`), strictly starting with "It is argued that..." and using natural synonyms.
+*   **Flags/Properties:**
+    *   `temperature: 0.1`
+    *   `autoTransitionVisible: true`
+*   **Output Snippet:** "**Higher Band Example:**\n**Original Question Statement:** ...\n**Paraphrased Sentence:** It is argued that..."
+
+---
+
+## Index 27: Readiness Check (Before Clause Reordering Intro)
+
+*   **Purpose:** Ask "Are you ready to continue?". *Requires user input.*
+*   **Flags/Properties:**
+    *   `buffer_memory: 1`
+    *   *(Note: `prompts.ts` has `validation: true` and `fallbackIndex: 4` here, but they seem functionally redundant as this is just a simple readiness check. Keeping `buffer_memory: 1`.)*
+*   **Output Snippet:** "Are you ready to continue?"
+
+---
+
+## Index 28: Explain Clause Reordering
+
+*   **Purpose:** Explain the concept of improving paraphrasing by reordering the main clauses of the question statement, providing an example.
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true`
+    *   `buffer_memory: 5`
+    *   `appendTextAfterResponse: "..."`
+*   **Output Snippet:** "One way to improve your paraphrasing is by varying your sentence structure..." (Includes explanation and example)
+
+---
+
+## Index 29: Analyze Clause Order in Original vs. User Statement
+
+*   **Purpose:** Extract and display the main clauses from both the original question statement (`[oqs]`) and the user's background statement (`[bgs]`) to prepare for checking if the order was swapped.
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true`
+    *   `appendTextAfterResponse: "..."`
+*   **Output Snippet:** "We will now check if you have swapped the two main clauses... \n**Original Question Statement:** ... \n**Original Statement Clauses:**\n Clause 1: ...\n Clause 2: ... \n**User's background Statement:** ... \n**User's background Statement Clauses:**\n Clause 1: ...\n Clause 2: ..."
+
+---
+
+## Index 30: Evaluate Clause Order Swap
+
+*   **Purpose:** Determine if the user actually swapped the clause order in their background statement (`[bgs]`) compared to the original (`[oqs]`).
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true`
+*   **Output Snippet:** "Well done! You have correctly swapped the clauses..." OR "You have not swapped the clauses in your sentence."
+
+---
+
+## Index 31: Provide Reordered Sentence (If Not Swapped)
+
+*   **Purpose:** If the user did *not* swap the clauses in Index 30, provide a correctly reordered version of their background statement, starting with "It is argued that..." and ensuring natural flow. If they *did* swap, this step effectively does nothing (or repeats the "Well done" from Index 30, depending on exact implementation). *Correction: Based on prompt text, this step generates the reordered sentence if needed, or confirms 'Well done' if already swapped.*
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true`
+    *   `temperature: 0`
+*   **Output Snippet:** "Well done! You have correctly swapped the clauses..." OR "Here is what your sentence would look like if reordered correctly:\nIt is argued that [User's Clause 2 text] [connector] [User's Clause 1 text]."
+
+---
+
+## Index 32: Readiness Check (Before Idea Quality)
+
+*   **Purpose:** Ask "Are you ready to continue?". *Requires user input.*
+*   **Flags/Properties:**
+    *   `buffer_memory: 1`
+    *   `validation: true`
+    *   `fallbackIndex: 4` *(Seems potentially misplaced here, might belong on a prompt *after* user input)*
+*   **Output Snippet:** "Are you ready to continue?"
+
+---
+
+## Index 33: Explain Idea Quality Check
+
+*   **Purpose:** Explain that the next step checks the relevance, clarity, and conciseness of the user's two supporting ideas.
+*   **Flags/Properties:**
+    *   `buffer_memory: 1`
+*   **Output Snippet:** "We will now check the **two key ideas**... Are you ready to continue?"
+
+---
+
+## Index 34: Display Introduction and Extracted Ideas
+
+*   **Purpose:** Display the user's full introduction (`[user_introduction]`) and the previously extracted ideas (`[user_extracted_ideas]`) together for context.
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true`
+    *   `temperature: 0`
+    *   `buffer_memory: 5`
+    *   `appendTextAfterResponse: "..."`
+*   **Output Snippet:** "**User's Introduction:** ...\n\n**Extracted Ideas:**\n1. ...\n2. ..."
+
+---
+
+## Index 35: Evaluate Idea Quality
+
+*   **Purpose:** Assess the relevance, specificity, and conciseness of the user's extracted ideas (`[user_extracted_ideas]`), providing feedback and suggestions for weak ideas.
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true`
+    *   `temperature: 0.1`
+    *   `appendTextAfterResponse: "..."`
+*   **Output Snippet:** "**Evaluation:**\nBoth ideas ... are relevant..." OR "**Evaluation:**\n- Idea 1 ('...') is too vague..." (Provides detailed feedback)
+
+---
+
+## Index 36: Final Readiness Check
+
+*   **Purpose:** Ask "Are you ready to continue?". *Requires user input.*
+*   **Flags/Properties:**
+    *   `buffer_memory: 1`
+*   **Output Snippet:** "Are you ready to continue?"
+
+---
+
+## Index 37: Evaluate Task Response (TR) - Introduction Only
+
+*   **Purpose:** Provide an IELTS band score estimate for Task Response based *only* on the introduction's adherence to the formula.
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true`
+    *   `temperature: 0`
+*   **Output Snippet:** "**Task Response Evaluation (Introduction Only)**\n*   **Band Score:** X\n*   **Rationale:** ..."
+
+---
+
+## Index 38: Evaluate Coherence & Cohesion (CC) - Introduction Only
+
+*   **Purpose:** Provide an IELTS band score estimate for Coherence and Cohesion based *only* on the introduction's flow and use of connectors.
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true`
+    *   `temperature: 0`
+*   **Output Snippet:** "**Coherence and Cohesion Evaluation (Introduction Only)**\n*   **Band Score:** X\n*   **Rationale:** ..."
+
+---
+
+## Index 39: Evaluate Lexical Resource (LR) - Introduction Only
+
+*   **Purpose:** Provide an IELTS band score estimate for Lexical Resource based *only* on the introduction's vocabulary and paraphrasing.
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true`
+    *   `temperature: 0`
+*   **Output Snippet:** "**Lexical Resource Evaluation (Introduction Only)**\n*   **Band Score:** X\n*   **Rationale:** ..."
+
+---
+
+## Index 40: Evaluate Grammatical Range & Accuracy (GRA) - Introduction Only
+
+*   **Purpose:** Provide an IELTS band score estimate for Grammatical Range and Accuracy based *only* on the introduction's grammar and sentence structure.
+*   **Flags/Properties:**
+    *   `autoTransitionVisible: true`
+    *   `temperature: 0`
+*   **Output Snippet:** "**Grammatical Range and Accuracy Evaluation (Introduction Only)**\n*   **Band Score:** X\n*   **Rationale:** ..."
+
+---
+
+## Index 41: Final Message
+
+*   **Purpose:** Display the concluding message.
+*   **Flags/Properties:**
+    *   `validation: true` *(Seems unnecessary for a final message)*
+    *   `fallbackIndex: 4` *(Seems unnecessary for a final message)*
+*   **Output Snippet:** "---\nThat's the end, thanks for using IELTS-AI!\n---"
+
+---

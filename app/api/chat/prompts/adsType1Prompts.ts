@@ -1,9 +1,9 @@
-// New file: app/api/chat/ads_type1.ts
+// New file: app/api/chat/prompts/adsType1Prompts.ts // Updated Path
 // Contains prompts specifically for Advantages/Disadvantages Type 1 Essays
 import {
     customValidationInstructionForQuestion,
     customValidationInstructionForOption, customValidationInstructionForintroduction,
-  } from "./validationInstructions";
+  } from "./validationInstructions"; // Corrected path: Same directory
 type PromptType = {
     prompt_text: string;
     validation?: boolean | string;
@@ -1416,5 +1416,3 @@ Do NOT evaluate vocabulary, coherence, or task response. Do NOT output JSON.
   
   // Optional: You might want a default export if this is the main export of the file
   // export default ADV_DISADV_TYPE1_PROMPTS;
-
-// Test comment to check git status

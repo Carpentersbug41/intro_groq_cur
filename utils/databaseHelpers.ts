@@ -1,7 +1,7 @@
 // /utils/databaseHelpers.ts
 
 import { storeDataInFirestore } from "./storeInFirestore"; 
-import { PROMPT_LIST } from "../app/api/chat/prompts";
+import { PROMPT_LIST } from "../app/api/chat/prompts/prompts";
 
 /**
  * handleDatabaseStorageIfNeeded
