@@ -1,0 +1,29 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Mission Brief: Adapting Prompts for `conclusionPrompts.ts`
+
+1.  **Objective:** To systematically create and populate the `app/api/chat/prompts_all/conclusionPrompts.ts` file with prompts designed specifically for guiding and evaluating IELTS **Opinion Conclusions**.
+
+2.  **Source Template:** We are using the existing structure and logic found in `app/api/chat/prompts/adsType1Prompts.ts` (which focuses on Advantages/Disadvantages Type 1 Introductions) as a reference and template, particularly for prompts starting from index 13 onwards in the target file.
+
+3.  **Target File:** The **only** file being modified is `app/api/chat/prompts_all/conclusionPrompts.ts`. The source file (`adsType1Prompts.ts`) remains unchanged and serves purely as a structural guide.
+
+4.  **Process:**
+    *   For each corresponding prompt structure identified in `adsType1Prompts.ts`:
+        *   **Analyze:** Examine the purpose, logic, input/output variables, and internal text of the source prompt.
+        *   **Note Differences:** Identify necessary changes required to align the prompt with the goal of teaching/evaluating **Opinion Conclusions** instead of **Advantages/Disadvantages Introductions**. Key areas include:
+            *   Contextual references (conclusion vs. introduction).
+            *   Specific IELTS essay type focus (Opinion vs. Adv/Disadv).
+            *   Structural formulas being taught or evaluated.
+            *   Explanatory text within the `prompt_text`.
+            *   Memory variable keys (e.g., `{key_name}`) referenced or saved (`saveUserInputAs`, `saveAssistantOutputAs`), ensuring they make sense in the conclusion context.
+            *   Hardcoded examples or lists, if applicable.
+        *   **Adapt:** Create a new prompt definition for `conclusionPrompts.ts` by modifying the source structure based on the noted differences.
+        *   **Implement:** Add the newly adapted prompt definition into the `PROMPT_LIST` array within `conclusionPrompts.ts`.
+        *   **Document:** Create a documentation entry (as we have been doing) for the new prompt, explaining its purpose, variables, and any specific adaptations made, within the **Opinion Conclusion** context.
+
+5.  **Goal:** To build out the `conclusionPrompts.ts` sequence logically, leveraging existing patterns from `adsType1Prompts.ts` where applicable, but ensuring each prompt is correctly tailored for the specific task of handling IELTS Opinion Conclusions.
+

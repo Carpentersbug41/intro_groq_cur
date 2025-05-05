@@ -1,0 +1,139 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Process for Adapting Prompts for `conclusionPrompts.ts` (from Index 13+)
+
+## 1. Objective
+
+To systematically create and implement prompts in `app/api/chat/prompts_all/conclusionPrompts.ts`, starting from index `13`, by adapting the structure and logic found in the corresponding prompts within `app/api/chat/prompts/adsType1Prompts.ts`. The goal is to ensure each adapted prompt accurately serves the purpose of teaching, analyzing, or evaluating **IELTS Opinion Essay Conclusions**.
+
+## 2. Source Template File
+
+*   `app/api/chat/prompts/adsType1Prompts.ts` (Focuses on Advantages/Disadvantages Type 1 Introductions)
+
+## 3. Target File (Modified)
+
+*   `app/api/chat/prompts_all/conclusionPrompts.ts` (Focuses on Opinion Essay Conclusions)
+
+## 4. The Mirroring and Adaptation Process (Prompt-by-Prompt from Index 13)
+
+For each prompt index `N` (where `N >= 13`):
+
+**Step A: Locate Source Prompt**
+
+*   Identify and retrieve the prompt definition at index `N` within the `ADV_DISADV_TYPE1_PROMPTS` array in `adsType1Prompts.ts`.
+
+**Step B: Analyze Source Prompt (Adv/Disadv Introduction Context)**
+
+*   **Purpose:** What specific task does this prompt perform in the context of analyzing an *Advantages/Disadvantages Introduction*? (e.g., breaking down structure, evaluating paraphrasing, checking specific keywords, providing feedback).
+*   **`prompt_text`:** Examine the internal instructions, explanations, and examples. Note any text specific to Adv/Disadv introductions, their structure, or their goals. Identify the core logic.
+*   **Input Variables:** Which memory keys (e.g., `{user_introduction}`, `{original_question_statement}`) does it expect as input?
+*   **Output Variables:** Does it save user input (`saveUserInputAs`) or assistant output (`saveAssistantOutputAs`)? What are the keys used?
+*   **Formula/Structure:** Does it reference or evaluate against the specific Adv/Disadv Type 1 introduction formula (`[Paraphrased Statement] + " the main benefits..."`)?
+*   **Validation/Other:** Are there specific validation rules or flags (`autoTransitionVisible`, `fallbackIndex`, etc.)?
+
+**Step C: Identify Required Changes for Opinion Conclusion Context**
+
+*   **Purpose Alignment:** How does the core purpose need to shift to apply to an *Opinion Conclusion* instead of an *Adv/Disadv Introduction*?
+*   **`prompt_text` Adaptation:**
+    *   Replace references to "introduction" with "conclusion".
+    *   Replace references to "Advantages/Disadvantages" essay type with "Opinion" essay type.
+    *   Update any internal examples to reflect Opinion Conclusion scenarios.
+    *   Modify instructions to align with analyzing or evaluating an Opinion Conclusion.
+*   **Input Variable Mapping:** Determine the corresponding input variables needed in the Opinion Conclusion context. For example, instead of `{user_introduction}`, it might need `{user conclusion}` (saved in Prompt 5 of `conclusionPrompts.ts`). Instead of `{original_question_statement}`, it might need `{introduction opinion}` (saved in Prompt 7).
+*   **Output Variable Naming:** Choose appropriate and distinct keys for `saveAssistantOutputAs` or `saveUserInputAs` relevant to the conclusion analysis (e.g., `"[user_conclusion_breakdown]"` instead of `"[user_introduction_breakdown]"`).
+*   **Formula/Structure Adaptation:** If the source prompt analyzed the Adv/Disadv formula, the target prompt must analyze the **Opinion Conclusion formula** introduced in Prompt 12 of `conclusionPrompts.ts` (`In conclusion + paraphrased opinion + because + paraphrased idea one + and + paraphrased idea two`). This requires changing the expected components and evaluation logic within the `prompt_text`.
+*   **Validation/Other:** Adjust flags or validation rules if necessary for the conclusion context.
+
+**Step D: Create and Implement Adapted Prompt in `conclusionPrompts.ts`**
+
+*   Construct the new prompt object for index `N` in `conclusionPrompts.ts`.
+*   Carefully implement the changes identified in Step C into the `prompt_text`, variable names (`saveAssistantOutputAs`, references like `{key}`), and other properties (`validation`, `autoTransitionVisible`, etc.).
+*   Ensure the adapted prompt logically follows the preceding prompt in the `conclusionPrompts.ts` sequence.
+
+**Step E: Document the Adapted Prompt**
+
+*   Create a documentation entry (similar to the format used for Prompts 0-12) for the new prompt at index `N`.
+*   Clearly state its **Purpose** within the **Opinion Conclusion** workflow.
+*   List the required **Input Variables** (memory keys).
+*   List any **Output Variables** (memory keys saved).
+*   Mention any specific **Adaptations** made compared to the source prompt in `adsType1Prompts.ts`, especially regarding formula changes or context shifts.
+
+## 5. Example: Adapting Prompt 13
+
+Let's illustrate with Prompt 13.
+
+**A/B: Source Analysis (`adsType1Prompts.ts`, Index 13)**
+
+*   **Purpose:** Breaks down the user's submitted *Adv/Disadv Introduction* (`{[user_introduction]}`) into components based on the *Adv/Disadv Type 1 formula*.
+*   **`prompt_text`:** Contains instructions and component labels like `[User's Paraphrased Statement]`, `[User's Advantages Intro Phrase]`, `[User's Advantage 1]`, etc.
+*   **Input:** `{user_introduction}`.
+*   **Output:** `saveAssistantOutputAs: "[user_introduction_breakdown]"`.
+*   **Formula:** Based on Adv/Disadv Type 1 structure.
+
+**C: Required Changes for `conclusionPrompts.ts`, Index 13**
+
+*   **Purpose Alignment:** Needs to break down the user's submitted *Opinion Conclusion* based on the *Opinion Conclusion formula*.
+*   **`prompt_text` Adaptation:** Instructions and component labels must change to reflect the Opinion Conclusion formula: `[Conclusion Opener]`, `[Paraphrased Opinion]`, `[Reason Conjunction]`, `[Paraphrased Idea 1]`, `[Idea Connector]`, `[Paraphrased Idea 2]`. (Exact labels TBD, but must match the formula `In conclusion + paraphrased opinion + because + paraphrased idea one + and + paraphrased idea two`).
+*   **Input Variable Mapping:** Needs `{user conclusion}` (likely saved in Prompt 5 or similar).
+*   **Output Variable Naming:** Should be something like `saveAssistantOutputAs: "[user_conclusion_breakdown]"`.
+*   **Formula/Structure Adaptation:** The entire segmentation logic within the `prompt_text` must target the specific parts of the Opinion Conclusion formula.
+
+**D: Hypothetical Implementation Snippet (Target: `conclusionPrompts.ts`, Index 13)**
+
+```typescript
+// Prompt 13 (Adapted for Opinion Conclusion Breakdown)
+{
+  prompt_text: `# System message:
+You are an expert AI assistant specializing in analyzing the structure of IELTS Opinion Conclusions based on the specific formula. Your task is to meticulously identify and extract the distinct components of the user's submitted conclusion based on their likely intended role within this formula.
+
+## Opinion Conclusion Formula Components:
+1.  **[Conclusion Opener]:** The starting phrase (e.g., "In conclusion,").
+2.  **[Paraphrased Opinion]:** The restatement of the writer's stance.
+3.  **[Reason Conjunction]:** The word linking opinion to reasons (e.g., "because").
+4.  **[Paraphrased Idea 1]:** The first reason/idea supporting the opinion.
+5.  **[Idea Connector]:** The word linking the two ideas (e.g., "and").
+6.  **[Paraphrased Idea 2]:** The second reason/idea supporting the opinion.
+
+## Task Instructions:
+1.  Retrieve the user's full conclusion text from memory key {user conclusion}.
+2.  Carefully segment the submission to identify the exact text corresponding to each of the 6 components of the Opinion Conclusion formula. Use keywords like "In conclusion", "because", "and" as delimiters. Extract the user's text *exactly as they wrote it*.
+    *   Use "[Component Missing]" if a part cannot be reasonably identified.
+3.  Construct the output exactly in the format shown below...
+
+### Example Output (Mapping to Opinion Conclusion Formula):
+Your conclusion broken down by formula components:
+**[Conclusion Opener]:** In conclusion,
+**[Paraphrased Opinion]:** I firmly believe cities need cars
+**[Reason Conjunction]:** because
+**[Paraphrased Idea 1]:** they provide essential transport
+**[Idea Connector]:** and
+**[Paraphrased Idea 2]:** support the local economy.
+
+### Additional Rules:
+- Focus SOLELY on segmenting the user's text based on the Opinion Conclusion formula.
+- ... (other rules adapted as needed) ...
+`,
+  saveAssistantOutputAs: "[user_conclusion_breakdown]", // Renamed output key
+  important_memory: true,
+  autoTransitionVisible: true,
+  // Input key {user conclusion} is referenced within the prompt_text
+},
+```
+
+**E: Documentation (Target: `conclusionPrompts.ts`, Index 13)**
+
+```markdown
+### Prompt 13: Break Down User's Opinion Conclusion by Formula
+
+*   **Purpose:** Analyzes the user's submitted **Opinion Conclusion** (`{user conclusion}`) and breaks it down into structural components based on the specific **Opinion Conclusion formula** (`In conclusion + paraphrased opinion + because + idea 1 + and + idea 2`).
+*   **Input Variables:** `{user conclusion}` (User's submitted conclusion text).
+*   **Output Variables:** `saveAssistantOutputAs: "[user_conclusion_breakdown]"` (Stores the structured breakdown).
+*   **Adaptation Notes:** Mirrored from `adsType1Prompts.ts` Prompt 13. Major changes include: switching context from Introduction to Conclusion, targeting the Opinion Conclusion formula structure and components instead of the Adv/Disadv one, and using `{user conclusion}` as input instead of `{user_introduction}`.
+```
+
+
+
+This detailed, step-by-step process, applied meticulously for each prompt from index 13 onwards, will ensure `conclusionPrompts.ts` is correctly built using the structure of `adsType1Prompts.ts` while being perfectly tailored for the **IELTS Opinion Conclusion** task.
