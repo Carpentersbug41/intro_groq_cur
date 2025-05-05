@@ -18,7 +18,7 @@ type PromptType = {
   fallbackIndex?: number;  // Optional rollback steps if validation fails
   saveUserInputAs?: string; // <-- Saves the raw user input
   saveAssistantOutputAs?: string; // <-- Saves the assistant's processed output
-  appendTextAfterResponse?: string; // <-- New: Static text to append after response
+  appendTextAfterResponse?: string; // <-- Add missing optional property
   dbOptions?: {
     collectionName: string;
     documentId?: string;

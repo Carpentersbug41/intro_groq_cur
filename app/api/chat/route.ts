@@ -1,6 +1,6 @@
 // D:\vercel\intro_groq m6\app\api\chat\route.ts
 
-import PROMPT_LIST from "./prompts/prompts"; // Correct path
+// import PROMPT_LIST from "./prompts/prompts"; // Correct path <-- REMOVE THIS LINE
 import { NextRequest, NextResponse } from "next/server";
 // Import cookies directly
 import { cookies } from 'next/headers';
@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
 
     // Prepare input for the handler, including the essayType
     // Ensure essayType is provided, default to 'opinion' if missing or invalid for safety
-    const resolvedEssayType = (essayType === 'opinion' || essayType === 'ads_type1' || essayType === 'discussion')
+    const resolvedEssayType = (essayType === 'opinion' || essayType === 'ads_type1' || essayType === 'discussion' || essayType === 'opinion_conclusion')
                                ? essayType
                                : 'opinion'; // Default if missing or invalid
 

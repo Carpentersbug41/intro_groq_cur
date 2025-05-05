@@ -6,7 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import ReactMarkdown from "react-markdown";
 
 // --- Define Essay Types ---
-type EssayType = "opinion" | "ads_type1" | "discussion"; // Or import from a shared types file
+type EssayType = "opinion" | "ads_type1" | "discussion" | "opinion_conclusion"; // <-- Add opinion_conclusion
 
 function customTrim(str: string) {
   return str.replace(/^[\s\u00A0\u200B]+|[\s\u00A0\u200B]+$/g, "");
@@ -191,17 +191,25 @@ export function ChatWindow(props: {
 
   // --- Helper to create Radio Buttons ---
   const renderEssayTypeSelector = () => {
-    const essayTypes: { value: EssayType; label: string }[] = [
+    const introEssayTypes: { value: EssayType; label: string }[] = [
       { value: "opinion", label: "Opinion Essay" },
       { value: "ads_type1", label: "Adv/Disadv (Type 1)" },
       { value: "discussion", label: "Discussion Essay" },
     ];
 
+    const conclusionEssayTypes: { value: EssayType; label: string }[] = [
+      { value: "opinion_conclusion", label: "Opinion Conclusion" },
+      // Add other conclusion types here if needed later
+    ];
+
+    const disableRadios = isSubmitting || isResetting || messages.length > 0;
+
     return (
       <div className="mb-3 p-2 border border-gray-200 rounded-md bg-gray-50">
-        <label className="block text-sm font-medium text-gray-700 mb-1">Select Essay Type:</label>
-        <div className="flex space-x-4">
-          {essayTypes.map((type) => (
+        {/* Introduction Types */}
+        <label className="block text-sm font-medium text-gray-700 mb-1">Select Introduction Essay Type:</label>
+        <div className="flex space-x-4 mb-3">
+          {introEssayTypes.map((type) => (
             <label key={type.value} className="inline-flex items-center text-sm">
               <input
                 type="radio"
@@ -209,14 +217,34 @@ export function ChatWindow(props: {
                 value={type.value}
                 checked={selectedEssayType === type.value}
                 onChange={() => setSelectedEssayType(type.value)}
-                disabled={isSubmitting || isResetting || messages.length > 0} // Disable after chat starts or during processing
+                disabled={disableRadios}
                 className="form-radio h-4 w-4 text-blue-600 transition duration-150 ease-in-out disabled:opacity-50"
               />
-              <span className={`ml-2 ${isSubmitting || isResetting || messages.length > 0 ? "text-gray-400" : "text-gray-800"}`}>{type.label}</span>
+              <span className={`ml-2 ${disableRadios ? "text-gray-400" : "text-gray-800"}`}>{type.label}</span>
             </label>
           ))}
         </div>
-         {messages.length > 0 && <p className="text-xs text-gray-500 mt-1">Start a new chat to change the essay type.</p>}
+
+        {/* Conclusion Types */}
+        <label className="block text-sm font-medium text-gray-700 mb-1">Select Conclusion Essay Type:</label>
+        <div className="flex space-x-4">
+          {conclusionEssayTypes.map((type) => (
+            <label key={type.value} className="inline-flex items-center text-sm">
+              <input
+                type="radio"
+                name="essayType" // Keep the same name to ensure only one can be selected overall
+                value={type.value}
+                checked={selectedEssayType === type.value}
+                onChange={() => setSelectedEssayType(type.value)}
+                disabled={disableRadios}
+                className="form-radio h-4 w-4 text-blue-600 transition duration-150 ease-in-out disabled:opacity-50"
+              />
+              <span className={`ml-2 ${disableRadios ? "text-gray-400" : "text-gray-800"}`}>{type.label}</span>
+            </label>
+          ))}
+        </div>
+
+         {messages.length > 0 && <p className="text-xs text-gray-500 mt-2">Start a new chat to change the essay type.</p>}
       </div>
     );
   };
