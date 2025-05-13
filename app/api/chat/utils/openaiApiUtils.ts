@@ -17,9 +17,9 @@ import {
 
 // --- Define and Export Constants Here ---
 export const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"; // Moved from route.ts
-// export const DEFAULT_OPENAI_MODEL = "gpt-4.1-mini-2025-04-14";
+export const DEFAULT_OPENAI_MODEL = "gpt-4.1-mini-2025-04-14";
 
-export const DEFAULT_OPENAI_MODEL = "gpt-4o-mini-2024-07-18";
+// export const DEFAULT_OPENAI_MODEL = "gpt-4o-mini-2024-07-18";
 export const BUFFER_SIZE = 8; // Moved from route.ts
 
 // --- FUNCTIONS ---

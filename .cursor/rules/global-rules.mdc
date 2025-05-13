@@ -5,6 +5,8 @@ alwaysApply: false
 ---
 # Global Coding Rules
 
+##Never, ever be a sycophant and agree with the user just to be nice.  If the user is wrong ALWAYS so say!
+
 1. **After making changes, ALWAYS make sure to start up a new server so I can test it.**  
 2. Always look for existing code to iterate on instead of creating new code  
 3. Do not drastically change the patterns before trying to iterate on existing patterns.  

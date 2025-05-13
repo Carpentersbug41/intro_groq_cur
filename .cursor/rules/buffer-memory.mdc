@@ -1,0 +1,78 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Buffer Memory Functionality
+
+##Only ever change files and functionality related to buffer memeory - never change anything else!
+
+##Never be a sycophant - if you don't agree with the uer say so!
+
+## Purpose of Buffer Memory
+
+Buffer memory in this chat application serves to manage the conversation history that is sent to the Language Model (LLM) with each turn. Its primary goals are:
+
+1.  **Context Management**: To provide the LLM with sufficient context from the recent conversation to generate relevant and coherent responses.
+2.  **Token Optimization**: To limit the number of tokens sent to the LLM, which helps in managing API costs and staying within the model's context window limitations.
+3.  **Information Flow Control**: To strategically include or exclude certain types of messages (like system prompts or specially marked "important" memory) regardless of their position in the raw history, ensuring the LLM always has critical instructions.
+
+## How Buffer Memory Works
+
+The buffer memory system dynamically adjusts and trims the conversation history before it's sent to the LLM.
+
+### 1. Determining Buffer Size:
+
+*   **Default Buffer Size**: There's a default buffer size that applies if a specific prompt doesn't override it.
+*   **Prompt-Specific Override**: Each prompt defined in `prompts.ts` can specify its own `buffer_size`. This allows for fine-grained control, where some prompts might require more historical context than others.
+*   **Dynamic Updates**: The `currentBufferSize` is stored in the user's session data. The function `updateDynamicBufferMemory` (from `memoryUtils.ts`) is called for each prompt to set the `currentBufferSize` based on the current prompt's configuration. If the prompt defines a `buffer_size`, that value is used; otherwise, the existing `currentBufferSize` from the session (or a system default) is maintained.
+
+### 2. Applying the Buffer:
+
+*   The core logic for applying the buffer resides in the `manageBuffer` function (from `bufferUtils.ts`).
+*   This function takes the full conversation history and the `currentBufferSize` as input.
+*   It ensures that:
+    *   The **System Prompt** is always included.
+    *   Messages marked as **"Important_memory:"** (typically assistant messages used to store key facts or context) are always included, appearing after the system prompt.
+    *   The `currentBufferSize` number of the most recent **regular** (user and assistant) messages are included. If `currentBufferSize` is 0, only the system prompt and important memory messages are kept.
+*   The `manageBuffer` function returns a new, trimmed list of `ConversationEntry` objects that are then sent to the LLM.
+
+## Key Files and Their Roles
+
+Several files work together to implement the buffer memory functionality:
+
+1.  **`app/api/chat/bufferUtils.ts`**:
+    *   Contains the `manageBuffer` function. This is the central piece of logic responsible for trimming the conversation history according to the specified buffer size, ensuring system prompts and important memory are preserved.
+
+2.  **`app/api/chat/memoryUtils.ts`**:
+    *   Contains the `updateDynamicBufferMemory` function. This function checks the configuration of the current prompt (from `prompts.ts`) for a `buffer_size` setting and updates the `currentBufferSize` in the session accordingly.
+    *   Also handles other memory-related functions like injecting `NamedMemory` and saving user/assistant outputs, which are distinct from, but related to, the conversation history buffer.
+
+3.  **`app/api/chat/nonStreamingFlow.ts`**:
+    *   This file orchestrates the main conversation flow.
+    *   It calls `updateDynamicBufferMemory` before processing a prompt to set the correct buffer size for that step.
+    *   It then calls `manageBuffer` to prepare the `historyForLLM` before making an API call to the LLM (via `fetchApiResponseWithRetry`).
+    *   It's also responsible for applying `manageBuffer` before generating retry messages in validation failure scenarios to ensure context is handled consistently.
+
+4.  **`app/api/chat/prompts.ts`**:
+    *   Defines the `PromptType` structure, which includes an optional `buffer_size: number;` property.
+    *   Contains the `PROMPT_LIST`, an array of prompt configurations. Individual prompts can specify their desired `buffer_size` here, allowing for tailored context management for different stages of the conversation.
+
+5.  **Session Management (e.g., `lib/session.ts` or similar, and types in `app/api/chat/routeTypes.ts`)**:
+    *   The `SessionCookieData` type (or equivalent) defines the structure for session data, which includes `currentBufferSize`.
+    *   The application reads from and writes to this session data to maintain the `currentBufferSize` across different turns of the conversation.
+
+## Flow Example (Simplified)
+
+1.  User sends a message.
+2.  `handleNonStreamingFlow` in `nonStreamingFlow.ts` retrieves `currentBufferSize` from the session.
+3.  It determines the current prompt (e.g., `PROMPT_LIST[currentIndex]`).
+4.  `updateDynamicBufferMemory` (from `memoryUtils.ts`) is called with the current prompt object and the current session buffer size. It updates `currentBufferSize` if the prompt has a specific `buffer_size` set.
+5.  The full conversation history is prepared.
+6.  `manageBuffer` (from `bufferUtils.ts`) is called with the history and the (potentially updated) `currentBufferSize`.
+7.  `manageBuffer` returns a trimmed history.
+8.  This trimmed history is sent to the LLM.
+9.  The updated `currentBufferSize` is saved back to the session for the next turn.
+
+
+This system allows for flexible and controlled context management, adapting to the needs of different parts of the conversational flow.

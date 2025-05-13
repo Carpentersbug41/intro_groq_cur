@@ -1,0 +1,26 @@
+---
+description:
+globs:
+alwaysApply: false
+---
+# Project Reorganization Brief for LLM
+
+## Current State:
+The current project structure suffers from inconsistencies and lacks clear organization. Specifically:
+- File names are not consistently named following a clear convention.
+- Folder names are sometimes unclear or do not accurately reflect their contents.
+- Some files are located in folders where they don't logically belong.
+- The overall directory structure could be improved for better clarity and maintainability.
+
+## Desired Outcome:
+A well-organized project structure with:
+- Consistent and descriptive file and folder naming conventions.
+- A logical folder hierarchy that groups related files effectively.
+- Improved discoverability and maintainability of project components.
+
+## Task for LLM:
+1.  **Analyze:** Examine the current file and folder structure of the project.
+2.  **Propose:** Suggest a revised, more logical directory structure.
+3.  **Rename:** Recommend new, consistent names for files and folders where necessary.
+4.  **Relocate:** Identify files that should be moved to different folders for better organization.
+5.  **Execute (Optional/If Possible):** Outline the steps (e.g., terminal commands, file operations) required to implement the proposed reorganization, or apply the changes directly if feasible within your capabilities.

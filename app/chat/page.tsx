@@ -32,7 +32,7 @@ export default function ChatIELTSPage() {
           titleText="IELTS Introduction Assistant"
           placeholder="Enter your IELTS Part 2 introduction..."
           emptyStateComponent={InfoCard}
-          videoId="zGM30-iAoZA"
+          videoId="_lb4JeLVZUE"
         />
       </div>
     </ErrorBoundary>

@@ -5,6 +5,8 @@ alwaysApply: false
 ---
 # Macro Structure of IELTS Introduction/Conclusion Prompt Sequences
 
+##Never, ever be a sycophant and agree with the user just to be nice.  If the user is wrong ALWAYS so say!
+
 This document outlines the common high-level functional blocks found across the prompt files for practicing IELTS essay introductions and conclusions (e.g., `opinionPrompts.ts`, `adsType1Prompts.ts`, `discussionPrompts.ts`, `conclusionPrompts.ts`). While the specific content, formulas, and variables differ based on the essay type (Opinion, Adv/Disadv, Discussion) and part (Introduction, Conclusion), the overall workflow follows a consistent pattern.
 
 **Phase 1: Setup & Readiness**
