@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
 
     // Prepare input for the handler, including the essayType
     // Ensure essayType is provided, default to 'opinion' if missing or invalid for safety
-    const resolvedEssayType = (essayType === 'opinion' || essayType === 'ads_type1' || essayType === 'discussion' || essayType === 'opinion_conclusion')
+    const resolvedEssayType = (essayType === 'opinion' || essayType === 'ads_type1' || essayType === 'discussion' || essayType === 'opinion_conclusion' || essayType === 'opinion_mbp')
                                ? essayType
                                : 'opinion'; // Default if missing or invalid
 

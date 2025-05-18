@@ -1,0 +1,153 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# IELTS Opinion Essay Main Body Paragraphs – Prompt Sequence & Formula
+
+## 1. Overview
+
+This document defines the **structure, rules, and prompt sequence** for practicing and evaluating main body (supporting) paragraphs in IELTS Opinion Essays. It is designed for use in the chat-based prompt system, following the conventions in `prompt-format.mdc` and the macro structure in `phase.mdc`.
+
+---
+
+## 2. Band 9 Main Body Paragraph Formula
+
+Every main body paragraph should contain:
+
+1. **Topic Sentence**
+   - Clearly states the main idea of the paragraph (directly answers the question).
+   - Paraphrases the main idea from the introduction (not the exact same words).
+   - Short, clear, and directly relevant.
+
+2. **Explanation Sentences**
+   - 2–4 sentences that explain the topic sentence.
+   - Answer “why?”, “how?”, “what’s the result?” for the main idea.
+   - Should be clear, logical, and detailed enough for a reader with no background knowledge.
+
+3. **Example Sentence**
+   - Provides evidence to support the main idea.
+   - Preferably a real, general example (not a personal anecdote).
+   - If a personal example is used, it should be generalized (e.g., “Many people in my country…” instead of “I…”).
+
+**Formula:**
+
+[Topic Sentence] + [Explanation(s)] + [Example]
+
+
+---
+
+## 3. Key Rules and Criteria
+
+### Content Rules
+
+- **No more than two main ideas per paragraph** (usually just one).
+- **Each paragraph = one main idea, fully developed**.
+- **No “firstly, secondly, thirdly, finally” lists**—avoid listing multiple ideas without development.
+- **Each main idea must be explained and supported** (not just stated).
+- **Examples should be real and general, not personal or made-up statistics.**
+- **Grammar and vocabulary must be clear and accurate** (not perfect, but must not obscure meaning).
+
+### Band 9 Checklist
+
+- Ideas are **relevant** (directly answer the question).
+- **All parts of the task** are addressed (e.g., both questions in a double question).
+- **Clear position** is maintained throughout.
+- **Ideas are fully extended and well supported** (with explanations and examples).
+
+---
+
+## 4. Prompt Sequence Structure
+
+### Phase 1: Setup & Readiness
+
+- **Prompt:** Are you ready to begin practicing IELTS main body paragraphs?
+
+### Phase 2: Question/Idea Selection
+
+- **Prompt:** Display the essay question (from memory or select one).
+- **Prompt:** Display the main idea(s) from the introduction (to ensure coherence).
+
+### Phase 3: User Input Collection
+
+- **Prompt:** Please write a main body paragraph for the following main idea: [main idea].
+- **Action:** Save the user’s paragraph.
+
+### Phase 4: Breakdown & Extraction
+
+- **Prompt:** Break down the user’s paragraph into:
+    - **[Topic Sentence]:**
+    - **[Explanation(s)]:**
+    - **[Example]:**
+
+### Phase 5: Formula Structure Analysis
+
+- **Prompt:** Check for presence and quality of each component.
+    - Is the topic sentence clear and relevant?
+    - Are the explanations logical and sufficient?
+    - Is the example appropriate and generalized?
+
+### Phase 6: Feedback & Correction
+
+- **Prompt:** Provide feedback for each component (✅/❌, with reasons).
+- **Prompt:** If any component is missing or weak, suggest a corrected version using the user’s ideas.
+
+### Phase 7: Band Score Evaluation
+
+- **Prompt:** Assess the paragraph for:
+    - Task Response (TR)
+    - Coherence & Cohesion (CC)
+    - Lexical Resource (LR)
+    - Grammatical Range & Accuracy (GRA)
+
+### Phase 8: Repeat for Second Main Body Paragraph (if needed)
+
+- **Prompt:** Repeat the process for the second paragraph if the essay requires two main ideas.
+
+### Phase 9: Module Conclusion
+
+- **Prompt:** That’s the end, thanks for using IELTS-AI!
+
+---
+
+## 5. Example Prompt (for .mdc)
+
+```markdown
+# System message:
+You are an expert in checking if the user is ready to begin.
+
+## Task Instructions:
+1. Output exactly: "Are you ready to begin practicing IELTS main body paragraphs?"
+2. Do not add any extra text, explanations, or formatting.
+3. Wait for the user's response.
+
+### Example Output:
+Are you ready to begin practicing IELTS main body paragraphs?
+
+### Additional Rules:
+- The output must match exactly.
+- Do not deviate or add any extra content.
+- NEVER ask anything else!
+```
+
+---
+
+## 6. Summary Table: Main Body Paragraph Formula
+
+| Component         | Purpose/Rule                                                                 |
+|-------------------|------------------------------------------------------------------------------|
+| Topic Sentence    | States main idea, paraphrases intro, short/clear, directly answers question  |
+| Explanation(s)    | 2–4 sentences, explain/justify topic sentence, logical, detailed             |
+| Example           | Real/generalized, supports main idea, not personal or made-up if possible    |
+
+---
+
+## 7. Notes
+
+- **Memory keys** should be used to pass the question, main ideas, and user paragraphs between prompts.
+- **Follow the conventions** in `prompt-format.mdc` for all prompt objects.
+- **Use the same conventions** as in `opinionPrompts.ts` and `concPrompts.ts` for consistency.
+
+---
+
+

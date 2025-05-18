@@ -1,0 +1,148 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Macro Structure: IELTS Opinion Essay – Main Body Paragraphs (MBP)
+
+## Overview
+
+This document outlines the high-level and low-level phases for the **Main Body Paragraphs (MBP)** module in IELTS Opinion Essays.  
+It is designed for use in prompt engineering and module design, and assumes the user has already completed the introduction phase.
+
+**Essay Flow:**  
+Introduction → Main Body Paragraph 1 (MBP1) → Main Body Paragraph 2 (MBP2) → Conclusion
+
+---
+
+## Phase 1: Setup & Readiness
+
+- **Prompt:** Check if the user is ready to begin practicing main body paragraphs for an opinion essay.
+- **Purpose:** Ensure user engagement and readiness.
+
+---
+
+## Phase 2: Display Context
+
+- **Prompt:** Display the selected essay question and the introduction (or main ideas) previously chosen/written.
+- **Purpose:** Remind the user of the essay context and ensure coherence between introduction and MBPs.
+
+---
+
+## Phase 3: User Input Collection (Parallel for MBP1 & MBP2)
+
+- **Prompt:** Ask the user to write both main body paragraphs (MBP1 and MBP2) for the given essay question and introduction.
+- **Purpose:** Collect the user's full responses for both MBPs before analysis.
+
+---
+
+## Phase 4: Breakdown & Extraction (Parallel for MBP1 & MBP2)
+
+- **Prompt:** For each MBP, break down the paragraph into:
+  - Topic Sentence
+  - Explanation(s)
+  - Example
+- **Purpose:** Prepare for detailed structural analysis.
+
+---
+
+## Phase 5: Component-by-Component Analysis (for each MBP, in sequence)
+
+### 5a. Topic Sentence Analysis (see @ts.mdc)
+
+- **Step 1:** Identify the essay type and extract the main idea from the introduction.
+- **Step 2:** Output the user's topic sentence.
+- **Step 3:** Check if the topic sentence matches the required formula for the essay type:
+  - For opinion essays:
+    - "One reason why [main idea] is that [reason 1]."
+    - "Another reason why [main idea] is because [reason 2]."
+- **Step 4:** Ensure the topic sentence uses the correct vocabulary from the introduction (no unnecessary synonyms).
+- **Step 5:** Provide feedback:
+  - ✅/❌ for formula match, clarity, and relevance.
+  - If incorrect, output a corrected version using the formula and the user's introduction.
+
+---
+
+### 5b. Explanation Analysis (see @explantions.mdc)
+
+- **Step 1:** Output the user's explanation(s).
+- **Step 2:** Break the explanation into three key parts:
+  1. **What the topic sentence means:** Clarifies or expands on the main point.
+  2. **How it answers the question:** Connects the explanation to the essay question/argument.
+  3. **What the result is:** Describes the outcome or consequence of the point.
+- **Step 3:** Check for structure and cohesion:
+  - Are all three parts present and logically ordered?
+  - Are cohesive devices (e.g., "That is to say," "This is because," "As a result,") used naturally?
+- **Step 4:** Provide feedback:
+  - ✅/❌ for each part (clarity, logical flow, relevance).
+  - If any part is missing or weak, suggest improvements or provide a model explanation with clear structure and cohesive devices.
+- **Step 5:** Output a full improved explanation, if needed, and explain the use of cohesive devices.
+
+---
+
+### 5c. Example Analysis (see @examples.mdc)
+
+- **Step 1:** Output the user's example.
+- **Step 2:** Identify if the example is:
+  - Personal/anecdotal
+  - Generalized/evidence-based
+  - Real-world/independent
+- **Step 3:** Guide the user to improve the example:
+  - If personal, explain why it may not be effective and show how to generalize it to reflect a broader trend.
+  - Encourage use of real, general, or widely recognized examples.
+- **Step 4:** Analyze the example for:
+  - Direct support of the explanation
+  - Generalization and evidence
+  - Relevance and effectiveness
+- **Step 5:** Provide feedback:
+  - ✅/❌ for generalization, evidence, and relevance.
+  - If needed, provide an improved or independent example, and explain the key elements (generalization, evidence, relevance).
+- **Step 6:** (Optional) Present a side-by-side comparison of the original, improved, and independent examples, highlighting key improvements.
+
+---
+
+**Purpose:**  
+This phase ensures that each main body paragraph is not only structurally correct at a high level, but that each component (topic sentence, explanation, example) is analyzed, improved, and modeled in a stepwise, transparent manner. This approach maximizes learning and mirrors the best practices in your existing rules.
+
+---
+
+## Phase 6: Overall MBP Feedback & Correction
+
+- **Prompt:** Summarize the feedback for the entire MBP.
+- **Prompt:** If any component is missing or weak, suggest a corrected version of the full paragraph using the user's ideas.
+- **Purpose:** Guide the user to improve their MBPs holistically.
+
+---
+
+## Phase 7: Band Score Evaluation (Parallel for MBP1 & MBP2)
+
+- **Prompt:** For each MBP, assess and output band scores for:
+  - Task Response (TR)
+  - Coherence & Cohesion (CC)
+  - Lexical Resource (LR)
+  - Grammatical Range & Accuracy (GRA)
+- **Purpose:** Give the user actionable, criterion-based feedback.
+
+---
+
+## Phase 8: Module Conclusion
+
+- **Prompt:** Display a simple concluding message to signal the end of the MBP practice module.
+- **Purpose:** Provide closure and next steps.
+
+---
+
+## Notes
+
+- **Parallel Processing:**  
+  Both MBPs are collected and analyzed in parallel for efficiency and to avoid prompt duplication.  
+  (If a more interactive, step-by-step experience is desired, a series approach can be implemented in the future.)
+
+- **Component Analysis:**  
+  The analysis of topic sentence, explanation, and example is done **sequentially for each MBP**, with each step providing focused feedback and correction opportunities.
+
+- **Integration:**  
+  This MBP module is designed to fit seamlessly between the introduction and conclusion modules in the overall opinion essay workflow.
+
+---
+

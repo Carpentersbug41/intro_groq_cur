@@ -1,0 +1,220 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+#**Step 4 constructing the assistant's topic sentence** 
+
+## Your aim is to contruct 2 topic sentences from the selected introduction without using synonyms or changing the vocabulary.
+
+## Always follow these steps: 
+
+- Step 1:  Identify the essay type
+- Step 2:  Output the selected introduction
+- Step 2:  Extract the correct topic sentence formula for the essay type:
+- Step 3  Construct 2 topic sentences from the introduction by using the formula without changing any of the vocabulary at all from the selected introduction.
+
+## Extract the correct topic sentence formula for the essay type: 
+
+### 1. **Opinion Essay Topic Sentence Formula**
+**Selected introduction:** It is argued that virtual learning offers more benefits than traditional classroom learning. I completely agree with this statement because in-person classes are less effective and it offers greater flexibility.
+
+**First Body Paragraph (Topic Sentence 1):**
+- **Instruction:** Start with "One reason why," followed by the exact topic sentence, and then "is that," followed by reason 1.
+- **Formula:** One reason why + [exact topic sentence] + is that + [reason 1].
+- **Example:** "One reason why virtual learning offers more benefits than traditional classroom learning is that in-person classes are less effective."
+
+**Second Body Paragraph (Topic Sentence 2):**
+- **Instruction:** Start with "Another reason why," followed by the exact topic sentence, and then "is because," followed by reason 2.
+- **Formula:** Another reason why + [exact topic sentence] + is because + [reason 2].
+- **Example:** "Another reason why virtual learning offers more benefits than traditional classroom learning is because it offers greater flexibility."
+
+---
+
+### 2. **Discussion Essay Topic Sentence Formula**
+**Selected introduction:**  
+*Some argue that treating young violent criminals like adults gives justice to the victims, while others believe that rehabilitation is a better approach. This essay will argue that although treating young offenders like adults may satisfy public demand for justice, rehabilitation provides a more effective long-term solution.*
+
+- **[Viewpoint 1]** = treating young violent criminals like adults gives justice to the victims  
+- **[Viewpoint 2]** = rehabilitation is a better approach  
+- **[reason 1]** = satisfies public demand for justice  
+- **[reason 2]** = provides a more effective long-term solution  
+
+**First Body Paragraph (Negative Viewpoint):**
+- **Instruction:** Start with "On the one hand," followed by the viewpoint you disagree with (negative viewpoint). Then explain why others hold this viewpoint.
+- **Formula:** On the one hand, + [Viewpoint 1] + [reason 1].
+- **Example:** "On the one hand, treating young violent criminals like adults gives justice to the victims because it satisfies public demand for justice."
+
+**Second Body Paragraph (Positive Viewpoint):**
+- **Instruction:** Start with "On the other hand," followed by the viewpoint you agree with (positive viewpoint). Explain why others hold this view, and state your agreement.
+- **Formula:** On the other hand, + [Viewpoint 2] + [reason 2] + I believe + [agreement].
+- **Example:** "On the other hand, rehabilitation is a better approach because it provides a more effective long-term solution, and I believe it ultimately benefits both society and the individual."
+
+---
+
+### 3. **Problem and Solution Essay Topic Sentence Formula**
+
+**Selected introduction:**
+
+"The rising cost of living is a growing issue in many parts of the world. This essay will suggest that high living costs lead to financial strain for many people, and that the best solution is to raise the minimum wage."
+
+**Introduction Formula:**
+1. **Paraphrase the Problem:** [Paraphrased version of the problem statement].
+2. **State the Problem and Solution:** This essay will suggest that [problem], and that the best solution is to [solution].
+
+#### **Type 1: Single Problem and Single Solution**
+
+**First Body Paragraph (Single Problem or Cause):**
+- **Instruction:** State the primary problem or cause.
+- **Formula:** The main problem with + [issue] + is that + [problem].
+- **Example:** "The main problem with high living costs is that they place a significant financial strain on many people."
+
+**Second Body Paragraph (Single Solution):**
+- **Instruction:** State the main solution.
+- **Formula:** A viable solution to + [problem] + is to + [solution].
+- **Example:** "A viable solution to alleviate financial strain from high living costs is to raise the minimum wage."
+
+---
+
+#### **Type 2: Multiple Problems and Solutions**
+
+**Selected Introduction:**
+
+"Many people strive to maintain a successful career and happy family life at the same time. This essay will discuss the issues of exhaustion and child behavioral problems as key challenges, and suggest work-life balance strategies and quality family time as effective solutions."
+
+**First Body Paragraph (Multiple Problems):**
+- **Instruction for Problem 1:** Start with "One problem with," followed by the issue and explanation.
+  - **Formula for Problem 1:** One problem with + [situation] + is that + [problem 1].
+  - **Example for Problem 1:** "One problem with balancing a career and family life is that it often leads to burnout."
+
+- **Instruction for Problem 2:** Use "Another issue is that," followed by the second problem.
+  - **Formula for Problem 2:** Another issue is that + [problem 2].
+  - **Example for Problem 2:** "Another issue is that it may lead to behavioral problems in children due to lack of parental attention."
+
+**Second Body Paragraph (Multiple Solutions):**
+- **Instruction for Solution 1:** Start with "One possible solution," followed by the solution and explanation.
+  - **Formula for Solution 1:** One possible solution is to + [solution 1].
+  - **Example for Solution 1:** "One possible solution is to set specific times each day dedicated to family, free from work interruptions."
+
+- **Instruction for Solution 2:** Use "Another effective approach," followed by the second solution.
+  - **Formula for Solution 2:** Another effective approach is to + [solution 2].
+  - **Example for Solution 2:** "Another effective approach is to establish clear work-life boundaries to prevent work-related stress."
+
+---
+
+#### **Type 3: Multiple Problems with a Single Solution**
+
+**Selected Introduction:**
+
+"Many people struggle to balance work and personal life, causing both exhaustion and stress. This essay will explore these challenges and suggest setting work-free family time as an effective solution."
+
+**First Body Paragraph (Multiple Problems):**
+- **Instruction for Problem 1:** Start with "One significant issue," followed by the problem and explanation.
+  - **Formula for Problem 1:** One significant issue is that + [problem 1].
+  - **Example for Problem 1:** "One significant issue is that balancing work and family life can lead to exhaustion."
+
+- **Instruction for Problem 2:** Use "Additionally," followed by the second problem and explanation.
+  - **Formula for Problem 2:** Additionally, + [problem 2].
+  - **Example for Problem 2:** "Additionally, work stress can reduce the quality of family interactions."
+
+**Second Body Paragraph (Single Solution):**
+- **Instruction:** Start with "A viable solution," then explain how this solution addresses both problems.
+  - **Formula:** A viable solution to address these issues is to + [solution].
+  - **Example:** "A viable solution to address these issues is to designate specific work-free times each day, allowing for quality family time and relaxation."
+
+---
+
+### 4. **Advantages and Disadvantages Essay Topic Sentence Formula**
+
+#### **Type 1: Discussing Advantages and Disadvantages Equally**
+
+**Selected introduction:**
+
+"Some countries provide free higher education to all citizens, which can increase access to education. The main benefits are that free education can reduce financial barriers for students and help create a more educated workforce. However, the key drawbacks are that it may also lead to underfunded institutions and place a significant financial burden on the government."
+
+**First Body Paragraph (Advantages):**
+- **Instruction advantage 1:** State the first advantage.
+- **Instruction advantage 2:** Start with 'Furthermore' and then state the second advantage.
+- **Formula advantage 1:** [topic] + [State the advantage 1]
+- **Formula advantage 2:** Furthermore + [topic sentence] + [State the advantage 2]
+- **Example advantage 1:** "Providing free education to all citizens can reduce financial barriers for students."
+- **Example advantage 2:** "Furthermore, providing free education to all citizens can lead to a more educated workforce."
+
+**Second Body Paragraph (Disadvantages):**
+- **Instruction disadvantage 1:** Start with 'however' followed by the topic sentence and then the main disadvantages.
+- **Instruction disadvantage 2:** Start with 'Another disadvantage is that' followed by the topic sentence and then state the main disadvantages.
+- **Formula disadvantage 1:** However + [topic sentence] + [State disadvantage 1]
+- **Formula disadvantage 2:** Another disadvantage is that + [topic sentence] + [State the disadvantage 2].
+- **Example disadvantage 1:** "However, providing free education to all citizens may lead to underfunded institutions."
+- **Example disadvantage 2:** "Another disadvantage is that providing free education to all citizens may place a financial burden on the government."
+
+---
+
+#### **Type 2: Weighing Advantages and Disadvantages (Outweigh Question)**   
+
+**Selected introduction:**
+
+"The use of solar energy as a household energy source is becoming increasingly common. Although solar energy is environmentally friendly and reduces electricity bills, I believe there are more drawbacks because the initial installation cost and dependency on weather conditions will negatively impact sales."
+
+**First Body Paragraph (disagreement side):**
+- **Instruction:** State the weaker side.
+- **Formula:** [State weaker side].
+- **Example:** "Solar energy is environmentally friendly and reduces electricity bills."
+
+**Second Body Paragraph (Agreement side):**
+- **Instruction:** State the stronger side.
+- **Formula:** The disadvantage is that + [State the stronger side].
+- **Example:** "The disadvantage is that the initial installation cost and dependency on weather conditions will negatively impact sales."
+
+---
+
+### 5. **Double Question Essay Topic Sentence Formula**
+
+**Type 1:** 
+
+**Question Statement:**
+
+"Most employers do job interviews before offering a position to a person. Do you think this is the best way to do it? What is the best method of choosing employees in your opinion?"
+
+**Selected introduction:**
+
+"Many companies rely on job interviews to assess candidates before making a hiring decision. This essay will argue that it is not the most appropriate way to recruit people because an interview is not a true reflection of a person's ability. The best method is to give people standardized tests designed to assess on-the-job performance."
+
+**First Body Paragraph (Answering Question 1):**
+
+- **Instruction:** Start with "One reason why," followed by your stance on whether interviews are an ideal recruitment method, then "is that," followed by your reason.
+- **Formula:** One reason why + [topic statement on interviews] + is that + [reason].
+- **Example:** "One reason why job interviews are not the best way to recruit employees is that they do not accurately measure a candidate’s practical abilities."
+
+**Second Body Paragraph (Answering Question 2):**
+
+- **Instruction:** Start with "Another effective method," followed by your suggested alternative, then "is to," followed by your reason.
+- **Formula:** Another effective method + [alternative to interviews] + is to + [reason].
+- **Example:** "Another effective method of selecting employees is to use standardized tests because they assess relevant job skills more accurately."
+
+---
+
+**Type 2:** 
+
+**Question Statement:**
+
+"It is important for children to learn the difference between right and wrong at an early age. Punishment is necessary to help them learn this distinction. To what extent do you agree or disagree with this opinion? What sort of punishment should parents and teachers be allowed to use to teach good behavior to children?"
+
+**Selected introduction:**
+
+"Learning the difference between right and wrong from a young age is crucial for children, and some believe that punishment is an essential part of this learning process. This essay totally agrees with that statement because they will be punished when they get older if they break the rules. However, parents and teachers should not beat their child and instead should deprive them of something they love."
+
+**First Body Paragraph (Answering Question 1):**
+
+- **Instruction:** Start with "One reason why," followed by your stance on punishment as a teaching tool, then "is that," followed by your reason.
+- **Formula:** One reason why + [statement on punishment’s role] + is that + [reason].
+- **Example:** "One reason why punishment is necessary for teaching children right from wrong is that it prepares them for real-life consequences as adults."
+
+**Second Body Paragraph (Answering Question 2):**
+
+- **Instruction:** Start with "A suitable form of punishment," followed by your recommended method, then "is to," followed by your reason.
+- **Formula:** A suitable form of punishment + [recommended action] + is to + [reason].
+- **Example:** "A suitable form of punishment for children is to deprive them of something they love because it teaches them consequences without using violence."
+
+---
+

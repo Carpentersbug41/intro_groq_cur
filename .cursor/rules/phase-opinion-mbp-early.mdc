@@ -1,0 +1,95 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Micro-Level Guide: Early Phase (Prompts 0–8) – Opinion Essay Main Body Paragraphs (MBP)
+
+## Overview
+This guide details the step-by-step logic and flow for the initial prompts of the Opinion Essay MBP module, mirroring the structure of the introduction and conclusion modules, but adapted for main body paragraphs. It covers readiness checks, context display, question/intro selection, user confirmation, and MBP collection, with memory key usage.
+
+---
+
+## Prompt 0: Readiness Check
+- **Purpose:** Ensure the user is ready to begin practicing main body paragraphs for an opinion essay.
+- **Logic:** Output a readiness check message. Wait for user response.
+- **Validation:** Accepts simple affirmatives ("yes", "ready").
+
+---
+
+## Prompt 1: Module Introduction
+- **Purpose:** Inform the user that the next stage is focused on practicing main body paragraphs (MBPs) for opinion essays.
+- **Logic:** Output a brief explanation of the MBP practice module and what the user will do.
+- **Transition:** Auto-transition to next prompt.
+
+---
+
+## Prompt 2: Continue Readiness Check
+- **Purpose:** Confirm the user is ready to continue to the next step.
+- **Logic:** Output a simple readiness check ("Are you ready to continue?").
+- **Validation:** Accepts simple affirmatives.
+
+---
+
+## Prompt 3: Display Question and Introduction Options
+- **Purpose:** Present a list of sample IELTS opinion essay questions, each paired with a model introduction.
+- **Logic:** Randomly select and display one question/introduction pair from a predefined list.
+- **Memory Keys:**
+  - `[question_options]` (if displaying multiple options)
+  - `[current_question]`, `[current_introduction]` (for the selected pair)
+- **Transition:** Auto-transition to user confirmation.
+
+---
+
+## Prompt 4: User Confirmation of Question/Introduction
+- **Purpose:** Ask the user if they want to continue with the displayed question/introduction or see another option.
+- **Logic:** Wait for user input. If user requests another, select a new, previously unseen pair.
+- **Validation:** Accepts "continue" or "another". If invalid, fallback to this prompt.
+- **Fallback:** If invalid input, re-ask the question.
+- **Memory Keys:**
+  - `[confirmed_question]`, `[confirmed_introduction]` (once user confirms)
+
+---
+
+## Prompt 5: Output Confirmed Question/Introduction
+- **Purpose:** Display the confirmed question and introduction back to the user for clarity.
+- **Logic:** Output the selected pair exactly as chosen.
+- **Memory Keys:**
+  - `[chosen_question]`, `[chosen_introduction]` (save as assistant output)
+- **Transition:** Auto-transition to MBP collection.
+
+---
+
+## Prompt 6: Collect Main Body Paragraphs
+- **Purpose:** Ask the user to write both main body paragraphs (MBP1 and MBP2) for the confirmed question/introduction.
+- **Logic:** Collect both MBPs in a single user input step (parallel collection).
+- **Validation:** Ensure both paragraphs are provided (basic length/content check).
+- **Memory Keys:**
+  - `[user_mbp1]`, `[user_mbp2]` (save as user input)
+
+---
+
+## Prompt 7: Output User MBPs
+- **Purpose:** Display the user's submitted MBP1 and MBP2 back to them for confirmation.
+- **Logic:** Output both paragraphs exactly as written.
+- **Memory Keys:**
+  - `[user_mbp1]`, `[user_mbp2]` (save as assistant output for downstream use)
+- **Transition:** Auto-transition to context/output phase.
+
+---
+
+## Prompt 8: Output Context for Analysis
+- **Purpose:** Output and save the key context variables for downstream analysis and feedback.
+- **Logic:**
+  - Output the introduction, question, MBP1, and MBP2 as needed.
+  - Save each as assistant output using memory keys for later prompts.
+- **Memory Keys:**
+  - `[chosen_question]`, `[chosen_introduction]`, `[user_mbp1]`, `[user_mbp2]`
+
+---
+
+## Notes
+- **Validation and Fallbacks:** Prompts that require user input should include validation and fallback logic to handle invalid responses.
+- **Memory Management:** Use clear, consistent memory keys for all user and assistant outputs to ensure smooth transitions and context availability for later analysis.
+- **Mirroring Best Practices:** This flow mirrors the introduction/conclusion modules but is tailored for MBP collection and context setup.
+

@@ -1,0 +1,77 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Opinion MBP Prompt Integration Report
+
+**Date:** [Auto-generated]
+**Author:** AI Assistant
+**Context:** Integration of `opinionMbpPrompts.ts` into the chat system, with full frontend and backend connection, and resolution of related issues.
+
+---
+
+## 1. Objective
+Integrate the Opinion Main Body Paragraphs (MBP) prompt sequence (`opinionMbpPrompts.ts`) into the essay chat flow, making it selectable from the UI and fully functional in the backend.
+
+---
+
+## 2. Steps Taken
+
+### 2.1. Frontend Changes
+- **Added a new section** in the essay type selector UI for "Main Body Paragraphs" in `ChatWindow.tsx`.
+- **Added a radio button** for "Opinion MBP" with value `opinion_mbp`.
+- **Updated the `EssayType` type** to include `"opinion_mbp"`.
+- **Ensured state and POST body** send the correct essayType value when selected.
+
+### 2.2. Backend Changes
+- **Imported the prompt list** from `opinionMbpPrompts.ts` in `app/api/chat/handlers/nonStreamingFlow.ts`.
+- **Added a case** for `"opinion_mbp"` in the essayType switch, so the correct prompt list is used.
+
+### 2.3. Route Handler Fix
+- **Discovered a bug** in `app/api/chat/route.ts`: the allowed essayType list did not include `opinion_mbp`, so it defaulted to `opinion`.
+- **Fixed the bug** by adding `opinion_mbp` to the allowed list for `resolvedEssayType`.
+
+### 2.4. Debugging & Validation
+- **Verified** that all other essay types worked, but "Opinion MBP" did not, indicating a backend filtering issue.
+- **Added/checked logs** to confirm the essayType value being sent and received.
+- **Tested the UI** after the fix to ensure the correct prompt flow was triggered for "Opinion MBP".
+
+### 2.5. Server/Build Issues
+- **Encountered a UI styling issue** after backend changes, traced to static asset loading and port changes.
+- **Resolved by**:
+  - Performing a hard refresh in the browser.
+  - Cleaning the `.next` build cache and restarting the dev server.
+
+---
+
+## 3. Lessons Learned
+- Always ensure new enum/type values are whitelisted in all backend validation logic.
+- UI issues after backend changes are often due to static asset serving or build cache, not code bugs.
+- Logging both frontend and backend values is critical for debugging integration issues.
+
+---
+
+## 4. Final State
+- The "Opinion MBP" option is now fully integrated and functional.
+- The prompt flow for main body paragraphs is accessible and works identically to other essay types.
+- The system is robust to future prompt list additions, provided all type checks are updated.
+
+---
+
+## 5. Files Changed
+- `components/ChatWindow.tsx`
+- `app/api/chat/handlers/nonStreamingFlow.ts`
+- `app/api/chat/route.ts`
+
+---
+
+## 6. Recommendations
+- When adding new essay types or prompt flows, always update all type guards and validation logic.
+- Document integration steps and issues for future maintainers.
+- Regularly clean build caches when encountering unexplained UI issues.
+
+---
+
+**End of Report**
+

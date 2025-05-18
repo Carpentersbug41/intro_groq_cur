@@ -1,0 +1,105 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Step-by-Step Guide: Constructing and Analyzing Explanations in IELTS Opinion Essay Main Body Paragraphs
+
+## Aim
+To construct and analyze the 'Explanation' component of a main body paragraph, ensuring it logically develops the topic sentence, is clear, relevant, and meets IELTS Band 9 criteria.
+
+---
+
+## Always Follow These Steps:
+
+### Step 1: Identify the Essay Type and Main Idea
+- Confirm the essay is an Opinion Essay (agree/disagree).
+- Identify the main idea from the topic sentence.
+
+### Step 2: Output the Topic Sentence
+- Display the topic sentence that the explanation must develop.
+
+### Step 3: Extract the Correct Explanation Formula
+- The explanation should answer: **Why? How? What is the result?**
+- It must logically connect the main idea to the essay question and provide reasoning or consequences.
+- **Formula:**
+  - [Reasoning/Mechanism] + [Result/Consequence (optional)]
+
+### Step 4: Construct or Analyze the Explanation
+- The explanation should:
+  - Directly support the topic sentence.
+  - Be 1–3 sentences (concise but detailed enough for clarity).
+  - Avoid vague statements; be specific and logical.
+  - Avoid introducing new main ideas.
+  - Use clear, natural language.
+
+#### Example Prompts for Explanation Construction:
+- "This is because..."
+- "The reason is that..."
+- "As a result..."
+- "This leads to..."
+- "For this reason..."
+
+### Step 5: Example Analysis
+- **Good Explanation:**
+  - Clearly explains why/how the main idea is true.
+  - Uses logical reasoning or cause-effect.
+  - Is specific and relevant.
+- **Weak Explanation:**
+  - Too vague or general ("This is good for people.")
+  - Repeats the topic sentence without adding reasoning.
+  - Off-topic or introduces a new main idea.
+
+---
+
+## Example Breakdown
+
+### Example 1
+**Topic Sentence:**
+"One reason why advertising alcohol should be banned is that it is harmful to health."
+
+**Good Explanation:**
+"This is because drinking too much alcohol can cause serious diseases such as liver cancer and heart problems. As a result, it puts a strain on the healthcare system."
+
+**Analysis:**
+- Explains the mechanism (alcohol causes disease).
+- Gives a result (strain on healthcare system).
+- Specific and logical.
+
+### Example 2
+**Topic Sentence:**
+"Another reason why advertising alcohol should be banned is because it influences young people."
+
+**Good Explanation:**
+"Alcohol advertisements often make drinking look glamorous and fun, which can encourage teenagers to start drinking at an early age. This increases the risk of addiction and health problems later in life."
+
+**Analysis:**
+- Explains how advertising influences behavior.
+- Gives a consequence (addiction, health problems).
+
+---
+
+## Checklist for Explanation Quality
+- Does the explanation directly support the topic sentence?
+- Is the reasoning clear and logical?
+- Is it specific (not vague or generic)?
+- Does it avoid introducing new main ideas?
+- Is the language natural and concise?
+
+---
+
+## Correction/Improvement Guidance
+- If the explanation is missing, vague, or off-topic, prompt the user to add or revise it using the formula and examples above.
+- Suggest using cause/effect language and specific details.
+
+---
+
+## Summary Table
+| Step | Action |
+|------|--------|
+| 1    | Identify essay type and main idea |
+| 2    | Output topic sentence |
+| 3    | Extract explanation formula (why/how/result) |
+| 4    | Construct/analyze explanation (clarity, logic, specificity) |
+| 5    | Check for errors and suggest improvements |
+

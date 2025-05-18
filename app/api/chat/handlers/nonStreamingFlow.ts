@@ -4,6 +4,7 @@ import { PROMPT_LIST as OPINION_PROMPTS } from "../prompts/opinionPrompts"; // C
 import { ADV_DISADV_TYPE1_PROMPTS } from "../prompts/adsType1Prompts"; // Corrected path: Use renamed file
 import { DISCUSSION_PROMPT_LIST } from "../prompts/discussionPrompts"; // Corrected path: Use renamed file
 import { PROMPT_LIST as CONCLUSION_PROMPT_LIST } from "../prompts/concPrompts"; // <-- Import Conclusion Prompts
+import { PROMPT_LIST as OPINION_MBP_PROMPTS } from "../prompts/opinionMbpPrompts";
 
 import { ConversationEntry, HandlerResult, ConversationProcessingInput, NamedMemory } from '../types/routeTypes'; // Go up one level, import NamedMemory
 import {
@@ -79,6 +80,10 @@ export async function handleNonStreamingFlow(
     case "opinion_conclusion": // <-- Add case for conclusion
       activePromptList = CONCLUSION_PROMPT_LIST;
       console.log("[INFO] Using CONCLUSION_PROMPT_LIST");
+      break;
+    case "opinion_mbp":
+      activePromptList = OPINION_MBP_PROMPTS;
+      console.log("[INFO] Using OPINION_MBP_PROMPTS");
       break;
     case "opinion":
     default: // Default to opinion if type is missing or unrecognized

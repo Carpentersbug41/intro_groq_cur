@@ -6,7 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import ReactMarkdown from "react-markdown";
 
 // --- Define Essay Types ---
-type EssayType = "opinion" | "ads_type1" | "discussion" | "opinion_conclusion"; // <-- Add opinion_conclusion
+type EssayType = "opinion" | "ads_type1" | "discussion" | "opinion_conclusion" | "opinion_mbp"; // <-- Add 'opinion_mbp'
 
 function customTrim(str: string) {
   return str.replace(/^[\s\u00A0\u200B]+|[\s\u00A0\u200B]+$/g, "");
@@ -223,6 +223,23 @@ export function ChatWindow(props: {
               <span className={`ml-2 ${disableRadios ? "text-gray-400" : "text-gray-800"}`}>{type.label}</span>
             </label>
           ))}
+        </div>
+
+        {/* Main Body Paragraphs Types */}
+        <label className="block text-sm font-medium text-gray-700 mb-1 mt-2">Select Main Body Paragraphs Type:</label>
+        <div className="flex space-x-4 mb-3">
+          <label className="inline-flex items-center text-sm">
+            <input
+              type="radio"
+              name="essayType"
+              value="opinion_mbp"
+              checked={selectedEssayType === "opinion_mbp"}
+              onChange={() => setSelectedEssayType("opinion_mbp")}
+              disabled={disableRadios}
+              className="form-radio h-4 w-4 text-blue-600 transition duration-150 ease-in-out disabled:opacity-50"
+            />
+            <span className={`ml-2 ${disableRadios ? "text-gray-400" : "text-gray-800"}`}>Opinion MBP</span>
+          </label>
         </div>
 
         {/* Conclusion Types */}
