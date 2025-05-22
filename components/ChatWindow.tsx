@@ -334,7 +334,7 @@ export function ChatWindow(props: {
           <div className="text-xs text-gray-500 mt-1 ml-1">
             {typeof window !== 'undefined' && navigator.platform.includes('Mac')
               ? 'Press ⌘+Enter to send'
-              : 'Press Ctrl+Enter to send'}
+              : 'Press Ctrl + Enter to send'}
           </div>
         </div>
         <button
