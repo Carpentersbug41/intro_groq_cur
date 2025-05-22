@@ -205,18 +205,34 @@ export function ChatWindow2(props: {
 
           {/* Input Form */}
           <form onSubmit={handleSubmit} className="flex">
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={placeholder}
-              className="flex-grow p-2 mr-2 border border-gray-300 rounded-md"
-              disabled={!apiKey.trim()}
-            />
+            <div className="flex flex-col flex-grow">
+              <textarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if ((e.key === "Enter" && (e.ctrlKey || e.metaKey))) {
+                    e.preventDefault();
+                    // Submit the form
+                    const form = e.currentTarget.form;
+                    if (form) {
+                      form.requestSubmit();
+                    }
+                  }
+                }}
+                placeholder={placeholder}
+                className="flex-grow p-2 mr-2 border border-gray-300 rounded-md resize-y min-h-[40px] max-h-[120px]"
+                disabled={!apiKey.trim()}
+                rows={2}
+              />
+              <div className="text-xs text-gray-500 mt-1 ml-1">
+                {typeof window !== 'undefined' && navigator.platform.includes('Mac')
+                  ? 'Press ⌘+Enter to send'
+                  : 'Press Ctrl+Enter to send'}
+              </div>
+            </div>
             <button
               type="submit"
-              className={`bg-blue-500 text-white px-4 py-2 rounded-md ${
-                isSubmitting ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+              className={`bg-blue-500 text-white px-4 py-2 rounded-md ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
               disabled={!apiKey.trim() || isSubmitting}
             >
               {isSubmitting ? "Sending..." : "Send"}

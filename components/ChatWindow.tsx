@@ -41,7 +41,7 @@ export function ChatWindow(props: {
 
   const messageContainerRef = useRef<HTMLDivElement | null>(null);
   // --- ADD REF FOR INPUT ---
-  const inputRef = useRef<HTMLInputElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   // Effect to scroll messages down
   useEffect(() => {
@@ -310,15 +310,33 @@ export function ChatWindow(props: {
 
       {/* Form */}
       <form onSubmit={handleSubmit} className="flex items-center">
-        <input
-          ref={inputRef}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={placeholder}
-          className="flex-grow p-2 mr-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-          disabled={isSubmitting || isResetting}
-          autoFocus
-        />
+        <div className="flex flex-col flex-grow">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if ((e.key === "Enter" && (e.ctrlKey || e.metaKey))) {
+                e.preventDefault();
+                // Submit the form
+                const form = e.currentTarget.form;
+                if (form) {
+                  form.requestSubmit();
+                }
+              }
+            }}
+            placeholder={placeholder}
+            className="flex-grow p-2 mr-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-y min-h-[40px] max-h-[120px]"
+            disabled={isSubmitting || isResetting}
+            autoFocus
+            rows={2}
+          />
+          <div className="text-xs text-gray-500 mt-1 ml-1">
+            {typeof window !== 'undefined' && navigator.platform.includes('Mac')
+              ? 'Press ⌘+Enter to send'
+              : 'Press Ctrl+Enter to send'}
+          </div>
+        </div>
         <button
           type="submit"
           className={`bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition duration-150 ease-in-out text-sm ${isSubmitting || isResetting ? "opacity-50 cursor-not-allowed" : ""}`}
