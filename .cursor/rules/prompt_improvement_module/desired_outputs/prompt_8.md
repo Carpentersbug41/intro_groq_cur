@@ -1,0 +1,1 @@
+**Topic Sentence MBP1:** One reason why starting school early is beneficial is that it helps children develop social skills. 

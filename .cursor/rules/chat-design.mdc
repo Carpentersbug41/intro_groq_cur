@@ -42,7 +42,7 @@ The `PromptType` interface defines the configuration for each step in the conver
 
 -   **`chaining` (boolean):**
     -   **Purpose:** Allows the output of one LLM call (from the prompt *before* this one) to be used as input context for the LLM call of *this* prompt, enabling sequential processing or refinement.
-    -   **Interaction:** Handled by `chainIfNeeded` in `chainUtils.ts`. If a prompt has `chaining: true`, this function is called. It takes the previous assistant response, adds it to the history (often as a 'user' turn for context), updates the system prompt to the current one, calls the LLM, and repeats if the *next* prompt also has `chaining: true`. *(Note: Integration between `chainIfNeeded` and the main `processTransitions` flow might need review, as they handle sequential execution differently).*
+    -   **Interaction:** Handled by `chainIfNeeded` in `chainUtils.ts`. If a prompt has `chaining: true`, this function is called. It takes the previous assistant response, adds it to the history (often as a 'user' turn for context), updates the system prompt to the current one, calls the LLM, and repeats if the *next* prompt also has `chaining: true`. *(Note: Integration between `chainIfNeeded` and the main `processTransitions` flow is still under review, as they handle sequential execution differently).*
 
 -   **`temperature` (number):**
     -   **Purpose:** Controls the randomness/creativity of the LLM response for this specific prompt. Higher values (e.g., 0.8) mean more randomness, lower values (e.g., 0) mean more deterministic output.
@@ -50,7 +50,7 @@ The `PromptType` interface defines the configuration for each step in the conver
 
 -   **`buffer_memory` (number):**
     -   **Purpose:** Dynamically adjusts the size of the conversation history buffer *before* this prompt's LLM call is made.
-    -   **Interaction:** `updateDynamicBufferMemory` in `memoryUtils.ts` reads this value. If present and valid, it updates the session's `currentBufferSize`. `manageBuffer` in `bufferUtils.ts` then uses this updated size to trim the history before the LLM call.
+    -   **Interaction:** `updateDynamicBufferMemory` in `memoryUtils.ts` reads this value. If present and valid, it updates the session's `currentBufferSize`. `manageBuffer` in `bufferUtils.ts` then uses this updated size to trim the history before the LLM call. **Buffer management now uses REVISION 7 rules:** it preserves the system prompt, all assistant messages starting with `# `, the user message immediately following such an assistant message, and the N most recent messages, maintaining their original order. This is more sophisticated than a simple buffer size and ensures important context is retained.
 
 -   **`wait_time` (number):**
     -   **Purpose:** Intended to introduce a delay (potentially before or after the prompt executes).
@@ -109,6 +109,9 @@ The `handleNonStreamingFlow` function orchestrates the main interaction logic wh
 9.  **Process Transitions:** Calls `processTransitions` (`autoTransitionUtils.ts`) with `contentForTransitions`, `historyAfterLLM`, and current state. This handles any `autoTransitionHidden` or `autoTransitionVisible` flags on the prompt that just executed (`currentIndex`), potentially involves further LLM calls and state updates. The `processTransitions` function internally uses `handleAutoTransitionHidden` and `handleAutoTransitionVisible`, which also handle `appendTextAfterResponse` for responses generated during transitions.
 10. **Update Final State:** Updates local state variables (`finalResponseContent`, `nextIndexAfterProcessing`, `indexGeneratingFinalResponse`, `currentNamedMemory`, `currentBufferSize`) based on the transition results.
 11. **Store & Return:** (Optionally stores results if `isStorable` is true) Returns the `finalResponseContent` and the `updatedSessionData` containing the state for the *next* turn (the `nextIndexAfterProcessing`, the `indexGeneratingFinalResponse` as the new `promptIndexThatAskedLastQuestion`, updated memory, and buffer size).
+
+**Note on Streaming Flow:**
+There is a streaming flow handler (`streamingFlow.ts`), but it is not yet fully integrated with the session cookie state model. The main supported and robust flow is the non-streaming flow described below.
 
 ## 4. Helper Utility Roles
 

@@ -1,0 +1,1 @@
+**Example MBP1:** For example, children who attend preschool often learn to share and cooperate with others. 

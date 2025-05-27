@@ -1,0 +1,1 @@
+**Explanation MBP1:** This is because they interact with peers from a young age. That is to say, they learn to share and cooperate in group settings. As a result, they are better prepared for primary education. 

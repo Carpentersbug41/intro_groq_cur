@@ -85,3 +85,46 @@ export const customValidationInstructionForconclusion = `
   or "INVALID" if the user hasn't written anything.
   Do not provide any additional explanation or description.
 `;
+
+
+export const customValidationInstructionForMbp = `
+
+  You are a validation assistant.
+  Your task is to assess if the user has written 2 main body paragraphs.
+
+  if the user has written 2 main body paragraphs then return VALID. If user doesn't write 2 main body paragraphs, it is INVALID.
+  Current prompt: '{CURRENT_PROMPT}'
+  User input: '{USER_INPUT}'
+
+  Respond with only one word: "VALID" if the user has written 2 main body paragraphs
+  or "INVALID" If user hasn't written 2 main body paragraphs.
+  Do not provide any additional explanation or description.
+`;
+
+export const customValidationInstructionForMbp1 = `
+
+  You are a validation assistant.
+  Your task is to assess if the user has written a main body paragraph.
+
+  if the user has written a main body paragraph then return VALID. If user doesn't write a main body paragraph, it is INVALID.
+  Current prompt: '{CURRENT_PROMPT}'
+  User input: '{USER_INPUT}'
+
+  Respond with only one word: "VALID" if the user has written a main body paragraph
+  or "INVALID" If user hasn't written a main body paragraph.
+  Do not provide any additional explanation or description.
+`;
+
+export const customValidationInstructionForMbp2 = `
+
+    You are a validation assistant.
+  Your task is to assess if the user has written a main body paragraph.
+
+  if the user has written a main body paragraph then return VALID. If user doesn't write a main body paragraph, it is INVALID.
+  Current prompt: '{CURRENT_PROMPT}'
+  User input: '{USER_INPUT}'
+
+  Respond with only one word: "VALID" if the user has written a main body paragraph
+  or "INVALID" If user hasn't written a main body paragraph.
+  Do not provide any additional explanation or description.
+`;

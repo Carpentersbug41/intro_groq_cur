@@ -326,7 +326,7 @@ export function ChatWindow(props: {
               }
             }}
             placeholder={placeholder}
-            className="flex-grow p-2 mr-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-y min-h-[40px] max-h-[120px]"
+            className="flex-grow p-2 mr-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-y min-h-[80px] max-h-[240px]"
             disabled={isSubmitting || isResetting}
             autoFocus
             rows={2}

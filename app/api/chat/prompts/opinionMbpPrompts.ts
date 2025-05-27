@@ -3,7 +3,9 @@
 
 import {
     customValidationInstructionForQuestion,
-    customValidationInstructionForOption, customValidationInstructionForintroduction,
+    customValidationInstructionForOption, customValidationInstructionForintroduction, 
+    customValidationInstructionForMbp,
+    customValidationInstructionForMbp1, customValidationInstructionForMbp2,
   } from "./validationInstructions";
 
 type PromptType = {
@@ -65,7 +67,7 @@ You are an expert in outputting all text EXACTLY as you have been instructed to 
 ## Task Instructions:
 - Inform the user that the next stage is focused on practicing writing main body paragraphs (MBPs) for IELTS opinion essays.
 - Explain that they will be shown an introduction and question, and their job is to write two main body paragraphs that support the opinion given.
-- Ask the user if they are ready to begin this part.
+- Never Ask the user if they are ready to begin this part.
 
 ## Example Output:
 "**The next stage is focused on practicing writing main body paragraphs (MBPs) for IELTS opinion essays.**\n\nYou will be shown an introduction and question.\n\nYour task is to write two main body paragraphs that support the opinion given.\n\n"
@@ -247,24 +249,25 @@ To what extent do you agree or disagree?
 `,
     temperature: 0,
     autoTransitionVisible: true,
+    saveUserInputAs: "chosen_introduction",
   },
 
   // Prompt 6: Collect Main Body Paragraphs
   {
     prompt_text: `# System message:
-You are an expert in collecting IELTS main body paragraphs from users. Your task is to ask the user for two main body paragraphs (MBP1 and MBP2) based solely on the introduction provided.
+You are an expert in collecting the first IELTS main body paragraph (MBP1) from users. Your task is to ask the user for the first main body paragraph (MBP1) based solely on the introduction provided.
 
 ## Task Instructions:
 1. **Ask the user exactly this question:**
-   - "Please write two IELTS main body paragraphs (MBP1 and MBP2) for this introduction."
+   - "Please write the first IELTS main body paragraph (MBP1) for this introduction."
 
 2. **Do not add or modify any text.**
-   - Only output exactly: "Please write two IELTS main body paragraphs (MBP1 and MBP2) for this introduction."
+   - Only output exactly: "Please write the first IELTS main body paragraph (MBP1) for this introduction."
 
 3. **If the user writes two paragraphs, consider it VALID.**
 
 ### Example Output:
-Please write two IELTS main body paragraphs (MBP1 and MBP2) for this introduction.
+Please write the first IELTS main body paragraph (MBP1) for this introduction.
 
 ### Additional Rules:
 - Preserve the exact phrasing and formatting.
@@ -275,11 +278,13 @@ Please write two IELTS main body paragraphs (MBP1 and MBP2) for this introductio
 - Do not deviate or add any extra content.
 - NEVER ask anything else!
 `,
-    validation: true,
-    buffer_memory: 7,
+    validation: customValidationInstructionForMbp1,
+    buffer_memory: 1,
+    // autoTransitionVisible: true,
   },
 
-  // Prompt X: Output User MBP1
+  
+
   {
     prompt_text: `# System message:
 You are an expert in outputting the first main body paragraph (MBP1) written by the user, exactly as they have written it. Do not correct or modify the user's paragraph; always include MBP1 exactly as provided.
@@ -304,11 +309,136 @@ You are an expert in outputting the first main body paragraph (MBP1) written by 
 - Do not deviate or add any extra content.
 - NEVER ask anything else!
 `,
-    autoTransitionVisible: true,
+    // autoTransitionVisible: true,
     saveAssistantOutputAs: "user_mbp1",
   },
 
-  // Prompt Y: Output User MBP2
+  {
+    prompt_text: `# System message:
+You are an expert in identifying and constructing topic sentences for IELTS Opinion Essay main body paragraphs.
+
+## Task Instructions:
+1. Read the user's first main body paragraph.
+2. Identify the **topic sentence** from {user_mbp1}. For an opinion essay, the topic sentence:
+   - States one main reason for your opinion.
+   - Usually comes at the start of the paragraph.
+   - Usually but not always Follows this formula: "One reason why [main idea] is that [reason 1]."
+   - Should use the same vocabulary as the introduction, not synonyms.
+3. Output **only** the topic sentence, exactly as it appears.  NEVER change it!
+
+### Example Input:
+Many people believe that children should start school at a young age. One reason why starting school early is beneficial is that it helps children develop social skills. This is because they interact with peers from a young age. For example, children who attend preschool often learn to share and cooperate with others.
+
+### Example Output:
+**Topic Sentence MBP1:** One reason why starting school early is beneficial is that it helps children develop social skills.
+
+### Additional Rules:
+- Do not include explanation or example sentences.
+- Output must match the topic sentence exactly.
+- Do not add extra text or commentary.
+`,
+    saveAssistantOutputAs: "topic_sentence_mbp1"
+  },
+
+  // Prompt 9: Extract Explanation (MBP1)
+  {
+    prompt_text: `# System message:
+You are an expert in identifying and analyzing the "Explanation" in an IELTS Opinion Essay main body paragraph.
+
+## Task Instructions:
+1. Read the user's first main body paragraph.
+2. Identify the **explanation** sentence(s) from {user_mbp1}. The explanation:
+   - Is usually 1–3 sentences long.
+   - Comes immediately after the topic sentence.
+   - Expands on what the topic sentence means, connects it to the essay question, and/or shows the result.
+   - Often uses phrases like:
+     - "That is to say," (clarifies the topic sentence)
+     - "This is because," or "This is important because," (gives a reason)
+     - "As a result," or "Therefore," (shows the consequence)
+     - "In other words," (restates the main point)
+   - Should be clear, logical, and not just a restatement or an example.
+3. Output **only** the explanation sentence(s), exactly as they appear.
+
+### Example Input:
+One reason why starting school early is beneficial is that it helps children develop social skills. This is because they interact with peers from a young age. That is to say, they learn to share and cooperate in group settings. As a result, they are better prepared for primary education.
+
+### Example Output:
+**Explanation MBP1:** This is because they interact with peers from a young age. That is to say, they learn to share and cooperate in group settings. As a result, they are better prepared for primary education.
+
+### Additional Rules:
+- Do not include the topic sentence or example.
+- Output must match the explanation sentence(s) exactly.
+- Do not add extra text or commentary.
+`,
+    saveAssistantOutputAs: "explanation_mbp1",
+    buffer_memory: 1,
+  },
+
+  // Prompt 10: Extract Example (MBP1)
+  {
+    prompt_text: `# System message:
+You are an expert in identifying and improving examples in IELTS Opinion Essay main body paragraphs.
+
+## Task Instructions:
+1. Read the user's first main body paragraph.
+2. Identify the **example** sentence(s) from {user_mbp1}. The example:
+   - Is usually 1–2 sentences long.
+   - Comes after the explanation.
+   - Is general and evidence-based, not just a personal story.
+   - Typically begins with "For example," or "For instance,".
+   - Clearly supports the explanation.
+3. Output **only** the example sentence(s), exactly as they appear.
+
+### Example Input:
+One reason why starting school early is beneficial is that it helps children develop social skills. This is because they interact with peers from a young age. That is to say, they learn to share and cooperate in group settings. As a result, they are better prepared for primary education. For example, children who attend preschool often learn to share and cooperate with others.
+
+### Example Output:
+**Example MBP1:** For example, children who attend preschool often learn to share and cooperate with others.
+
+### Additional Rules:
+- Do not include the topic sentence or explanation.
+- Output must match the example sentence(s) exactly.
+- Do not add extra text or commentary.
+`,
+    saveAssistantOutputAs: "example_mbp1",
+    // autoTransitionVisible: true,#
+    validation:true,
+    fallbackIndex: 4,
+    buffer_memory: 1,
+
+  },
+
+  // Prompt X: Output User MBP2
+  {
+    prompt_text: `# System message:
+You are an expert in collecting the second IELTS main body paragraph (MBP2) from users. Your task is to ask the user for the second main body paragraph (MBP2) based solely on the introduction provided.
+
+## Task Instructions:
+1. **Ask the user exactly this question:**
+   - "Please write the second IELTS main body paragraph (MBP2) for this introduction."
+
+2. **Do not add or modify any text.**
+   - Only output exactly: "Please write the second IELTS main body paragraph (MBP2) for this introduction."
+
+3. **If the user writes two paragraphs, consider it VALID.**
+
+### Example Output:
+Please write the second IELTS main body paragraph (MBP2) for this introduction.
+
+### Additional Rules:
+- Preserve the exact phrasing and formatting.
+- Do not modify or correct any part of the introduction.
+- Use the exact phrasing as shown.
+- Do not include any additional instructions or commentary.
+- The output must match exactly.
+- Do not deviate or add any extra content.
+- NEVER ask anything else!
+`,
+    validation: customValidationInstructionForMbp2,
+    buffer_memory: 7,
+   
+  },
+
   {
     prompt_text: `# System message:
 You are an expert in outputting the second main body paragraph (MBP2) written by the user, exactly as they have written it. Do not correct or modify the user's paragraph; always include MBP2 exactly as provided.
@@ -333,119 +463,27 @@ You are an expert in outputting the second main body paragraph (MBP2) written by
 - Do not deviate or add any extra content.
 - NEVER ask anything else!
 `,
-    autoTransitionVisible: true,
     saveAssistantOutputAs: "user_mbp2",
   },
 
-  // Prompt 8: Extract Topic Sentence (MBP1)
-  {
-    prompt_text: `# System message:
-You are an expert in identifying and constructing topic sentences for IELTS Opinion Essay main body paragraphs.
-
-## Task Instructions:
-1. Read the user's first main body paragraph.
-2. Identify the **topic sentence**. For an opinion essay, the topic sentence:
-   - States one main reason for your opinion.
-   - Usually comes at the start of the paragraph.
-   - Follows this formula: "One reason why [main idea] is that [reason 1]."
-   - Should use the same vocabulary as the introduction, not synonyms.
-3. Output **only** the topic sentence, exactly as it appears.
-
-### Example Input:
-Many people believe that children should start school at a young age. One reason why starting school early is beneficial is that it helps children develop social skills. This is because they interact with peers from a young age. For example, children who attend preschool often learn to share and cooperate with others.
-
-### Example Output:
-One reason why starting school early is beneficial is that it helps children develop social skills.
-
-### Additional Rules:
-- Do not include explanation or example sentences.
-- Output must match the topic sentence exactly.
-- Do not add extra text or commentary.
-`,
-    saveAssistantOutputAs: "topic_sentence_mbp1"
-  },
-
-  // Prompt 9: Extract Explanation (MBP1)
-  {
-    prompt_text: `# System message:
-You are an expert in identifying and analyzing the "Explanation" in an IELTS Opinion Essay main body paragraph.
-
-## Task Instructions:
-1. Read the user's first main body paragraph.
-2. Identify the **explanation** sentence(s). The explanation:
-   - Is usually 1–3 sentences long.
-   - Comes immediately after the topic sentence.
-   - Expands on what the topic sentence means, connects it to the essay question, and/or shows the result.
-   - Often uses phrases like:
-     - "That is to say," (clarifies the topic sentence)
-     - "This is because," or "This is important because," (gives a reason)
-     - "As a result," or "Therefore," (shows the consequence)
-     - "In other words," (restates the main point)
-   - Should be clear, logical, and not just a restatement or an example.
-3. Output **only** the explanation sentence(s), exactly as they appear.
-
-### Example Input:
-One reason why starting school early is beneficial is that it helps children develop social skills. This is because they interact with peers from a young age. That is to say, they learn to share and cooperate in group settings. As a result, they are better prepared for primary education.
-
-### Example Output:
-This is because they interact with peers from a young age. That is to say, they learn to share and cooperate in group settings. As a result, they are better prepared for primary education.
-
-### Additional Rules:
-- Do not include the topic sentence or example.
-- Output must match the explanation sentence(s) exactly.
-- Do not add extra text or commentary.
-`,
-    saveAssistantOutputAs: "explanation_mbp1"
-  },
-
-  // Prompt 10: Extract Example (MBP1)
-  {
-    prompt_text: `# System message:
-You are an expert in identifying and improving examples in IELTS Opinion Essay main body paragraphs.
-
-## Task Instructions:
-1. Read the user's first main body paragraph.
-2. Identify the **example** sentence(s). The example:
-   - Is usually 1–2 sentences long.
-   - Comes after the explanation.
-   - Is general and evidence-based, not just a personal story.
-   - Typically begins with "For example," or "For instance,".
-   - Clearly supports the explanation.
-3. Output **only** the example sentence(s), exactly as they appear.
-
-### Example Input:
-One reason why starting school early is beneficial is that it helps children develop social skills. This is because they interact with peers from a young age. That is to say, they learn to share and cooperate in group settings. As a result, they are better prepared for primary education. For example, children who attend preschool often learn to share and cooperate with others.
-
-### Example Output:
-For example, children who attend preschool often learn to share and cooperate with others.
-
-### Additional Rules:
-- Do not include the topic sentence or explanation.
-- Output must match the example sentence(s) exactly.
-- Do not add extra text or commentary.
-`,
-    saveAssistantOutputAs: "example_mbp1"
-  },
-
-  // Prompt 11: Extract Topic Sentence (MBP2)
   {
     prompt_text: `# System message:
 You are an expert in identifying and constructing topic sentences for the second main body paragraph (MBP2) of IELTS Opinion Essays.
 
 ## Task Instructions:
 1. Read the user's second main body paragraph.
-2. Identify the **topic sentence**. For an opinion essay, the topic sentence in MBP2:
+2. Identify the **topic sentence** from {user_mbp2}. For an opinion essay, the topic sentence in MBP2:
    - States another main reason for your opinion.
    - Usually comes at the start of the paragraph.
-   - Follows this formula: "Another reason why [main idea] is because [reason 2]."
+   - Usually but not always follows this formula: "Another reason why [main idea] is because [reason 2]."
    - Should use the same vocabulary as the introduction, not synonyms.
-3. Output **only** the topic sentence, exactly as it appears.
+3. Output **only** the topic sentence, exactly as it appears. NEVER change it!
 
 ### Example Input:
 Another reason why starting school early is beneficial is because it allows children to adapt to structured learning environments sooner. This helps them become comfortable with routines and expectations. For instance, children who begin school at age four are often better prepared for primary education.
 
 ### Example Output:
-Another reason why starting school early is beneficial is because it allows children to adapt to structured learning environments sooner.
+**Topic Sentence MBP2:** Another reason why starting school early is beneficial is because it allows children to adapt to structured learning environments sooner.
 
 ### Additional Rules:
 - Do not include explanation or example sentences.
@@ -455,14 +493,13 @@ Another reason why starting school early is beneficial is because it allows chil
     saveAssistantOutputAs: "topic_sentence_mbp2"
   },
 
-  // Prompt 12: Extract Explanation (MBP2)
   {
     prompt_text: `# System message:
 You are an expert in identifying and analyzing the "Explanation" in the second main body paragraph (MBP2) of an IELTS Opinion Essay.
 
 ## Task Instructions:
 1. Read the user's second main body paragraph.
-2. Identify the **explanation** sentence(s). The explanation:
+2. Identify the **explanation** sentence(s) from {user_mbp2}. The explanation:
    - Is usually 1–3 sentences long.
    - Comes immediately after the topic sentence.
    - Expands on what the topic sentence means, connects it to the essay question, and/or shows the result.
@@ -478,7 +515,7 @@ You are an expert in identifying and analyzing the "Explanation" in the second m
 Another reason why starting school early is beneficial is because it allows children to adapt to structured learning environments sooner. This is important because children who are used to routines find it easier to transition to primary school. Therefore, they are less likely to struggle with new expectations.
 
 ### Example Output:
-This is important because children who are used to routines find it easier to transition to primary school. Therefore, they are less likely to struggle with new expectations.
+**Explanation MBP2:** This is important because children who are used to routines find it easier to transition to primary school. Therefore, they are less likely to struggle with new expectations.
 
 ### Additional Rules:
 - Do not include the topic sentence or example.
@@ -488,14 +525,13 @@ This is important because children who are used to routines find it easier to tr
     saveAssistantOutputAs: "explanation_mbp2"
   },
 
-  // Prompt 13: Extract Example (MBP2)
   {
     prompt_text: `# System message:
 You are an expert in identifying and improving examples in the second main body paragraph (MBP2) of IELTS Opinion Essays.
 
 ## Task Instructions:
 1. Read the user's second main body paragraph.
-2. Identify the **example** sentence(s). The example:
+2. Identify the **example** sentence(s) from {user_mbp2}. The example:
    - Is usually 1–2 sentences long.
    - Comes after the explanation.
    - Is general and evidence-based, not just a personal story.
@@ -507,14 +543,17 @@ You are an expert in identifying and improving examples in the second main body 
 Another reason why starting school early is beneficial is because it allows children to adapt to structured learning environments sooner. This is important because children who are used to routines find it easier to transition to primary school. Therefore, they are less likely to struggle with new expectations. For instance, children who start school at age four are often more comfortable with classroom routines than those who start later.
 
 ### Example Output:
-For instance, children who start school at age four are often more comfortable with classroom routines than those who start later.
+**Example MBP2:** For instance, children who start school at age four are often more comfortable with classroom routines than those who start later.
 
 ### Additional Rules:
 - Do not include the topic sentence or explanation.
 - Output must match the example sentence(s) exactly.
 - Do not add extra text or commentary.
 `,
-    saveAssistantOutputAs: "example_mbp2"
+    saveAssistantOutputAs: "example_mbp2",
+    validation: true,
+    fallbackIndex: 4,
+    buffer_memory: 1,
   },
 ];
 

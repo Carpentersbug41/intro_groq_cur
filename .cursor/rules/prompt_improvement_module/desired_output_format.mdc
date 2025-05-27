@@ -1,0 +1,71 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Desired Output Formation & Format
+
+## Purpose
+This document defines how to create, format, and review desired outputs for each prompt in the prompt improvement module. These outputs serve as the gold standard for grading and improvement.
+
+---
+
+## File Naming & Location
+- **All desired outputs are now stored in a single file:** `desired_outputs/all_desired_outputs.md`.
+- Each prompt's output is clearly separated and labeled by prompt number (e.g., `## Prompt 0`, `## Prompt 1`, etc.).
+
+---
+
+## Content & Extraction
+- The content for each prompt should be the **exact, literal ideal output** for that prompt.
+- Extract the output from the "Example Output" section of the prompt definition (e.g., from `@prompts.ts`).
+- Preserve all formatting (Markdown, line breaks, bolding, etc.) as shown in the example.
+- If no example output is present, consult a subject matter expert to define the ideal output.
+
+---
+
+## Formatting Rules
+- Use plain text or Markdown as appropriate for the prompt.
+- Do not add any extra commentary, explanations, or metadata—only the desired output itself.
+- Each prompt's output should be preceded by a heading (e.g., `## Prompt 0`) and separated by `---`.
+- If the output is multi-line, preserve all line breaks and formatting.
+- If the output includes Markdown headings, bold, or code blocks, retain them exactly.
+
+---
+
+## Review Process
+1. **Automated Extraction (Optional):**
+   - Use a script to extract example outputs from the prompt definitions file.
+2. **Human Review:**
+   - Manually review each section in `all_desired_outputs.md` to ensure:
+     - The output matches expectations and requirements.
+     - Formatting is correct and complete.
+     - The output is truly the "gold standard" for that prompt.
+3. **Edit as Needed:**
+   - Make corrections or improvements directly in the file.
+
+---
+
+## Example
+
+```
+## Prompt 0
+Are you ready to begin practicing IELTS opinion essay main body paragraphs?
+
+---
+
+## Prompt 1
+**The next stage is focused on practicing writing main body paragraphs (MBPs) for IELTS opinion essay main body paragraphs.**
+
+You will be shown an introduction and question.
+
+Your task is to write two main body paragraphs that support the opinion given.
+```
+
+---
+
+## Notes
+- All desired outputs must be reviewed and approved before use in grading.
+- If a prompt's ideal output changes, update the corresponding section and log the change.
+
+
