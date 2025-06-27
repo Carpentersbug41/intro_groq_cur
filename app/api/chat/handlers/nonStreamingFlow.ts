@@ -343,100 +343,107 @@ export async function handleNonStreamingFlow(
     // If we reach here, validation succeeded or wasn't needed for the previous prompt.
     // We now generate the response for the prompt at `currentIndex`.
 
-      const currentPromptObj = activePromptList[currentIndex]; // <-- Use activePromptList
+    const currentPromptObj = activePromptList[currentIndex]; // <-- Use activePromptList
     if (!currentPromptObj) {
-         // console.error("[ERROR] Current prompt object is missing at index:", currentIndex);
-         return { content: "Internal error: Could not retrieve current prompt details.", updatedSessionData: null };
+        // console.error("[ERROR] Current prompt object is missing at index:", currentIndex);
+        return { content: "Internal error: Could not retrieve current prompt details.", updatedSessionData: null };
     }
-    const currentPromptText = currentPromptObj.prompt_text || "";
-      const currentPromptWithMemory = injectNamedMemory(currentPromptText, currentNamedMemory);
 
-    // Update dynamic buffer size based on the prompt that is *about to run*
-    currentBufferSize = updateDynamicBufferMemory(currentPromptObj, currentBufferSize);
+    let assistantContentGenerated: string | null = null; // Use a distinct name for raw generated content
+    let baseAssistantResponse: string; // Content after memory processing, etc.
 
-    // Prepare conversation history for the main LLM call
-    let historyForLLM = [
-          { role: "system", content: currentPromptWithMemory },
-          ...currentHistory.filter((entry) => entry.role !== "system"),
-      ];
-    historyForLLM = manageBuffer(historyForLLM, currentBufferSize);
+    // --- Conditional Logic for Direct Output vs. LLM Call ---
+    if (currentPromptObj.directOutput !== undefined && currentPromptObj.directOutput !== null) {
+        // === Path for DIRECT OUTPUT prompts ===
+        console.log(`[INFO][nonStreamingFlow] Executing DIRECT OUTPUT for prompt index: ${currentIndex}.`);
+        assistantContentGenerated = currentPromptObj.directOutput;
 
-    // --- PAYLOAD PREP DEBUG LOG (Existing) ---
-    console.log(`>>> [PAYLOAD PREP DEBUG] History BEING USED for payload (Index: ${currentIndex}, Size: ${historyForLLM.length}):`);
-    console.log(JSON.stringify(historyForLLM.map(m => ({ role: m.role, content: (m.content ?? '').substring(0, 70) + '...' })), null, 2));
-    // --- END PAYLOAD PREP DEBUG LOG ---
+        // No LLM call needed, so historyForLLM prep for an LLM is skipped *for this step*.
+        // The overall conversation history (messagesFromClient) is still relevant.
 
-      // --- Main LLM Call ---
-      const mainPayload = {
-      model: getModelForCurrentPrompt(currentIndex, activePromptList), // <-- Pass activePromptList
-      temperature: currentPromptObj?.temperature ?? 0,
-      messages: historyForLLM, // Assigning the buffered history
-      };
+    } else if (currentPromptObj.prompt_text) {
+        // === Path for LLM-based prompts (existing logic) ===
+        console.log(`[INFO][nonStreamingFlow] Executing LLM-based prompt for index: ${currentIndex}.`);
+        const currentPromptTextWithMemory = injectNamedMemory(currentPromptObj.prompt_text, currentNamedMemory);
 
-    // --- START NEW DEBUG LOG ---
-    console.log(">>> [POST-ASSIGN DEBUG] Content of mainPayload.messages IMMEDIATELY after assignment:");
-    console.log(JSON.stringify(mainPayload.messages.map(m => ({ role: m.role, content: (m.content ?? '').substring(0, 70) + '...' })), null, 2));
-    // --- END NEW DEBUG LOG ---
+        currentBufferSize = updateDynamicBufferMemory(currentPromptObj, currentBufferSize); // Existing logic
 
-      // --- START API PAYLOAD LOG (MODIFIED) ---
-      console.log(`\n--- START API PAYLOAD (MAIN - Index: ${currentIndex}) ---`);
-      // console.log(JSON.stringify(mainPayload.messages, null, 2)); // <<< Comment out the stringify version
-      console.log("Simple log of mainPayload.messages structure:", mainPayload.messages); // <<< Log the raw object/array
-      console.log(`--- END API PAYLOAD (MAIN - Index: ${currentIndex}) ---\n`);
-      // --- END START API PAYLOAD LOG ---
+        // Prepare history for the LLM call
+        let historyForLLM = [
+            { role: "system", content: currentPromptTextWithMemory },
+            // currentHistory should be messagesFromClient here, representing the full chat up to the user's latest message
+            ...messagesFromClient.filter((entry) => entry.role !== "system"),
+        ];
+        historyForLLM = manageBuffer(historyForLLM, currentBufferSize); // Existing logic
 
-      const rawAssistantContent = await fetchApiResponseWithRetry(mainPayload);
-    const assistantContentCleaned = cleanLlmResponse(rawAssistantContent);
+        const mainPayload = {
+            model: getModelForCurrentPrompt(currentIndex, activePromptList), // Existing logic
+            temperature: currentPromptObj?.temperature ?? 0, // Existing logic
+            messages: historyForLLM,
+        };
 
-      if (!assistantContentCleaned) {
-       // console.error("[ERROR] Main LLM call failed for index:", currentIndex);
-       // Return state as it was *before* this failed call attempt
-          return {
-         content: "I'm sorry, I couldn't process that. Could you repeat?",
-         updatedSessionData: {
-            currentIndex: currentIndex, // Stay on the current index
-            promptIndexThatAskedLastQuestion: promptIndexThatAskedLastQuestion, // The last *successful* question asker
-            namedMemory: currentNamedMemory,
-            currentBufferSize: currentBufferSize
-          }
-          };
-      }
+        console.log(`\n--- START API PAYLOAD (MAIN - Index: ${currentIndex}) ---`);
+        console.log(JSON.stringify(mainPayload.messages.map(m => ({ role: m.role, content: (m.content ?? '').substring(0, 70) + '...' })), null, 2));
+        console.log(`--- END API PAYLOAD (MAIN - Index: ${currentIndex}) ---\n`);
 
-      // --- Process Assistant Response Memory (Save & Prefix) ---
-    // Uses config for the prompt that just ran (currentPromptObj at currentIndex)
-    let baseAssistantResponse = processAssistantResponseMemory(
-          assistantContentCleaned,
-      currentPromptObj,
-          currentNamedMemory,
-      currentIndex
-      );
+        const rawAssistantContentFromLLM = await fetchApiResponseWithRetry(mainPayload); // Existing logic
+        assistantContentGenerated = cleanLlmResponse(rawAssistantContentFromLLM); // Existing logic
 
-    // --- History Context *After* Main LLM Call (for transitions) ---
-      let historyAfterLLM = [
-      ...historyForLLM, // Use the history that was *actually sent* to the API
-      { role: "assistant", content: baseAssistantResponse } // Use base response here
-      ];
+    } else {
+        // === Path for Error or Misconfigured Prompt ===
+        console.error(`[ERROR][nonStreamingFlow] Prompt index ${currentIndex} has neither directOutput nor prompt_text.`);
+        assistantContentGenerated = "Error: Prompt configuration issue."; // Fallback error message
+    }
 
-    // --- New Step: Append Static Text if Configured ---
-    let contentForTransitions = baseAssistantResponse; // Start with the processed response
+    // --- Common processing AFTER content generation (direct or LLM) ---
+    if (assistantContentGenerated === null) {
+        console.error(`[ERROR][nonStreamingFlow] Failed to generate content for prompt index: ${currentIndex}.`);
+        // Handle error: return a generic message, maintain current state for retry.
+        return {
+            content: "I'm sorry, I couldn't process that. Could you try again?",
+            updatedSessionData: {
+                currentIndex: currentIndex,
+                promptIndexThatAskedLastQuestion: sessionData.promptIndexThatAskedLastQuestion, // From input sessionData
+                namedMemory: currentNamedMemory,
+                currentBufferSize: currentBufferSize
+            }
+        };
+    }
+
+    // Process memory (saveAssistantOutputAs) for the generated content
+    baseAssistantResponse = processAssistantResponseMemory(
+        assistantContentGenerated,
+        currentPromptObj,
+        currentNamedMemory, // This will be mutated by processAssistantResponseMemory
+        currentIndex
+    );
+
+    // Prepare history context for subsequent operations (e.g., transitions)
+    // This history MUST include the user's latest message AND this assistant's response.
+    const historyIncludingThisTurn = [
+        ...messagesFromClient, // Full history from client, ending with the latest user message
+        { role: "assistant", content: baseAssistantResponse } // The response from this step (direct or LLM)
+    ];
+
+    // Handle appendTextAfterResponse
+    let contentForTransitions = baseAssistantResponse;
     if (currentPromptObj.appendTextAfterResponse) {
-      console.log(`[DEBUG] Appending static text for prompt index ${currentIndex}: "${currentPromptObj.appendTextAfterResponse}"`);
-      // Add two spaces and a newline before the appended text for Markdown hard break
-      contentForTransitions += "  \n" + currentPromptObj.appendTextAfterResponse;
+        console.log(`[DEBUG][nonStreamingFlow] Appending static text for prompt index ${currentIndex}: "${currentPromptObj.appendTextAfterResponse}"`);
+        contentForTransitions += "  \n" + currentPromptObj.appendTextAfterResponse;
     }
-    // --- End New Step ---
 
-    // --- Step 5: Process Transitions ---
-    const executedPromptIndex = currentIndex; // The index that just generated the main response
+    const executedPromptIndex = currentIndex;
 
-    // Call the refactored transition processing function
+    // Call processTransitions
+    // The history passed here (historyIncludingThisTurn) now correctly contains the direct output if it occurred.
+    console.log(`[DEBUG][nonStreamingFlow] Calling processTransitions with historyIncludingThisTurn (length: ${historyIncludingThisTurn.length}) for executedPromptIndex: ${executedPromptIndex}`);
     const transitionResult = await processTransitions({
-        initialHistory: historyAfterLLM,
-        initialContent: contentForTransitions, // Pass content with appended text
+        initialHistory: historyIncludingThisTurn,
+        initialContent: contentForTransitions,
         executedPromptIndex: executedPromptIndex,
-        initialNamedMemory: currentNamedMemory, // Pass memory *after* main call processing
-        initialBufferSize: currentBufferSize, // Pass buffer size *after* main call update
-        activePromptList: activePromptList // <-- Pass activePromptList
+        initialNamedMemory: currentNamedMemory, // currentNamedMemory is updated by processAssistantResponseMemory
+        initialBufferSize: currentBufferSize,
+        activePromptList: activePromptList
     });
 
     // Update state based on transition results
@@ -447,61 +454,61 @@ export async function handleNonStreamingFlow(
     currentBufferSize = transitionResult.finalBufferSize;
 
     // --- Step 6: Store to DB (Optional) and Prepare Final Return ---
-     console.log(`>>> DEBUG: Reaching FINAL return. Final content generated by index: ${indexGeneratingFinalResponse}. Next turn index: ${nextIndexAfterProcessing}. isStorable: ${isStorable}`);
+    console.log(`>>> DEBUG: Reaching FINAL return. Final content generated by index: ${indexGeneratingFinalResponse}. Next turn index: ${nextIndexAfterProcessing}. isStorable: ${isStorable}`);
 
-     // Store interaction result if needed
-     const indexForStorageContext = isStorable ? promptIndexThatAskedLastQuestion : null; // Example: only store if valid
-     if (isStorable && indexForStorageContext !== null && indexForStorageContext !== undefined && indexForStorageContext >= 0) {
-       const contentToStore = finalResponseContent ?? "";
-       // await handleDatabaseStorageIfNeeded(indexForStorageContext, contentToStore, userMessage); // Pass user message too
-       // console.log(`[DB-DEBUG] Storing final content related to prompt index ${indexForStorageContext} question.`);
-      } else {
-       // console.log("[DB-DEBUG] Interaction was not stored (isStorable=false or no valid prev index).");
-      }
+    // Store interaction result if needed
+    const indexForStorageContext = isStorable ? promptIndexThatAskedLastQuestion : null; // Example: only store if valid
+    if (isStorable && indexForStorageContext !== null && indexForStorageContext !== undefined && indexForStorageContext >= 0) {
+      const contentToStore = finalResponseContent ?? "";
+      // await handleDatabaseStorageIfNeeded(indexForStorageContext, contentToStore, userMessage); // Pass user message too
+      // console.log(`[DB-DEBUG] Storing final content related to prompt index ${indexForStorageContext} question.`);
+    } else {
+      // console.log("[DB-DEBUG] Interaction was not stored (isStorable=false or no valid prev index).");
+    }
 
-     // --- START EDIT: Modify Final Context Logging ---
-     console.log("--------------------------------------------------");
-     console.log("[DEBUG] FINAL CONTEXT before returning from handleNonStreamingFlow:");
+    // --- START EDIT: Modify Final Context Logging ---
+    console.log("--------------------------------------------------");
+    console.log("[DEBUG] FINAL CONTEXT before returning from handleNonStreamingFlow:");
 
-     // 1. Log the System Prompt used for the final generating step
-     let finalSystemPromptText = "[Error: Could not determine final system prompt]";
-     if (indexGeneratingFinalResponse >= 0 && indexGeneratingFinalResponse < activePromptList.length) { // <-- Use activePromptList
-         const finalPromptObj = activePromptList[indexGeneratingFinalResponse]; // <-- Use activePromptList
-         if (finalPromptObj) {
-             const rawPrompt = finalPromptObj.prompt_text || "[Prompt text missing]";
-             finalSystemPromptText = injectNamedMemory(rawPrompt, currentNamedMemory);
+    // 1. Log the System Prompt used for the final generating step
+    let finalSystemPromptText = "[Error: Could not determine final system prompt]";
+    if (indexGeneratingFinalResponse >= 0 && indexGeneratingFinalResponse < activePromptList.length) { // <-- Use activePromptList
+        const finalPromptObj = activePromptList[indexGeneratingFinalResponse]; // <-- Use activePromptList
+        if (finalPromptObj) {
+            const rawPrompt = finalPromptObj.prompt_text || "[Prompt text missing]";
+            finalSystemPromptText = injectNamedMemory(rawPrompt, currentNamedMemory);
+        }
+    }
+    console.log("  - System Prompt (for generating index " + indexGeneratingFinalResponse + "):");
+    console.log("    " + finalSystemPromptText.replace(/\n/g, "\n    "));
+
+    // 2. REMOVED: Log the history RECEIVED from the client this turn
+    // console.log("  - History Received from Client this Turn:", JSON.stringify(messagesFromClient, null, 2)); // <-- Commented out
+
+    // 3. Log the final content being sent back
+    console.log("  - Final Assistant Content Sent to Client:", finalResponseContent ? `"${finalResponseContent}"` : "[null]");
+
+    // 4. Log Session Data to be Saved (No change)
+    console.log("  - Session Data to be Saved for NEXT Turn:", JSON.stringify({
+        currentIndex: nextIndexAfterProcessing,
+        promptIndexThatAskedLastQuestion: indexGeneratingFinalResponse,
+        namedMemory: currentNamedMemory,
+        currentBufferSize: currentBufferSize
+    }, null, 2));
+    console.log("--------------------------------------------------");
+    // --- END EDIT: Modify Final Context Logging ---
+
+
+    // Return final content and session state for the *next* turn
+     return {
+      content: finalResponseContent,
+         updatedSessionData: {
+        currentIndex: nextIndexAfterProcessing, // Index for the *next* prompt
+        promptIndexThatAskedLastQuestion: indexGeneratingFinalResponse, // Index that generated *this* response
+             namedMemory: currentNamedMemory,
+             currentBufferSize: currentBufferSize
          }
-     }
-     console.log("  - System Prompt (for generating index " + indexGeneratingFinalResponse + "):");
-     console.log("    " + finalSystemPromptText.replace(/\n/g, "\n    "));
-
-     // 2. REMOVED: Log the history RECEIVED from the client this turn
-     // console.log("  - History Received from Client this Turn:", JSON.stringify(messagesFromClient, null, 2)); // <-- Commented out
-
-     // 3. Log the final content being sent back
-     console.log("  - Final Assistant Content Sent to Client:", finalResponseContent ? `"${finalResponseContent}"` : "[null]");
-
-     // 4. Log Session Data to be Saved (No change)
-     console.log("  - Session Data to be Saved for NEXT Turn:", JSON.stringify({
-         currentIndex: nextIndexAfterProcessing,
-         promptIndexThatAskedLastQuestion: indexGeneratingFinalResponse,
-         namedMemory: currentNamedMemory,
-         currentBufferSize: currentBufferSize
-     }, null, 2));
-     console.log("--------------------------------------------------");
-     // --- END EDIT: Modify Final Context Logging ---
-
-
-     // Return final content and session state for the *next* turn
-      return {
-       content: finalResponseContent,
-          updatedSessionData: {
-         currentIndex: nextIndexAfterProcessing, // Index for the *next* prompt
-         promptIndexThatAskedLastQuestion: indexGeneratingFinalResponse, // Index that generated *this* response
-              namedMemory: currentNamedMemory,
-              currentBufferSize: currentBufferSize
-          }
-      };
+     };
 
   } catch (error: any) {
       console.error("[JEST_DEBUG] ERROR CAUGHT in handleNonStreamingFlow:", error);

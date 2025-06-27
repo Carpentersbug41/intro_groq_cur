@@ -20,6 +20,7 @@ type TransitionPrompt = {
     saveAssistantOutputAs?: string;
     appendTextAfterResponse?: string;
     important_memory?: boolean; // Keep if used by processAssistantResponseMemory
+    directOutput?: string;
     [key: string]: any; // Allow other properties
 };
 
@@ -89,135 +90,80 @@ export async function handleAutoTransitionHidden(
     }
 
     // --- Simulate User Input ("OK") and Prepare History ---
-    const simulatedUserInput = "OK"; // --- DEBUG VAR ---
-    // console.log(`[DEBUG][AUTO-HIDDEN] Simulating user input: "${simulatedUserInput}"`); // Less verbose
+    const simulatedUserInput = "OK"; 
     let historyForThisStep = [...baseConvHistory, { role: "user", content: simulatedUserInput }];
-    // console.log(`[DEBUG][AUTO-HIDDEN] History length after adding simulated input: ${historyForThisStep.length}`); // Less verbose
 
-    // --- Get Prompt Text and Inject Memory ---
-    const promptText = currentPromptObj.prompt_text || "Error: No prompt text found.";
-    // console.log(`[DEBUG][AUTO-HIDDEN] Raw Prompt Text (Index ${idx}):\n${promptText.substring(0, 150)}...`);
-    const promptWithMemory = injectNamedMemory(promptText, tempNamedMemory); // Inject memory
-    // console.log(`[DEBUG][AUTO-HIDDEN] Prompt Text After Memory Injection (Index ${idx}):\n${promptWithMemory.substring(0, 150)}...`);
+    let autoResponseContent: string | null = null; // Variable for the response of this hidden step
 
+    if (currentPromptObj.directOutput !== undefined && currentPromptObj.directOutput !== null) {
+        // === Path for DIRECT OUTPUT in hidden transition ===
+        console.log(`[DEBUG][AUTO-HIDDEN] Using DIRECT OUTPUT for index ${tempCurrentIndex}: "${currentPromptObj.directOutput}"`);
+        autoResponseContent = currentPromptObj.directOutput;
+    } else if (currentPromptObj.prompt_text) {
+        // === Path for LLM-based hidden transition (existing logic) ===
+        const promptTextWithMemory = injectNamedMemory(currentPromptObj.prompt_text, tempNamedMemory);
+        let historyForHiddenLLM = [
+            { role: "system", content: promptTextWithMemory },
+            ...historyForThisStep.filter((e) => e.role !== "system"), // historyForThisStep was baseConvHistory + simulated "OK"
+        ];
+        historyForHiddenLLM = manageBuffer(historyForHiddenLLM, tempBufferSize);
 
-    // --- Update System Prompt ---
-    historyForThisStep = [
-        { role: "system", content: promptWithMemory },
-        ...historyForThisStep.filter((e) => e.role !== "system"),
-    ];
-    // console.log(`[DEBUG][AUTO-HIDDEN] System prompt updated in history.`); // Less verbose
+        const payload = {
+            model: getModelForCurrentPrompt(tempCurrentIndex, activePromptList),
+            messages: historyForHiddenLLM,
+            temperature: currentPromptObj.temperature ?? 0,
+        };
+        console.log(`\n--- START API PAYLOAD (HIDDEN LLM - Index: ${tempCurrentIndex}) ---`); // etc.
+        const rawHiddenResponseFromLLM = await fetchApiResponseWithRetry(payload, 2, 500);
+        autoResponseContent = cleanLlmResponse(rawHiddenResponseFromLLM);
+    } else {
+        console.warn(`[WARN][AUTO-HIDDEN] Prompt index ${tempCurrentIndex} for hidden transition has neither directOutput nor prompt_text.`);
+        autoResponseContent = null; // Or some error indicator
+    }
 
-
-    // --- Manage Buffer ---
-    const bufferSizeBefore = tempBufferSize; // --- DEBUG VAR ---
-    historyForThisStep = manageBuffer(historyForThisStep, tempBufferSize);
-     // console.log(`[DEBUG][AUTO-HIDDEN] Buffer managed. Size: ${bufferSizeBefore}. History length now: ${historyForThisStep.length}`); // Less verbose
-
-    // --- Prepare API Payload ---
-    const payload = {
-        model: getModelForCurrentPrompt(tempCurrentIndex, activePromptList), // <-- Pass activePromptList
-        messages: historyForThisStep,
-        temperature: currentPromptObj.temperature ?? 0, // Defaults to 0
-    };
-
-    // --- UPDATED LOG ---
-    console.log(`\n--- START API PAYLOAD (HIDDEN - Index: ${tempCurrentIndex}) ---`);
-    console.log(JSON.stringify(payload.messages, null, 2));
-    console.log(`--- END API PAYLOAD (HIDDEN - Index: ${tempCurrentIndex}) ---\n`);
-    // --- END UPDATED LOG ---
-
-    // --- Fetch API Response ---
-    // console.log(`[DEBUG][AUTO-HIDDEN] Sending request to LLM...`); // Less verbose
-    const autoResponse = await fetchApiResponseWithRetry(payload, 2, 500);
-
-    if (!autoResponse) {
-        console.warn(`[WARN][AUTO-HIDDEN][Index: ${tempCurrentIndex}] LLM call returned no content. Ending transition step.`);
-        console.log(`--- [END][AUTO-HIDDEN] --- (LLM Error/No Content)\n`);
-        // Return state *before* this failed step, but increment index as the step was attempted
+    if (autoResponseContent === null) {
+        console.warn(`[WARN][AUTO-HIDDEN][Index: ${tempCurrentIndex}] Failed to get content for hidden step. Ending transition.`);
         return {
-            conversationHistory: historyForThisStep, // Return history *used* for the failed call
-            response: null, // Indicate failure response
-            updatedIndex: tempCurrentIndex + 1, // Increment index to prevent infinite loops
-            updatedNamedMemory: tempNamedMemory, // Return memory state *before* this step
-            updatedBufferSize: tempBufferSize,   // Return buffer size state *before* this step
+            conversationHistory: historyForThisStep, // historyForThisStep is the context *before* this failed hidden step's response
+            response: null,
+            updatedIndex: tempCurrentIndex + 1,
+            updatedNamedMemory: tempNamedMemory,
+            updatedBufferSize: tempBufferSize,
         };
     }
-    // console.log(`[DEBUG][AUTO-HIDDEN] LLM Response Received (Index ${tempCurrentIndex}):\n"${autoResponse.substring(0, 150)}..."`); // Less verbose
 
-    // --- Update State After Successful Response ---
-
-    // 1. Named Memory Saving (Assistant Output)
-    // --- EDIT START: Use processAssistantResponseMemory for consistency ---
-    // Use processAssistantResponseMemory which handles both saving and prefixing (if any)
-    // It modifies tempNamedMemory directly if saveAssistantOutputAs is set.
-    const processedContentForMemory = processAssistantResponseMemory(
-        autoResponse, // Use the raw response here for potential prefixing checks
-        currentPromptObj, // Pass the prompt object
-        tempNamedMemory, // Pass the memory object (will be modified)
-        tempCurrentIndex // Pass the index
+    // Common processing for autoResponseContent (direct or LLM)
+    const processedHiddenResponse = processAssistantResponseMemory(
+        autoResponseContent,
+        currentPromptObj,
+        tempNamedMemory, // Mutated
+        tempCurrentIndex
     );
-    // Note: processedContentForMemory might have a prefix if specified,
-    // but the memory saving inside processAssistantResponseMemory should use the clean value.
-    // Let's stick to using the original `autoResponse` for adding to history context below,
-    // unless `important_memory` needs the prefixed version from `insertImportantMemory`.
-    // --- EDIT END ---
-
-
-    // 2. Named Memory Saving (Simulated User Input) - Check if still needed or handled by process... no, this is separate
-    if (currentPromptObj.saveUserInputAs) { // Renamed from saveUserInputAsMemory for clarity based on PromptType
-         const memoryKey = currentPromptObj.saveUserInputAs;
-         tempNamedMemory[memoryKey] = simulatedUserInput; // Save the exact simulated input
-         // console.log(`[DEBUG][AUTO-HIDDEN][MEMORY] Saved simulated user input ("${simulatedUserInput}") to namedMemory["${memoryKey}"]`); // Less verbose
-    } else {
-         // console.log(`[DEBUG][AUTO-HIDDEN][MEMORY] No 'saveUserInputAs' configured for index ${tempCurrentIndex}.`); // Less verbose
+    
+    // Named Memory Saving (Simulated User Input)
+    if (currentPromptObj.saveUserInputAs) {
+        const memoryKey = currentPromptObj.saveUserInputAs;
+        tempNamedMemory[memoryKey] = simulatedUserInput;
     }
 
+    // Update buffer size
+    tempBufferSize = updateDynamicBufferMemory(currentPromptObj, tempBufferSize);
 
-    // 3. Update Dynamic Buffer Size
-    const oldBufferSize = tempBufferSize; // --- DEBUG VAR ---
-    tempBufferSize = updateDynamicBufferMemory(currentPromptObj, tempBufferSize); // Update buffer size based on the prompt just run
-    // console.log(`[DEBUG][AUTO-HIDDEN][BUFFER] Buffer size updated from ${oldBufferSize} to ${tempBufferSize}.`); // Less verbose
-    // console.log(`[DEBUG][AUTO-HIDDEN][BUFFER] Buffer size remains ${tempBufferSize}.`); // Less verbose
-
-    // --- New Step: Append Static Text if Configured ---
-    let responseToReturn = autoResponse; // Start with the clean LLM response
+    let responseToReturnFromHidden = processedHiddenResponse;
     if (currentPromptObj.appendTextAfterResponse) {
-      console.log(`[DEBUG][AUTO-HIDDEN] Appending static text for prompt index ${tempCurrentIndex}: "${currentPromptObj.appendTextAfterResponse}"`);
-      responseToReturn += "  \n" + currentPromptObj.appendTextAfterResponse; // <-- Change \n to "  \n"
+        responseToReturnFromHidden += "  \n" + currentPromptObj.appendTextAfterResponse;
     }
-    // --- End New Step ---
 
-    // 4. Handle Important Memory (Internal history modification)
-    let finalHistoryContext = [...historyForThisStep, { role: "assistant", content: autoResponse }]; // Add assistant response (clean) to context
-    // if (currentPromptObj.important_memory) {
-    //     // console.log(`[DEBUG][AUTO-HIDDEN][MEMORY] Prompt index ${tempCurrentIndex} marked as important_memory. Inserting into history context.`); // Less verbose
-    //     // insertImportantMemory adds the "Important_memory:" prefix to the content *in the history array*.
-    //     finalHistoryContext = insertImportantMemory(finalHistoryContext, autoResponse);
-    // } else {
-    //      // console.log(`[DEBUG][AUTO-HIDDEN][MEMORY] Prompt index ${tempCurrentIndex} not marked as important_memory.`); // Less verbose
-    // }
+    // Update history context: Add this hidden step's assistant response
+    const finalHistoryContextAfterHidden = [
+        ...historyForThisStep, // History *including* the simulated "OK" for this hidden step
+        { role: "assistant", content: processedHiddenResponse } // The actual output of this hidden step
+    ];
 
-    // 5. Increment Index for the next step/return
-    const indexBeforeIncrement = tempCurrentIndex; // --- DEBUG VAR ---
     tempCurrentIndex++;
-    // console.log(`[DEBUG][AUTO-HIDDEN] Index incremented from ${indexBeforeIncrement} to ${tempCurrentIndex}.`); // Less verbose
-
-    // --- Return Updated State ---
-    // console.log(`[DEBUG][AUTO-HIDDEN] Returning updated state:`); // Less verbose
-    // console.log(`  - updatedIndex: ${tempCurrentIndex}`); // Less verbose
-    // console.log(`  - updatedNamedMemory: ${JSON.stringify(tempNamedMemory)}`); // Less verbose
-    // console.log(`  - updatedBufferSize: ${tempBufferSize}`); // Less verbose
-    // console.log(`  - response: ${autoResponse ? `"${autoResponse.substring(0,50)}..."` : 'null'}`); // Less verbose
-    // console.log(`  - conversationHistory length: ${finalHistoryContext.length}`); // Less verbose
-    // --- EDIT START: Add detailed log of the history being returned ---
-    // console.log(`[DEBUG][AUTO-HIDDEN] Content of conversationHistory being returned:`);
-    // console.log(JSON.stringify(finalHistoryContext, null, 2)); // Less verbose
-    // --- EDIT END ---
-    // console.log(`--- [END][AUTO-HIDDEN] --- (Success)\n`); // Less verbose
     return {
-        conversationHistory: finalHistoryContext, // Return history *including* the response from this step
-        response: responseToReturn, // The response potentially with appended text
+        conversationHistory: finalHistoryContextAfterHidden,
+        response: responseToReturnFromHidden,
         updatedIndex: tempCurrentIndex,
         updatedNamedMemory: tempNamedMemory,
         updatedBufferSize: tempBufferSize,
@@ -245,65 +191,72 @@ export async function handleAutoTransitionVisible(
         return { response: null, updatedIndex: currentPromptIndex + 1, updatedNamedMemory: currentNamedMemory, updatedBufferSize: currentBufferSize, conversationHistory };
     }
 
-    const updatedBufferSize = updateDynamicBufferMemory(promptObj, currentBufferSize);
-    const promptText = promptObj.prompt_text || "";
-    const promptWithMemory = injectNamedMemory(promptText, currentNamedMemory);
+    let assistantContentForVisible: string | null = null;
 
-    // --- Prepare history for THIS visible prompt's LLM call ---
-    let historyForCall = [{ role: "system", content: promptWithMemory }, ...conversationHistory.filter((e) => e.role !== "system")];
-    // Apply buffer *before* this visible prompt's call
-    historyForCall = manageBuffer(historyForCall, updatedBufferSize); // Use updatedBufferSize for this step
-    console.log(`[DEBUG][TRANSITION-V] History length BEFORE call (Index ${currentPromptIndex}): ${historyForCall.length}`);
+    if (promptObj.directOutput !== undefined && promptObj.directOutput !== null) {
+        // === Path for DIRECT OUTPUT in visible transition ===
+        console.log(`[DEBUG][TRANSITION-V] Using DIRECT OUTPUT for index ${currentPromptIndex}: "${promptObj.directOutput}"`);
+        assistantContentForVisible = promptObj.directOutput;
+    } else if (promptObj.prompt_text) {
+        // === Path for LLM-based visible transition (existing logic) ===
+        const updatedBufferSize = updateDynamicBufferMemory(promptObj, currentBufferSize);
+        const promptTextWithMemory = injectNamedMemory(promptObj.prompt_text, currentNamedMemory);
+        let historyForVisibleLLM = [
+            { role: "system", content: promptTextWithMemory },
+            ...conversationHistory.filter((e) => e.role !== "system"), // conversationHistory is from before this visible step
+        ];
+        historyForVisibleLLM = manageBuffer(historyForVisibleLLM, updatedBufferSize); // Use updatedBufferSize for this step
 
+        const payload = {
+            model: getModelForCurrentPrompt(currentPromptIndex, activePromptList),
+            temperature: promptObj.temperature ?? 0,
+            messages: historyForVisibleLLM
+        };
+        console.log(`\n--- START API PAYLOAD (VISIBLE LLM - Index: ${currentPromptIndex}) ---`); // etc.
+        const rawVisibleResponseFromLLM = await fetchApiResponseWithRetry(payload);
+        assistantContentForVisible = cleanLlmResponse(rawVisibleResponseFromLLM);
+    } else {
+        console.warn(`[WARN][TRANSITION-V] Prompt index ${currentPromptIndex} for visible transition has neither directOutput nor prompt_text.`);
+        assistantContentForVisible = null;
+    }
 
-    const payload = { model: getModelForCurrentPrompt(currentPromptIndex, activePromptList), temperature: promptObj.temperature ?? 0, messages: historyForCall }; // <-- Pass activePromptList
-
-    // --- UPDATED LOG ---
-    console.log(`\n--- START API PAYLOAD (VISIBLE - Index: ${currentPromptIndex}) ---`);
-    console.log(JSON.stringify(payload.messages, null, 2));
-    console.log(`--- END API PAYLOAD (VISIBLE - Index: ${currentPromptIndex}) ---\n`);
-    // --- END UPDATED LOG ---
-
-    const rawAssistantContent = await fetchApiResponseWithRetry(payload);
-    const assistantContentCleaned = cleanLlmResponse(rawAssistantContent);
-
-     if (assistantContentCleaned === null) {
+    if (assistantContentForVisible === null) {
         console.warn(`[WARN] Auto transition visible failed for index ${currentPromptIndex}. Stopping visible transitions.`);
-        // Return input memory state on failure
-        return { response: null, updatedIndex: currentPromptIndex + 1, updatedNamedMemory: currentNamedMemory, updatedBufferSize, conversationHistory: historyForCall }; // Return history used for the failed call
+        return {
+            response: null,
+            updatedIndex: currentPromptIndex + 1,
+            updatedNamedMemory: currentNamedMemory,
+            updatedBufferSize: currentBufferSize,
+            conversationHistory // Return original history passed in
+        };
     }
 
-    // --- Use processAssistantResponseMemory which handles saving output and potential '#' prefixing ---
-    // It modifies currentNamedMemory directly if needed.
-    let processedContentForReturn = processAssistantResponseMemory(
-        assistantContentCleaned, // Pass the clean response here
-        promptObj, // Pass the prompt object
-        currentNamedMemory, // Pass the memory object (will be modified)
-        currentPromptIndex // Pass the index
+    let processedVisibleResponse = processAssistantResponseMemory(
+        assistantContentForVisible,
+        promptObj,
+        currentNamedMemory, // Mutated
+        currentPromptIndex
     );
-    // currentNamedMemory is now potentially updated by processAssistantResponseMemory
 
-    // --- Append Static Text if Configured ---
+    const updatedBufferSize = updateDynamicBufferMemory(promptObj, currentBufferSize);
+
     if (promptObj.appendTextAfterResponse) {
-        console.log(`[DEBUG][AUTO-VISIBLE] Appending static text for prompt index ${currentPromptIndex}: "${promptObj.appendTextAfterResponse}"`);
-        processedContentForReturn += "  \n" + promptObj.appendTextAfterResponse;
+        processedVisibleResponse += "  \n" + promptObj.appendTextAfterResponse;
     }
 
-    // --- History update: Just add Assistant Response ---
-    // The simulated user message is now added by processTransitions *after* this returns.
-    let historyAfterCall = [
-        ...historyForCall, // History used for the successful call
-        { role: "assistant", content: processedContentForReturn } // Add the response generated by this visible prompt
+    // Update history: Add this visible step's assistant response
+    // The simulated user message ("#OK") is added by processTransitions *after* this handler returns and *before* the next visible step.
+    const historyAfterVisibleCall = [
+        ...conversationHistory, // History from *before* this visible step
+        { role: "assistant", content: processedVisibleResponse }
     ];
-    console.log(`[DEBUG][TRANSITION-V] Added Assistant response for index ${currentPromptIndex}. New history length: ${historyAfterCall.length}`);
-
 
     return {
-        response: processedContentForReturn, // Return the content generated by this step
+        response: processedVisibleResponse, // This content WILL be appended to the user-facing output
         updatedIndex: currentPromptIndex + 1,
-        updatedNamedMemory: currentNamedMemory, // Return the potentially modified memory
-        updatedBufferSize, // Return the buffer size calculated for this step
-        conversationHistory: historyAfterCall // Pass history INCLUDING this step's response
+        updatedNamedMemory: currentNamedMemory,
+        updatedBufferSize,
+        conversationHistory: historyAfterVisibleCall
     };
 }
 

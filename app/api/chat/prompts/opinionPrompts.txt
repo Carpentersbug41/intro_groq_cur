@@ -1,15 +1,63 @@
 // AFTER: Each prompt has a unique docId + storing only the LLM's response
-import { PromptType } from "../types/promptTypes";
 import {
   customValidationInstructionForQuestion,
   customValidationInstructionForOption, customValidationInstructionForintroduction,
 } from "./validationInstructions";
+type PromptType = {
+  prompt_text: string;
+  validation?: boolean | string;
+  important_memory?: boolean; // <-- RE-ADDED
+  autoTransitionHidden?: boolean;
+  autoTransitionVisible?: boolean;
+  chaining?: boolean;
+  temperature?: number;
+  buffer_memory?: number;
+  wait_time?:number;
+  addToDatabase?: boolean;
+  model?: string;          // Optional custom model for this prompt
+  fallbackIndex?: number;  // Optional rollback steps if validation fails
+  saveUserInputAs?: string; // <-- Saves the raw user input
+  saveAssistantOutputAs?: string; // <-- Saves the assistant's processed output
+  appendTextAfterResponse?: string; // <-- Add missing optional property
+  dbOptions?: {
+    collectionName: string;
+    documentId?: string;
+    fields?: {
+      // We'll store ONLY the LLM response here...
+      result?: string;
+      // ...and store the user input here when validation passes.
+      userresult?: string;
+      [key: string]: string | undefined;
+    };
+    timestamp?: boolean;
+  };
+};
 
+// D:\vercel\intro_groq m6\app\api\chat\prompts.ts
 export const PROMPT_LIST: PromptType[] = [
+
   // Prompt Index: 0
   {
-    directOutput: "Are you ready to begin practicing IELTS opinion introductions?",
+    prompt_text: `# System message:
+      You are an expert in checking if the user is ready to begin and outputting text EXACTLY as shown.
+      
+      ## Task Instructions:
+      1. Output exactly the following text:
+         "Are you ready to begin practicing IELTS opinion introductions?"
+      
+      2. Do not add any extra text, explanations, or formatting.
+      3. Wait for the user's response.
+      
+      ### Example Output:
+      Are you ready to begin practicing IELTS opinion introductions?
+      
+      ### Additional Rules:
+      - The output must match exactly.
+      - Do not deviate or add any extra content.
+      - NEVER ask anything else!
+      `,
     validation: customValidationInstructionForQuestion,
+   
   },
 
   // Prompt Index: 1
@@ -252,7 +300,8 @@ It has been suggested that cars and public transport should be banned from city 
 - NEVER ask anything else!
 - Never use the user's background statement!
 `,
-autoTransitionVisible: true, // <-- RE-ADDED
+autoTransitionVisible: true,
+important_memory: true, // <-- RE-ADDED
 temperature: 0,
 saveAssistantOutputAs: "[original_question_statement]",
 },

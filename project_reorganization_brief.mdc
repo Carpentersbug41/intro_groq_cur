@@ -1,8 +1,13 @@
 ---
-description:
-globs:
+description: 
+globs: 
 alwaysApply: false
 ---
+# Project Reorganization Brief for LLM
+
+## Current State:
+The current project structure suffers from inconsistencies and lacks clear organization. Specifically:
+- File names are not consistently named following a clear convention.
 # Project Reorganization Brief for LLM
 
 ## Current State:
@@ -96,3 +101,96 @@ To ensure that each automated IELTS grading prompt (for Task Response, Coherence
 ---
 
 **This approach ensures that automated IELTS grading is fair, focused, and aligned with best assessment practices.**
+
+# 🧩 What is a Multistage Chatbot? (Simple Version)
+
+A **multistage chatbot** is a conversational agent that guides the user through a sequence of steps, where each step (or "stage") has its own prompt and expects a user response before moving to the next. The conversation is structured and always knows which stage it is in.
+
+## Key Features
+
+- **Sequential Prompts:** The bot asks a question or gives an instruction, waits for the user's response, then moves to the next stage.
+- **Stateful:** The bot keeps track of which stage the user is in, and may store user responses for use in later stages.
+- **No "one-shot" interaction:** Unlike a simple Q&A bot, the conversation is structured and progresses through a series of steps.
+
+---
+
+# 🛠️ How to Implement a Multistage Chatbot (Minimal)
+
+## 1. Define Your Stages
+
+Each stage is just a prompt. You can represent this as an array of strings.
+
+```js
+// stages.js
+export const STAGES = [
+  "Welcome! Are you ready to begin?",
+  "Please enter your name.",
+  "What is your favorite color?",
+  "Thank you! Conversation complete."
+];
+```
+
+---
+
+## 2. Track the Current Stage
+
+Keep track of which stage the user is in with a simple index.
+
+```js
+let currentStageIndex = 0;
+```
+
+---
+
+## 3. Handle User Input and Advance Stages
+
+When the user responds, advance to the next stage and show the next prompt.
+
+```js
+function handleUserInput(userInput) {
+  // Store userInput if needed
+  currentStageIndex++;
+  if (currentStageIndex < STAGES.length) {
+    return STAGES[currentStageIndex];
+  } else {
+    return "End of conversation.";
+  }
+}
+```
+
+---
+
+## 4. Integrate with Your Chatbot Framework
+
+In a Next.js or Vercel AI SDK setup, store the `currentStageIndex` in the session or conversation state. On each user message, look up the current stage, process the input, and send the next prompt.
+
+**Example (pseudo-code for an API route):**
+
+```js
+// In your API handler
+import { STAGES } from './stages';
+
+export default function handler(req, res) {
+  const { userInput, currentStageIndex } = req.body;
+  let nextStageIndex = currentStageIndex + 1;
+  let nextPrompt = STAGES[nextStageIndex]
+    ? STAGES[nextStageIndex]
+    : "End of conversation.";
+  res.json({
+    nextPrompt,
+    nextStageIndex
+  });
+}
+```
+
+---
+
+# 📝 Summary
+
+- **Multistage chatbot** = a bot that guides users through a series of steps, each with its own prompt.
+- **Implementation** = define an array of prompts, track the current stage, and advance through the stages as the user responds.
+- **Integration** = store the stage index in session/conversation state, and use it to determine what prompt to show next.
+
+---
+
+> This approach is **simple** and **scalable**: you can add, remove, or reorder stages easily.

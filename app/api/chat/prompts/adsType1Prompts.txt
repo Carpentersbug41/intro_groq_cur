@@ -1,12 +1,40 @@
 // New file: app/api/chat/prompts/adsType1Prompts.ts // Updated Path
 // Contains prompts specifically for Advantages/Disadvantages Type 1 Essays
-import { PromptType } from "../types/promptTypes"; // Corrected path
 import {
     customValidationInstructionForQuestion,
     customValidationInstructionForOption, customValidationInstructionForintroduction,
   } from "./validationInstructions"; // Corrected path: Same directory
+type PromptType = {
+    prompt_text: string;
+    validation?: boolean | string;
+    important_memory?: boolean;
+    autoTransitionHidden?: boolean;
+    autoTransitionVisible?: boolean;
+    chaining?: boolean;
+    temperature?: number;
+    buffer_memory?: number;
+    wait_time?:number;
+    addToDatabase?: boolean;
+    model?: string;
+    fallbackIndex?: number;
+    saveUserInputAs?: string;
+    saveAssistantOutputAs?: string;
+    appendTextAfterResponse?: string;
+    dbOptions?: {
+      collectionName: string;
+      documentId?: string;
+      fields?: {
+        result?: string;
+        userresult?: string;
+        [key: string]: string | undefined;
+      };
+      timestamp?: boolean;
+    };
+  };
+  
 
-export const ADV_DISADV_TYPE1_PROMPTS: PromptType[] = [
+  
+  export const ADV_DISADV_TYPE1_PROMPTS: PromptType[] = [
   
     // Prompt Index: 0 - Introduction Readiness Check (Adv/Disadv Type 1)
     {

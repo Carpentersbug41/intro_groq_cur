@@ -1,7 +1,6 @@
 // Opinion Essay Main Body Paragraphs (MBP) Prompt Sequence
 // Prompt 0: Readiness Check for MBP Practice
 
-import { PromptType } from "../types/promptTypes";
 import {
     customValidationInstructionForQuestion,
     customValidationInstructionForOption, customValidationInstructionForintroduction, 
@@ -9,13 +8,55 @@ import {
     customValidationInstructionForMbp1, customValidationInstructionForMbp2,
   } from "./validationInstructions";
 
+type PromptType = {
+  prompt_text: string;
+  validation?: boolean | string;
+  important_memory?: boolean;
+  autoTransitionHidden?: boolean;
+  autoTransitionVisible?: boolean;
+  chaining?: boolean;
+  temperature?: number;
+  buffer_memory?: number;
+  wait_time?: number;
+  addToDatabase?: boolean;
+  model?: string;
+  fallbackIndex?: number;
+  saveUserInputAs?: string;
+  saveAssistantOutputAs?: string;
+  appendTextAfterResponse?: string;
+  dbOptions?: {
+    collectionName: string;
+    documentId?: string;
+    fields?: {
+      result?: string;
+      userresult?: string;
+      [key: string]: string | undefined;
+    };
+    timestamp?: boolean;
+  };
+};
+
 export const PROMPT_LIST: PromptType[] = [
   // Prompt 0: Readiness Check
   {
-    // prompt_text: `# System message: ... (original text) ...`, // Comment out or remove
-    directOutput: "Are you ready to begin practicing IELTS opinion essay main body paragraphs?",
-    // validation: customValidationInstructionForQuestion, // Keep if validation applies to the USER'S response TO this
-    // Other flags like autoTransition... are likely not needed for a simple question.
+    prompt_text: `# System message:
+You are an expert in checking if the user is ready to begin practicing IELTS opinion essay main body paragraphs (MBPs).
+
+## Task Instructions:
+1. Output exactly the following text:
+   'Are you ready to begin practicing IELTS opinion essay main body paragraphs?'
+
+2. Do not add any extra text, explanations, or formatting.
+3. Wait for the user's response.
+
+### Example Output:
+Are you ready to begin practicing IELTS opinion essay main body paragraphs?
+
+### Additional Rules:
+- The output must match exactly.
+- Do not deviate or add any extra content.
+- NEVER ask anything else!`,
+    // validation: customValidationInstructionForQuestion,
   },
 
   // Prompt 1: Module Introduction for MBP

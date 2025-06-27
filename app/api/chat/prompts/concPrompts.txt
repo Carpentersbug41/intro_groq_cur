@@ -1,11 +1,40 @@
 // AFTER: Each prompt has a unique docId + storing only the LLM's response
-import { PromptType } from "../types/promptTypes";
 import {
     customValidationInstructionForQuestion,
     customValidationInstructionForOption, customValidationInstructionForintroduction, customValidationInstructionForconclusion
   } from "./validationInstructions";
-
-export const PROMPT_LIST: PromptType[] = [
+  type PromptType = {
+    prompt_text: string;
+    validation?: boolean | string;
+    important_memory?: boolean;
+    autoTransitionHidden?: boolean;
+    autoTransitionVisible?: boolean;
+    chaining?: boolean;
+    temperature?: number;
+    buffer_memory?: number;
+    wait_time?:number;
+    addToDatabase?: boolean;
+    model?: string;          // Optional custom model for this prompt
+    fallbackIndex?: number;  // Optional rollback steps if validation fails
+    saveUserInputAs?: string; // <-- Saves the raw user input
+    saveAssistantOutputAs?: string; // <-- Saves the assistant's processed output
+    appendTextAfterResponse?: string; // <-- Add missing optional property
+    dbOptions?: {
+      collectionName: string;
+      documentId?: string;
+      fields?: {
+        // We'll store ONLY the LLM response here...
+        result?: string;
+        // ...and store the user input here when validation passes.
+        userresult?: string;
+        [key: string]: string | undefined;
+      };
+      timestamp?: boolean;
+    };
+  };
+  
+  
+  export const PROMPT_LIST: PromptType[] = [
   
   
   
