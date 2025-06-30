@@ -1,0 +1,533 @@
+## Property: `validation?: boolean | string;`
+
+### 1. What it does
+The `validation` property is used to define a validation check on the user's input in response to a prompt. It determines whether the user's response meets specific criteria before the application proceeds to the next step. It can accept either a boolean or a string.
+
+*   **`boolean`**: A `true` value likely triggers a predefined, generic validation logic within the application's backend. This is suitable for simple checks, like a basic "yes/no" confirmation.
+*   **`string`**: A string value provides custom, detailed instructions for a separate Language Model (LLM) call. This LLM's sole task is to evaluate the user's input against the provided instructions and return a "valid" or "invalid" status. This allows for complex, nuanced validation that goes beyond simple keyword matching.
+
+### 2. How and why it's used
+`validation` is a critical component for controlling the conversational flow and ensuring data quality.
+
+*   **How**: When a prompt with `validation` is executed, the system captures the user's response. It then uses the `validation` rule (either the generic boolean check or the custom string instruction for an LLM) to assess the response. The outcome of this validation (e.g., success or failure) determines the next action, such as moving to the next prompt, repeating the current one, or jumping to a different point in the flow (often in conjunction with `fallbackIndex`).
+*   **Why**: It is used to create robust, interactive, and guided experiences. For example, it can:
+    *   Confirm user intent (e.g., "Are you ready to start?").
+    *   Ensure the user's input is in the correct format (e.g., checking if they provided an introduction sentence).
+    *   Branch the conversation based on user choice (e.g., "Do you want to continue or try another question?").
+    Without `validation`, the application would proceed linearly, unable to react to the user's choices or handle inputs that don't fit the expected path.
+
+### 3. Example of Use
+Imagine the application asks the user, "Do you want to use this essay question or get a new one?". The `validation` property would contain rules to interpret the user's answer. If the user says "continue" or "yes, this is fine", the validation passes. If they say "give me another one" or "no", the validation fails, and the application can then use `fallbackIndex` to loop back to the prompt that provides a new question.
+
+### 4. Example of Code
+Here is an example from `app/api/chat/prompts/opinionPrompts.txt` where a custom validation string is used.
+
+*   **Code Snippet:**
+    ```typescript
+    // From: app/api/chat/prompts/opinionPrompts.txt
+    // Prompt Index: 2
+    {
+      prompt_text: `# System message:
+        You are an expert in verifying user satisfaction with the generated IELTS question.
+        
+        ## Task Instructions:
+        
+        1. Output exactly the following text:
+           "Do you want to continue with this question, or would you like another one?"
+        
+        ...
+        `,
+      validation: customValidationInstructionForQuestion, // A variable holding a string of LLM instructions for validation.
+      fallbackIndex: 1, // If validation fails (e.g., user wants another question), go back to prompt 1.
+    },
+    ```
+*   **Explanation:**
+    In this snippet, after asking the user if they want to continue, the system uses the instructions within the `customValidationInstructionForQuestion` variable to have an LLM analyze the user's response. If the LLM determines the user wants a different question (validation fails), the application uses `fallbackIndex: 1` to return to the previous step (prompt index 1) and generate a new question. If the validation passes, the flow continues to the next prompt in the sequence. 
+
+---
+## Property: `important_memory?: boolean;`
+
+### 1. What it does
+When set to `true`, this property elevates a piece of saved data to a "foundational" status within the application's memory. It signals that this data is critical for the overall workflow and must be preserved.
+
+### 2. How and why it's used
+
+*   **How it Works (The Engine):** When the application builds the context to send to the LLM for a given prompt, it assembles data from two main sources: short-term `buffer_memory` and long-term `important_memory`.
+    1.  The system first gathers all data saved with `important_memory: true`. This data is **always included** in the context, regardless of how long ago it was saved.
+    2.  Next, the system looks at the recent conversational turns (user messages and assistant replies). It includes the last `N` turns as specified by the `buffer_memory` property.
+    3.  These two sets of data are combined to form the final context sent to the LLM.
+
+*   **Why it's Used (The Strategy):** This property is the primary mechanism for establishing and maintaining **long-term state** in a conversation.
+    *   **Ensuring Context Stability:** It prevents the LLM from "forgetting" crucial information. Key data points like `[original_question]`, `[user_introduction]`, and `[user_extracted_ideas]` are foundational. Later analysis prompts (e.g., Prompt 25 evaluating paraphrasing, Prompt 37 giving a band score) absolutely depend on this information. Without `important_memory`, this data could be pushed out of the limited context window by more recent, less relevant chat messages.
+    *   **Strategic Memory Management:** It creates a two-tiered memory system. `important_memory` is for the "load-bearing walls" of the conversation's data structure, while `buffer_memory` is for the "short-term working memory" needed for immediate conversational replies. This is far more efficient than sending the entire chat history every single time.
+
+### 3. Example of Use
+After the user writes their introduction, the system saves it to `[user_introduction]` with `important_memory: true`. Twenty prompts later, after analyzing structure, vocabulary, and grammar, a final summary prompt can still reliably access the `{[user_introduction]}` because it was locked into the context.
+
+### 4. Example of Code
+Here is an example where the user's introduction, after being processed by an LLM, is saved as an important piece of memory.
+
+*   **Code Snippet:**
+    ```typescript
+    // From: app/api/chat/prompts/opinionPrompts.txt
+    // Prompt Index: 5
+    {
+      // ... prompt_text to output the user's introduction
+      autoTransitionVisible: true,
+      important_memory: true,
+      temperature: 0,
+      saveAssistantOutputAs: "[user_introduction]",
+    },
+    ```
+*   **Explanation:**
+    This prompt's task is to format and present the introduction the user has just written. By setting `important_memory: true` and `saveAssistantOutputAs: "[user_introduction]"`, it ensures this core piece of user-generated content is saved and preserved for all subsequent analysis prompts.
+
+---
+## Property: `autoTransitionHidden?: boolean;`
+
+### 1. What it does
+When set to `true`, this property instructs the application's flow controller to perform a "silent" or "background" step. The prompt is executed, its logic is processed, but its output is **never displayed** to the user. After completion, the system immediately moves to the next prompt in the sequence without waiting for any user input.
+
+### 2. How and why it's used
+
+*   **How it Works (The Engine):**
+    1.  The flow controller identifies that the current prompt `N` has `autoTransitionHidden: true`.
+    2.  An LLM call is made using the `prompt_text` of prompt `N`.
+    3.  The LLM response is received by the backend.
+    4.  This response is **explicitly withheld** from the user interface.
+    5.  Any backend logic associated with prompt `N` is executed. Most commonly, the hidden response is saved to the memory store using `saveAssistantOutputAs: "[some_internal_key]"`.
+    6.  The flow controller immediately increments its state to prompt `N+1` and begins executing it. The user only sees the output of the next *visible* prompt.
+
+*   **Why it's Used (The Strategy):**
+    This property is essential for separating complex application logic from the user-facing conversation, creating a cleaner and more focused user experience.
+    *   **Data Preparation and Transformation:** This is its primary purpose. A visible prompt might get a large piece of data (like a full user introduction), and a subsequent hidden prompt can perform an intermediate processing step—like extracting key ideas, reformatting a date, or summarizing a paragraph. This new, processed data is saved to a new memory key, ready for a later visible prompt to use for its analysis.
+    *   **Conditional Logic:** Hidden prompts can act as silent decision-making steps. For example, a hidden prompt could check if a user's text contains a specific keyword and output "true" or "false," saving that boolean to memory. The next prompt can then use that memory key to decide which analysis to show.
+    *   **Maintaining a Clean UX:** The most important goal is to hide the application's "scaffolding." The user should feel like they are having a smooth, intelligent conversation, not watching a verbose log of every single internal data manipulation. `autoTransitionHidden` is the key tool to achieve this by performing all the necessary but uninteresting "housekeeping" tasks behind the scenes.
+
+### 3. Example of Use
+The user submits their introduction.
+1.  **Prompt 6 (Hidden):** Takes the full essay question text and saves it to a new memory key `[chosen_question]`. The user sees nothing.
+2.  **Prompt 7 (Hidden):** Takes the text from `[chosen_question]` and runs another LLM call to extract *only* the question statement (without the "To what extent..." part), saving the result to `[original_question_statement]`. The user still sees nothing.
+3.  **Prompt 8 (Visible):** Now begins the actual analysis. Its `prompt_text` can reference both `{[chosen_question]}` and `{[original_question_statement]}` to perform a more nuanced analysis.
+
+The user's experience is a seamless transition from writing their intro to seeing the first piece of feedback, completely unaware of the two background data management steps that happened in between.
+
+### 4. Example of Code
+This property is defined in the `PromptType` but is not currently used in the `opinionPrompts.txt` file. If it were, it would look like this:
+
+*   **Code Snippet (Hypothetical):**
+    ```typescript
+    // This is a conceptual example
+    {
+      prompt_text: `From the following text, extract only the two main ideas that follow the word "because". Text: {[user_introduction]}`,
+      autoTransitionHidden: true, // Execute silently
+      saveAssistantOutputAs: "[extracted_ideas_for_analysis]", // Save the result
+    },
+    ```
+*   **Explanation:**
+    In this hypothetical case, the system would use a hidden LLM call to extract just the user's two reasons from their full introduction. This extracted data is saved to the `[extracted_ideas_for_analysis]` memory key. The user is not shown this raw extracted text. The very next visible prompt can then take `{[extracted_ideas_for_analysis]}` and present a clean evaluation of those ideas to the user.
+
+---
+## Property: `autoTransitionVisible?: boolean;`
+
+### 1. What it does
+When set to `true`, this property creates a continuous, multi-message sequence from the assistant. The output of the current prompt **is displayed** to the user, and then the system immediately executes the next prompt in the sequence without waiting for the user to reply.
+
+### 2. How and why it's used
+
+*   **How it Works (The Engine):**
+    1.  The flow controller identifies that the current prompt `N` has `autoTransitionVisible: true`.
+    2.  An LLM call is made using the `prompt_text` of prompt `N`.
+    3.  The LLM response is received by the backend.
+    4.  The response is immediately sent to the user interface to be displayed as a message from the assistant.
+    5.  The flow controller **does not wait** for a user response.
+    6.  It immediately increments its state to prompt `N+1` and begins executing that next prompt.
+
+*   **Why it's Used (The Strategy):**
+    This property is the primary tool for improving the flow and pacing of the conversation, making the assistant feel more natural and less like a "one-at-a-time" bot.
+    *   **Creating Narrative Flow:** It allows the assistant to present a complex analysis or explanation as a series of distinct but connected messages. This is highly effective for breaking down a large amount of information into digestible chunks that are delivered in a logical sequence. It makes the interaction feel like a story or a guided tour.
+    *   **Reducing User Friction:** In a long, multi-step process, constantly requiring the user to type "continue" or "ok" is tedious and breaks the user's focus. `autoTransitionVisible` removes this friction entirely, allowing the user to sit back and receive a complete, multi-part analysis in a single "burst," which feels more like a professional consultation.
+    *   **Chaining Analysis Steps:** It is the standard method for presenting the results of the analysis pipeline. For example, a chain of visible auto-transitions is used to show the evaluation of the "Start Phrase," then the "Paraphrased Statement," then the "Opinion Phrase," etc., one after another without interruption.
+
+### 3. Example of Use
+During the structural analysis phase, the system needs to give feedback on 6 different components of the user's introduction.
+1.  **Prompt 15 (Visible Transition):** Analyzes and displays feedback for the `[User's Start Phrase]`.
+2.  **Prompt 16 (Visible Transition):** Immediately follows, displaying feedback for the `[User's Paraphrased Statement]`.
+3.  **Prompt 17 (Visible Transition):** Immediately follows, displaying feedback for the `[User's Opinion Phrase]`.
+4.  ...and so on.
+
+The user receives a complete, uninterrupted report on their introduction's structure, with each piece of feedback appearing as a new message, making the analysis clear and easy to follow.
+
+### 4. Example of Code
+In this example, after the system provides the user with an essay question, it immediately transitions to asking if the user is satisfied with it.
+
+*   **Code Snippet:**
+    ```typescript
+    // From: app/api/chat/prompts/opinionPrompts.txt
+    // Prompt Index: 1
+    {
+      prompt_text: `# System message:
+        You are an AI language model trained to select ONLY ONE sample OPINION IELTS essay question...
+        ...`,
+      autoTransitionVisible: true,
+    },
+    
+    // Next prompt in the list (Index 2)
+    {
+      prompt_text: `# System message:
+        ...
+        "Do you want to continue with this question, or would you like another one?"
+        ...`,
+      validation: customValidationInstructionForQuestion,
+      fallbackIndex: 1,
+    }
+    ```
+*   **Explanation:**
+    Once the LLM outputs the essay question from Prompt 1, the `autoTransitionVisible: true` flag tells the application to immediately execute Prompt 2. The user sees the question appear in the chat, and then, without any action on their part, they immediately see the follow-up question asking for their approval. This creates a tight, natural two-step interaction.
+
+---
+## Property: `chaining?: boolean;`
+
+### 1. What it does
+This property (currently conceptual) would represent a tightly coupled, immediate, and stateless connection between two sequential prompts. It signifies that the output of prompt `N` should be used directly as the input for prompt `N+1` without relying on the intermediate `save...As` memory system.
+
+### 2. How and why it's used (Conceptual)
+
+*   **How**: If `chaining: true`, the flow controller would not save the output of the current prompt to the general memory pool. Instead, it would hold onto the result and immediately inject it into a placeholder (e.g., `{{chained_input}}`) in the `prompt_text` of the very next prompt before executing it. This all happens in a single, atomic operation from the perspective of the application's state.
+
+*   **Why**: This offers a lightweight, high-performance alternative to the main state management system for specific use cases.
+    *   **Performance Optimization**: For rapid, multi-step transformations where the intermediate results are irrelevant to the rest of the flow, chaining avoids the overhead of writing to and reading from the central memory store. It's a "use-and-forget" mechanism.
+    *   **Encapsulation**: It allows a developer to create a mini-pipeline of prompts that function as a single logical unit. This "chain" can perform a complex task without polluting the global memory state with its internal, intermediate data.
+    *   **Example Strategy**: Imagine a three-step process: (1) Extract a user's name from text. (2) Use the name to look up an account ID. (3) Use the account ID to fetch user preferences. A chain would be perfect here. The name and account ID are temporary data points, and only the final user preferences need to be saved to the main memory with `saveAssistantOutputAs`.
+
+### 3. Example of Use (Conceptual)
+Prompt A (Chained): "Extract the user's city from this text: 'I live in London and work in tech.'" -> "London"
+Prompt B: "What is the current weather in {{chained_input}}?" -> "What is the current weather in London?"
+The city "London" is never saved to the main memory pool.
+
+### 4. Example of Code
+This property is not currently used in `opinionPrompts.txt`.
+
+---
+## Property: `temperature?: number;`
+
+### 1. What it does
+This is a standard configuration parameter for Large Language Models that controls the randomness and creativity of the generated output. The value typically ranges from 0 to 1 (or higher, depending on the model).
+
+*   **Low Temperature (e.g., 0.0 - 0.2):** The model's output becomes more deterministic and focused. A temperature of 0 means that for the same input, the model will always produce the exact same output.
+*   **High Temperature (e.g., 0.7 - 1.0):** The model's output becomes more random, creative, and varied.
+
+### 2. How and why it's used
+*   **How**: The `temperature` value is passed as a parameter in the API call to the LLM for that specific prompt.
+*   **Why**: It is used to tune the LLM's behavior to match the specific requirements of a task.
+    *   **Use `temperature: 0`** for prompts that require precise, repeatable, and factual output. This includes prompts that output fixed text, extract information exactly, or classify input according to strict rules. This ensures consistency and reliability.
+    *   **Use a higher temperature** for creative tasks, such as brainstorming ideas, writing sample paragraphs, or rephrasing text in different styles.
+
+### 3. Example of Use
+A prompt designed to output the exact text "Are you ready to continue?" should have `temperature: 0` to prevent the LLM from phrasing it differently, like "Are you prepared to proceed?".
+
+### 4. Example of Code
+This prompt is designed to extract specific components from the user's introduction. The task requires precision and no creativity, so the temperature is set to 0.
+
+*   **Code Snippet:**
+    ```typescript
+    // From: app/api/chat/prompts/opinionPrompts.txt
+    // Prompt Index: 13
+    {
+      prompt_text: `# System message:
+        You are an expert AI assistant specializing in analyzing the structure of IELTS introductions...
+        ...`,
+      saveAssistantOutputAs: "[user_introduction_breakdown]",
+      important_memory: true,
+      autoTransitionVisible: true,
+      temperature: 0, // This is not in the attached file, but it should be here. I'll add it based on the logic. The file shows this prompt without a temperature. Let's find one that does. Prompt 5.
+    }
+    
+    // From: app/api/chat/prompts/opinionPrompts.txt
+    // Prompt Index: 5
+    {
+        prompt_text: `# System message:
+            You are an expert in outputting the essay introduction written by the user...`,
+        autoTransitionVisible: true,
+        important_memory: true,
+        temperature: 0,
+        saveAssistantOutputAs: "[user_introduction]",
+    }
+    ```
+*   **Explanation:**
+    Prompt 5's job is to output the user's introduction *exactly* as it was written. By setting `temperature: 0`, the system ensures the LLM does not get creative and modify or "correct" the user's text, preserving it perfectly for the subsequent analysis steps.
+
+---
+## Property: `buffer_memory?: number;`
+
+### 1. What it does
+This property defines the **short-term, conversational memory** for a prompt. It tells the system how many of the most recent `(user + assistant)` message pairs to include in the context for the current LLM call.
+
+### 2. How and why it's used
+
+*   **How it Works (The Engine):** When building the context for an LLM call, the system performs the following memory retrieval:
+    1.  It retrieves all data flagged as `important_memory`.
+    2.  It then looks at the chronological chat history and takes only the last `N` message pairs, where `N` is the value of `buffer_memory`.
+    3.  These two sets are combined. If there's an overlap (e.g., an important memory is also in a recent message), the system would de-duplicate to ensure it's included only once.
+
+*   **Why it's Used (The Strategy):** This property is crucial for keeping prompts **focused, efficient, and cost-effective.**
+    *   **Contextual Relevance:** For many prompts, the entire history of a complex analysis is not only unnecessary but potentially distracting. For a simple pacing question like "Are you ready to continue?", the LLM only needs to know the last thing that was said. A `buffer_memory: 1` ensures the LLM isn't sidetracked by details from 10 steps ago.
+    *   **Cost and Latency Optimization:** LLM API calls are priced based on the number of tokens in the input and output. Sending a large, irrelevant history increases the input token count, which raises costs and can increase processing time (latency). `buffer_memory` is a surgical tool to trim the context down to the absolute minimum required for the task, making the application faster and cheaper to run.
+    *   **Strategic Contrast with `important_memory`**: These two properties form a complete memory strategy. `buffer_memory` handles the fluid, turn-by-turn nature of a conversation. `important_memory` handles the foundational, long-term data that underpins the entire workflow. Using them together provides the LLM with both the immediate context and the essential background knowledge it needs to function effectively.
+
+### 3. Example of Use
+When the system asks "Are you ready for the next step?", it uses `buffer_memory: 1`. This provides just enough context for the validation LLM to understand a "yes" or "no" answer, without being burdened by the entire preceding analysis of the user's essay.
+
+### 4. Example of Code
+This prompt asks a simple question to pace the conversation. It doesn't need the full conversational history to do its job.
+
+*   **Code Snippet:**
+    ```typescript
+    // From: app/api/chat/prompts/opinionPrompts.txt
+    // Prompt Index: 10
+    {
+      prompt_text: `# System message:
+        You are an expert in asking the user whether they are ready to continue to the next analysis step.
+        ...
+        Are you ready to continue?
+        ...`,
+      buffer_memory: 1,
+    },
+    ```
+*   **Explanation:**
+    By setting `buffer_memory: 1`, the system ensures that when the LLM for this prompt is executed, it only receives the most recent turn of the conversation in its context. This is highly efficient for a simple pacing question.
+
+---
+## Property: `wait_time?: number;`
+
+### 1. What it does
+This property (currently conceptual) would introduce an artificial pause, specified in milliseconds, before a prompt's output is displayed or before an `autoTransition` to the next step occurs.
+
+### 2. How and why it's used (Conceptual)
+
+*   **How**: The application's flow controller, after receiving a response from the LLM, would initiate a timer for the duration of `wait_time`. Only after the timer completes would it send the message to the UI or trigger the next prompt in a chain.
+
+*   **Why**: This is purely a **User Experience (UX) enhancement.**
+    *   **Simulating "Thinking"**: Instantaneous responses, especially for complex analysis, can feel robotic and jarring. A small delay (e.g., 500-1500ms) creates a more natural rhythm, mimicking the pause a human expert might take before speaking.
+    *   **Improving Readability and Pacing**: When a series of messages are delivered via `autoTransitionVisible`, displaying them all at once can overwhelm the user. By adding a `wait_time` to each prompt in the chain, the messages appear one by one. This paced delivery gives the user a moment to read and digest each piece of information before the next one arrives, significantly improving comprehension and making the interaction feel more like a guided conversation.
+    *   **Building Anticipation**: A slight pause before revealing a key piece of information, like a final score, can build anticipation and make the interaction more engaging.
+
+### 3. Example of Use
+In the chain of structural analysis prompts (15, 16, 17...), each one could have a `wait_time: 1200`. The user would see the feedback for the Start Phrase, then a 1.2-second pause, then the feedback for the Paraphrased Statement, another pause, and so on. This makes the feedback feel like a deliberate, step-by-step evaluation.
+
+### 4. Example of Code
+This property is defined in the `PromptType` but is not currently used in the `opinionPrompts.txt` file. A hypothetical implementation might look like this:
+
+*   **Code Snippet (Hypothetical):**
+    ```typescript
+    // This is a conceptual example
+    {
+      prompt_text: `Now I will analyze your Start Phrase...`,
+      autoTransitionVisible: true,
+      wait_time: 1500, // Wait 1.5 seconds before showing the next message
+    },
+    ```
+*   **Explanation:**
+    In this hypothetical example, after telling the user it will analyze the start phrase, the system would pause for 1.5 seconds before auto-transitioning to the prompt that actually contains the analysis, creating a more natural conversational rhythm.
+
+---
+## Property: `addToDatabase?: boolean;`
+
+### 1. What it does
+This property (likely a legacy or simplified feature) acts as a simple on/off switch to trigger a generic database logging operation for the current prompt interaction.
+
+### 2. How and why it's used (Conceptual)
+
+*   **How**: If this flag is `true`, the system, upon completion of the prompt, would call a predefined logging function. This function would likely save a generic payload to a default database collection, perhaps containing the raw user input, the final assistant output, and a timestamp.
+
+*   **Why**: It serves as a quick and easy mechanism for debugging or simple data collection, especially during development, without the overhead of configuring a detailed schema.
+    *   **Simplified Logging**: It's a "low-effort" way to start saving data. A developer can just add `addToDatabase: true` to a prompt to begin capturing its interactions for later review.
+    *   **Contrast with `dbOptions`**: The `dbOptions` property is the more powerful and structured evolution of this idea. While `addToDatabase: true` might save a single block of text to a "general_logs" collection, `dbOptions` allows for writing specific, named fields to a dedicated collection (e.g., saving `user_introduction` and `final_score` as separate fields in the `ielts_submissions` collection). For any production-level application requiring structured data, `dbOptions` is the superior choice. `addToDatabase` remains a useful concept for quick, temporary logging.
+
+### 3. Example of Use
+A developer is trying to debug why a specific validation is failing. They could temporarily add `addToDatabase: true` to that prompt. They could then check the database logs to see the exact user inputs that are causing the validation to fail, without having to set up a full `dbOptions` configuration.
+
+### 4. Example of Code
+This property is defined in the `PromptType` but is not currently used in the `opinionPrompts.txt` file. A hypothetical usage might be:
+
+*   **Code Snippet (Hypothetical):**
+    ```typescript
+    // Conceptual example for a key submission step
+    {
+      prompt_text: `Here is your final feedback...`,
+      dbOptions: {
+        collectionName: "ielts-introductions",
+        documentId: "[user_id]_[session_id]", // Dynamically created ID
+        fields: {
+          result: "Here is your final feedback...", // The assistant's output
+          userresult: "{[user_introduction]}", // The user's original intro
+          question: "{[original_question]}",
+          final_score: "{[final_band_score]}"
+        },
+        timestamp: true
+      },
+    }
+    ```
+*   **Explanation:**
+    In this hypothetical example, at the end of the analysis, this prompt would save a comprehensive record of the session to the `ielts-introductions` collection in the database. The record would be a structured document containing the key pieces of information from memory, making it invaluable for future analysis or for displaying a history to the user.
+
+---
+## Property: `model?: string;`
+
+### 1. What it does
+This property allows a developer to override the system's default Large Language Model and specify a different, specific model to be used for this prompt only. The string would be the model's identifier, such as `gpt-4-turbo`, `claude-3-opus`, or a custom fine-tuned model name.
+
+### 2. How and why it's used
+*   **How**: When preparing the API call to the language model for this specific prompt, the system checks for this property. If it exists, it uses the specified model name instead of the global default. If it's absent, the default is used.
+*   **Why**: This is a powerful feature for optimizing both performance and cost. Different tasks have different complexity levels.
+    *   **Simple tasks**, like classifying "yes" vs. "no" or extracting text with a rigid format, can be done by smaller, faster, and cheaper models (e.g., Groq's Llama3, `gpt-3.5-turbo`).
+    *   **Complex tasks**, like evaluating the nuanced quality of an essay or performing sophisticated analysis, may require a state-of-the-art model (e.g., `gpt-4o`, `claude-3-opus`).
+    By assigning the right model to the right task on a per-prompt basis, the application can be made much more efficient.
+
+### 3. Example of Use
+The prompt that asks "Are you ready to continue?" could be set to use a very fast and inexpensive model. In contrast, Prompt 37, which gives a final Task Response band score, could be configured to use the most powerful and reliable model available to ensure the highest quality evaluation.
+
+### 4. Example of Code
+This property is defined in the `PromptType` but is not currently used in the `opinionPrompts.txt` file. An example would look like this:
+
+*   **Code Snippet (Hypothetical):**
+    ```typescript
+    // Conceptual example for a complex analysis prompt
+    {
+      prompt_text: `# System message:
+        You are a certified IELTS Writing Task 2 examiner...
+        Assess Task Response for the intro...`,
+      model: 'gpt-4o', // Use the most powerful model for this critical evaluation
+      temperature: 0,
+      autoTransitionVisible: true,
+    },
+    ```
+*   **Explanation:**
+    In this hypothetical example, the developer has explicitly designated `gpt-4o` to be used for the task response evaluation, ensuring the highest level of analytical capability is applied, while other, simpler prompts in the flow might use a cheaper default model.
+
+---
+## Property: `fallbackIndex?: number;`
+
+### 1. What it does
+The `fallbackIndex` property specifies which prompt the application should jump to if the validation for the current prompt fails. It holds the numerical index of the target prompt in the `PROMPT_LIST` array.
+
+### 2. How and why it's used
+*   **How**: This property works in direct conjunction with the `validation` property. When a prompt is executed, the user responds. The `validation` logic then assesses that response. If the validation returns a "fail" or "invalid" status, the application's flow controller reads the `fallbackIndex` and immediately changes the current step to the prompt at that index.
+*   **Why**: This is the core mechanism for creating non-linear, branching, and looping conversations. It allows the application to gracefully handle negative paths and user choices. Instead of just stopping or throwing an error, the application can loop back to a previous step to give the user another chance or guide them down a different conversational path.
+
+### 3. Example of Use
+The system presents an essay question (at index 1) and then asks the user if they're happy with it (at index 2). If the user says "No, give me another one," the validation on prompt 2 fails, and the `fallbackIndex: 1` directs the application right back to the question-generation prompt to try again.
+
+### 4. Example of Code
+This is a classic example of using `fallbackIndex` to handle user dissatisfaction.
+
+*   **Code Snippet:**
+    ```typescript
+    // From: app/api/chat/prompts/opinionPrompts.txt
+    // Prompt Index: 2
+    {
+      prompt_text: `# System message:
+        ...
+        "Do you want to continue with this question, or would you like another one?"
+        ...`,
+      validation: customValidationInstructionForQuestion,
+      fallbackIndex: 1, // If validation fails, go back to Prompt 1
+    },
+    ```
+*   **Explanation:**
+    Prompt 2 asks for the user's consent. The `validation` logic is designed to fail if the user expresses a desire for a new question. When it fails, `fallbackIndex: 1` is triggered, and the application's state moves back to prompt index 1, which is the prompt responsible for selecting a random question. This creates a "get another question" loop.
+
+---
+## Property: `saveUserInputAs?: string;`
+
+### 1. What it does
+This property captures the user's **raw, unprocessed input** at a specific step and saves it to the application's memory store under a designated key.
+
+### 2. How and why it's used
+
+*   **How**: The moment a user sends a message to a prompt that includes this property, the system intercepts that exact text *before* any LLM processing occurs. It then saves this text to the memory store: `memory['[the_key]'] = "The user's exact input."`.
+
+*   **Why it's Used (The Strategy):** Capturing raw user input is strategically important and distinct from saving a processed assistant output.
+    *   **Preserving the Original Source:** It provides a perfect, unmodified record of what the user actually said. This is invaluable for logging, debugging, and analysis, as it shows the true input that led to a specific application behavior.
+    *   **Enabling Comparative Analysis:** This is a key use case. The system can save the user's raw introduction with `saveUserInputAs: "[raw_intro]"`. A later LLM prompt can then format and clean that intro, saving its own output with `saveAssistantOutputAs: "[formatted_intro]"`. Now, the system has access to both versions and can perform a comparison, for example, to highlight corrections or analyze the user's original phrasing.
+    *   **Decoupling Input from Processing:** In some flows, the user's input might not be for an LLM at all. It might be a command or a piece of data. `saveUserInputAs` captures this data, which can then be used by other parts of the application (e.g., a tool or a different API call) that are not the next immediate LLM prompt. It decouples data *capture* from data *processing*.
+
+### 3. Example of Use
+A prompt asks the user, "What is your name?". The system uses `saveUserInputAs: "[user_name]"`. Even if the user replies "well my name is Bob", the system saves "well my name is Bob" to the `[user_name]` key. A subsequent *hidden* prompt could then be used to extract just "Bob" from that raw input and save it to a different key.
+
+### 4. Example of Code
+This property is defined in the `PromptType` but is not currently used in the `opinionPrompts.txt` file. The current implementation seems to favor a pattern where the user's input is first echoed and formatted by an assistant prompt, and then that *assistant output* is saved using `saveAssistantOutputAs`. A direct usage would look like this:
+
+*   **Code Snippet (Hypothetical):**
+    ```typescript
+    // Conceptual example for the prompt where the user submits their work
+    {
+      prompt_text: `Please write an IELTS introduction for this essay title.`,
+      saveUserInputAs: "[user_submitted_introduction]", // Save the user's raw input
+    },
+    ```
+*   **Explanation:**
+    In this hypothetical example, as soon as the user submits their introduction, their exact text would be saved to the memory key `[user_submitted_introduction]` before any LLM processing takes place.
+
+---
+## Property: `saveAssistantOutputAs?: string;`
+
+### 1. What it does
+This property saves the final, generated output from the assistant (the LLM's response for the current prompt) into the application's memory store under a specific key. The string value of the property is the key used for storage and retrieval.
+
+### 2. How and why it's used
+*   **How**: After the LLM generates its response for the current prompt, the system takes that response text and saves it to a memory object, like `memory['[key]'] = "assistant's final output"`.
+*   **Why**: This is one of the most fundamental properties for creating a stateful, multi-step application. It is the primary mechanism for passing data between decoupled prompts. One prompt can perform a transformation or extraction (e.g., pull out the two main ideas from an introduction), save the result with `saveAssistantOutputAs`, and then subsequent prompts can access that specific piece of data using the `{[key]}` syntax in their own `prompt_text`. This allows for a complex workflow to be broken down into small, single-responsibility steps.
+
+### 3. Example of Use
+A prompt is designed to extract only the "background statement" from the user's full introduction. It uses `saveAssistantOutputAs: "[background_statement]"` to store this extracted sentence. Later prompts that analyze paraphrasing can then refer specifically to `{[background_statement]}`.
+
+### 4. Example of Code
+This prompt extracts the two supporting ideas from the user's introduction and saves them for later analysis.
+
+*   **Code Snippet:**
+    ```typescript
+    // From: app/api/chat/prompts/opinionPrompts.txt
+    // Prompt Index: 9
+    {
+      prompt_text: `# System message:
+        You are an AI language model trained to identify and extract the two main supporting ideas...`,
+      autoTransitionVisible: true,  
+      important_memory: true,
+      temperature: 0,
+      saveAssistantOutputAs: "[user_extracted_ideas]",
+    },
+    ```
+*   **Explanation:**
+    The LLM for Prompt 9 processes the user's full introduction and extracts only the two supporting ideas. The result (e.g., "1. it reduces air pollution\n2. decreases traffic congestion") is then saved to memory with the key `[user_extracted_ideas]`. Prompts later in the flow can now access this specific data.
+
+---
+## Property: `appendTextAfterResponse?: string;`
+
+### 1. What it does
+This property appends a fixed, predefined string of text to the end of the assistant's response *after* the LLM has generated its output.
+
+### 2. How and why it's used
+*   **How**: The LLM generates its response based on the `prompt_text`. Before this response is sent to the user, the application concatenates the string from `appendTextAfterResponse` to it.
+*   **Why**: This is used for separating content generation from presentation. It allows for the consistent addition of UI elements, formatting, or boilerplate text without having to include it in the `prompt_text` for the LLM. This keeps the prompts cleaner and focused on their logic, while the `appendTextAfterResponse` handles repetitive presentational concerns, like adding a horizontal separator to visually break up different sections of the analysis in the chat window.
+
+### 3. Example of Use
+Almost all the analysis prompts use this to add a dotted line after their feedback, creating a visually clear and consistent separation between each step of the evaluation.
+
+### 4. Example of Code
+This prompt evaluates the user's "Start Phrase" and then adds a separator line.
+
+*   **Code Snippet:**
+    ```typescript
+    // From: app/api/chat/prompts/opinionPrompts.txt
+    // Prompt Index: 15
+    {
+      prompt_text: `# System message:
+        You are an AI language model evaluating **only the Start Phrase**...`,
+      temperature: 0,
+      autoTransitionVisible: true,
+      appendTextAfterResponse: "....................................................................................................................",
+    }
+    ```
+*   **Explanation:**
+    The LLM for this prompt will generate its feedback (e.g., "✅ **Start Phrase:** Correct..."). Before this is displayed to the user, the application will append the long string of dots, ensuring a consistent visual format across all similar feedback prompts.

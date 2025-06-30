@@ -1,0 +1,66 @@
+name: "Action Type Test Flow"
+steps:
+  - id: 0_start
+    action: ASK_USER
+    content: "Welcome to the Action Type Test Flow. What is your name?"
+    next_step: 1_get_name
+
+  - id: 1_get_name
+    action: GET_USER_INPUT
+    save_to_memory_key: "user_name"
+    next_step: 2_save_greeting
+
+  - id: 2_save_greeting
+    action: SAVE_TO_MEMORY
+    value_to_save: "Hello, {{memory.user_name}}! It's nice to meet you."
+    save_to_memory_key: "greeting_message"
+    next_step: 3_show_greeting
+
+  - id: 3_show_greeting
+    action: SHOW_CONTENT
+    content: "{{memory.greeting_message}}"
+    next_step: 4_ask_about_mood
+
+  - id: 4_ask_about_mood
+    action: ASK_USER
+    content: "How are you feeling today?"
+    next_step: 5_get_mood
+
+  - id: 5_get_mood
+    action: GET_USER_INPUT
+    save_to_memory_key: "user_mood_raw"
+    next_step: 6_analyze_mood
+
+  - id: 6_analyze_mood
+    action: LLM_TRANSFORM
+    prompt_template: "prompts/common/classify_mood.txt"
+    save_to_memory_key: "user_mood_classification"
+    next_step: 7_branch_on_mood
+
+  - id: 7_branch_on_mood
+    action: BRANCH_ON_MEMORY
+    memory_key_to_check: "user_mood_classification"
+    branches:
+      "positive": 8a_positive_response
+      "negative": 8b_negative_response
+      default: 8c_neutral_response
+
+  - id: 8a_positive_response
+    action: SHOW_CONTENT
+    content: "Glad to hear you're feeling positive! That's the power of LLM_TRANSFORM and BRANCH_ON_MEMORY working together."
+    next_step: 9_end_flow
+
+  - id: 8b_negative_response
+    action: SHOW_CONTENT
+    content: "Sorry to hear you're not feeling great. At least we know LLM_TRANSFORM and BRANCH_ON_MEMORY are working correctly."
+    next_step: 9_end_flow
+
+  - id: 8c_neutral_response
+    action: SHOW_CONTENT
+    content: "Thanks for sharing. The LLM_TRANSFORM classified that as neutral, and BRANCH_ON_MEMORY sent you here."
+    next_step: 9_end_flow
+
+  - id: 9_end_flow
+    action: SHOW_CONTENT
+    content: "This concludes the action type test. All systems seem to be functioning correctly."
+    is_terminal: true 

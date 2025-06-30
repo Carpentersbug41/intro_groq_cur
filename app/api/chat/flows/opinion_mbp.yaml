@@ -1,0 +1,97 @@
+# FILE: app/api/chat/flows/opinion_mbp.yaml
+name: "IELTS Opinion MBP Practice Flow"
+steps:
+  - id: 0_start
+    action: ASK_USER
+    content: "Are you ready to begin practicing IELTS opinion essay main body paragraphs?"
+    next_step: 1_get_readiness_response
+
+  - id: 1_get_readiness_response
+    action: GET_USER_INPUT
+    save_to_memory_key: "user_input_raw" # Use a generic key
+    next_step: 2_check_if_affirmative
+
+  - id: 2_check_if_affirmative
+    action: LLM_TRANSFORM
+    prompt_template: "prompts/common/is_affirmative.txt"
+    save_to_memory_key: "user_is_ready"
+    next_step: 3_branch_on_readiness
+
+  - id: 3_branch_on_readiness
+    action: BRANCH_ON_MEMORY
+    memory_key_to_check: "user_is_ready"
+    branches:
+      "true": 4_show_module_intro
+      "false": 99_exit_flow
+      default: 0_start
+
+  - id: 4_show_module_intro
+    action: SHOW_CONTENT
+    content: |
+      **The next stage is focused on practicing writing main body paragraphs (MBPs) for IELTS opinion essays.**
+      
+      You will be shown an introduction and question. Your task is to write two main body paragraphs that support the opinion given.
+    next_step: 5_ask_to_continue
+
+  - id: 5_ask_to_continue
+    action: ASK_USER
+    content: "Are you ready to continue?"
+    next_step: 6_get_continue_response
+
+  - id: 6_get_continue_response
+    action: GET_USER_INPUT
+    save_to_memory_key: "user_input_raw"
+    next_step: 7_check_continue_affirmative
+
+  - id: 7_check_continue_ affirmative
+    action: LLM_TRANSFORM
+    prompt_template: "prompts/common/is_affirmative.txt"
+    save_to_memory_key: "user_wants_to_continue"
+    next_step: 8_branch_on_continue
+
+  - id: 8_branch_on_continue
+    action: BRANCH_ON_MEMORY
+    memory_key_to_check: "user_wants_to_continue"
+    branches:
+      "true": 9_display_question_and_ask_confirm
+      "false": 99_exit_flow
+      default: 5_ask_to_continue
+
+  - id: 9_display_question_and_ask_confirm
+    action: ASK_USER
+    content: |
+      **Question**: Companies that rely on fossil fuels should face higher taxes compared to those that use renewable energy. To what extent do you agree or disagree?
+
+      **Introduction**: It is argued that companies that use fossil fuels should pay more tax than those using renewable energy. I completely agree with this because it would push businesses to use cleaner energy and help protect the environment.
+      ---
+      Do you want to continue with this question and introduction, or would you like another one?
+    next_step: 10_get_confirmation
+
+  - id: 10_get_confirmation
+    action: GET_USER_INPUT
+    save_to_memory_key: "user_input_raw"
+    next_step: 11_check_confirmation_affirmative
+
+  - id: 11_check_confirmation_affirmative
+    action: LLM_TRANSFORM
+    prompt_template: "prompts/common/is_affirmative.txt"
+    save_to_memory_key: "user_confirmed_question"
+    next_step: 12_branch_on_confirmation
+
+  - id: 12_branch_on_confirmation
+    action: BRANCH_ON_MEMORY
+    memory_key_to_check: "user_confirmed_question"
+    branches:
+      "true": 13_proceed_to_writing
+      "false": 9_display_question_and_ask_confirm # For now, we'll just re-display. A real flow would jump to a 'select random' action.
+      default: 9_display_question_and_ask_confirm
+
+  - id: 13_proceed_to_writing
+    action: ASK_USER
+    content: "Excellent. Please write the first IELTS main body paragraph (MBP1) for this introduction."
+    next_step: null # End of this example flow
+
+  - id: 99_exit_flow
+    action: SHOW_CONTENT
+    content: "No problem. Let me know when you're ready to start."
+    next_step: null 

@@ -102,3 +102,4 @@ app/api/chat/old_stuff/
 
 # Old/Experimental Prompt files
 app/api/chat/prompts_all/
+.env*.local

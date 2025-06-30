@@ -6,7 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import ReactMarkdown from "react-markdown";
 
 // --- Define Essay Types ---
-type EssayType = "opinion" | "ads_type1" | "discussion" | "opinion_conclusion" | "opinion_mbp"; // <-- Add 'opinion_mbp'
+type EssayType = "opinion" | "ads_type1" | "discussion" | "opinion_conclusion" | "opinion_mbp" | "action_test"; // <-- Add 'action_test'
 
 function customTrim(str: string) {
   return str.replace(/^[\s\u00A0\u200B]+|[\s\u00A0\u200B]+$/g, "");
@@ -34,147 +34,115 @@ export function ChatWindow(props: {
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
-  // --- ADD STATE FOR ESSAY TYPE ---
-  const [selectedEssayType, setSelectedEssayType] = useState<EssayType>("opinion"); // Default to 'opinion'
+  const [selectedEssayType, setSelectedEssayType] = useState<EssayType>("opinion");
 
   const messageContainerRef = useRef<HTMLDivElement | null>(null);
-  // --- ADD REF FOR INPUT ---
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // Effect to scroll messages down
   useEffect(() => {
     if (messageContainerRef.current) {
       messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
     }
   }, [messages]);
 
-  // --- ADD EFFECT TO MANAGE INPUT FOCUS ---
   useEffect(() => {
-    // Focus on mount
     inputRef.current?.focus();
-  }, []); // Empty dependency array means run only once on mount
+  }, []);
 
   useEffect(() => {
-    // Refocus after submission or reset completes
-    if (!isSubmitting && !isResetting && inputRef.current) {
-       console.log("Refocusing input field..."); // Debug log
+    if (!isLoading && !isResetting && inputRef.current) {
        inputRef.current.focus();
     }
-     // Also log when disabled, for context
-     if (isSubmitting || isResetting) {
-        console.log("Input field disabled, focus not attempted.");
+  }, [isLoading, isResetting]);
+
+  const handleNewChat = async () => {
+    // This should ideally call a `/api/chat/reset` endpoint
+    // which would call `destroySession`. For now, we just reset client-side.
+    if (isLoading || isResetting) return;
+    setIsResetting(true);
+    setMessages([]);
+    setInput("");
+    
+    try {
+      await fetch('/api/chat/reset', { method: 'POST' });
+      toast.success("New chat started!");
+    } catch (error) {
+      console.error("Error resetting chat:", error);
+      toast.error("Could not start a new chat. Please refresh the page.");
+    } finally {
+      setIsResetting(false);
     }
-  }, [isSubmitting, isResetting]); // Re-run when submission/reset state changes
+  };
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (isSubmitting || isResetting) return;
+    if (isLoading || isResetting) return;
 
     let trimmedInput = customTrim(input);
-
     if (!trimmedInput) {
       toast.warning("Please enter a message.");
-      // --- FOCUS BACK IF INPUT WAS EMPTY ---
       inputRef.current?.focus();
       return;
     }
 
-    setIsSubmitting(true);
-
+    setIsLoading(true);
     const userMessage: Message = { role: "user", content: trimmedInput };
-    setMessages((prev) => [...prev, userMessage]);
-    setInput(""); // Clear input *before* API call potentially
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
+    setInput("");
 
     try {
-      const messagesToSend = [...messages, userMessage];
       const requestBody = {
-        // --- PASS essayType to backend ---
         essayType: selectedEssayType,
-        messages: messagesToSend, // Keep existing structure if backend expects 'messages' key
-        // Alternatively, backend might expect just { message, history, essayType }
-        // Adjust this based on your exact backend route's expectations
-        // Example if backend expects { message, history, essayType }:
-        // message: trimmedInput,
-        // history: messages, // Send previous messages if needed
-        // essayType: selectedEssayType,
-        stream: false, // Assuming you don't want streaming responses based on current code
+        messages: newMessages,
       };
 
-      console.log("📤 Sending request to backend:", JSON.stringify(requestBody, null, 2));
-
-      // --- Ensure endpoint usage is correct ---
-      // If your main chat endpoint is different from '/api/chat', use `endpoint` prop
-      const targetEndpoint = endpoint || '/api/chat'; // Use prop or default
-
-      const res = await fetch(targetEndpoint, { // Use targetEndpoint
-        method: "POST",
+      const response = await fetch(endpoint, {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(requestBody),
       });
 
-      if (!res.ok) {
-        let errorDetails: any;
-        try {
-          errorDetails = await res.clone().json();
-        } catch {
-          errorDetails = await res.text();
-        }
-        console.error("❌ Error response details:", errorDetails);
-        const errorMessage = errorDetails?.message || errorDetails || `HTTP error ${res.status}`;
-        throw new Error(errorMessage);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP error ${response.status}: ${errorText}`);
+      }
+      
+      if (!response.body) {
+        throw new Error("Response body is empty.");
       }
 
-      const responseText = await res.text();
-      console.log("🤖 Assistant Response (raw text):", responseText);
+      // Handle the streaming response
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let assistantResponse = "";
+      
+      setMessages(prev => [...prev, { role: 'assistant', content: "" }]);
 
-      const assistantContent = responseText || "Error: No response content.";
-      setMessages((prev) => [...prev, { role: "assistant", content: assistantContent }]);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        assistantResponse += decoder.decode(value, { stream: true });
+        setMessages(prev => {
+          const updatedMessages = [...prev];
+          updatedMessages[updatedMessages.length - 1].content = assistantResponse;
+          return updatedMessages;
+        });
+      }
 
     } catch (err: any) {
-      console.error("❌ Caught error in handleSubmit:", err);
+      console.error("Error in handleSubmit:", err);
       toast.error("Error: " + err.message);
-      // Don't clear messages on error
+      setMessages(messages); // Revert to old messages on error
     } finally {
-      setIsSubmitting(false);
-      // Focus will be handled by the useEffect hook reacting to isSubmitting becoming false
+      setIsLoading(false);
     }
   }
-
-  const handleNewChat = async () => {
-    if (isSubmitting || isResetting) return;
-
-    setIsResetting(true);
-    console.log("🔄 Resetting chat session...");
-
-    try {
-      const response = await fetch('/api/chat/reset', {
-        method: 'POST',
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to reset chat session');
-      }
-
-      const data = await response.json();
-      console.log(data.message);
-      toast.success("New chat started!");
-
-      setMessages([]);
-      setInput("");
-
-    } catch (error: any) {
-      console.error("Error resetting chat:", error);
-      toast.error("Error starting new chat: " + error.message);
-    } finally {
-      setIsResetting(false);
-      // Focus will be handled by the useEffect hook reacting to isResetting becoming false
-    }
-  };
 
   function renderMessage(msg: Message, index: number) {
     const isUser = msg.role === "user";
@@ -202,10 +170,27 @@ export function ChatWindow(props: {
       // Add other conclusion types here if needed later
     ];
 
-    const disableRadios = isSubmitting || isResetting || messages.length > 0;
+    const disableRadios = isLoading || isResetting || messages.length > 0;
 
     return (
       <div className="mb-3 p-2 border border-gray-200 rounded-md bg-gray-50">
+        {/* Test Flows */}
+        <label className="block text-sm font-medium text-gray-700 mb-1">Test Flows:</label>
+        <div className="flex space-x-4 mb-3">
+          <label className="inline-flex items-center text-sm">
+            <input
+              type="radio"
+              name="essayType"
+              value="action_test"
+              checked={selectedEssayType === "action_test"}
+              onChange={() => setSelectedEssayType("action_test")}
+              disabled={disableRadios}
+              className="form-radio h-4 w-4 text-blue-600 transition duration-150 ease-in-out disabled:opacity-50"
+            />
+            <span className={`ml-2 ${disableRadios ? "text-gray-400" : "text-gray-800"}`}>Action Test Flow</span>
+          </label>
+        </div>
+
         {/* Introduction Types */}
         <label className="block text-sm font-medium text-gray-700 mb-1">Select Introduction Essay Type:</label>
         <div className="flex space-x-4 mb-3">
@@ -273,8 +258,8 @@ export function ChatWindow(props: {
         <h2 className="text-lg font-semibold">{titleText}</h2>
         <button
           onClick={handleNewChat}
-          className={`bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md text-sm ${isResetting || isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
-          disabled={isResetting || isSubmitting}
+          className={`bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md text-sm ${isResetting || isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+          disabled={isResetting || isLoading}
         >
           {isResetting ? "Resetting..." : "New Chat"}
         </button>
@@ -306,6 +291,25 @@ export function ChatWindow(props: {
         {messages.length === 0 && emptyStateComponent
           ? <div className="flex justify-center items-center h-full text-gray-500">{emptyStateComponent}</div>
           : messages.map((m, idx) => renderMessage(m, idx))}
+        
+        {isLoading && (
+          <div className="p-3 mb-2 text-sm bg-gray-100 text-gray-900 self-start rounded-lg max-w-[80%] break-words">
+            <div className="flex items-center space-x-1">
+              <span className="dot animate-bounce"></span>
+              <span className="dot animate-bounce" style={{ animationDelay: '0.2s' }}></span>
+              <span className="dot animate-bounce" style={{ animationDelay: '0.4s' }}></span>
+            </div>
+            <style jsx>{`
+              .dot {
+                display: inline-block;
+                width: 8px;
+                height: 8px;
+                background-color: #4b5563;
+                border-radius: 50%;
+              }
+            `}</style>
+          </div>
+        )}
       </div>
 
       {/* Form */}
@@ -327,7 +331,7 @@ export function ChatWindow(props: {
             }}
             placeholder={placeholder}
             className="flex-grow p-2 mr-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm resize-y min-h-[80px] max-h-[240px]"
-            disabled={isSubmitting || isResetting}
+            disabled={isLoading || isResetting}
             autoFocus
             rows={2}
           />
@@ -339,10 +343,10 @@ export function ChatWindow(props: {
         </div>
         <button
           type="submit"
-          className={`bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition duration-150 ease-in-out text-sm ${isSubmitting || isResetting ? "opacity-50 cursor-not-allowed" : ""}`}
-          disabled={isSubmitting || isResetting}
+          className={`bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition duration-150 ease-in-out text-sm ${isLoading || isResetting ? "opacity-50 cursor-not-allowed" : ""}`}
+          disabled={isLoading || isResetting}
         >
-          {isSubmitting ? "Sending..." : "Send"}
+          {isLoading ? "Sending..." : "Send"}
         </button>
       </form>
 
