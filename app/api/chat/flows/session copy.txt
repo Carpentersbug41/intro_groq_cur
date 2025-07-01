@@ -1,0 +1,9 @@
+import { SessionData } from './types';
+
+export const defaultSessionData: SessionData = {
+    currentStepId: '0_start',
+    conversationHistory: [],
+    namedMemory: {
+        essayType: ''
+    }
+}; 

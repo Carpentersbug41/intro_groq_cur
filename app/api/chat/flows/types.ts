@@ -5,7 +5,9 @@ export type ActionType =
   | 'GET_USER_INPUT'    // Processes the user's input from the previous turn.
   | 'LLM_TRANSFORM'     // Calls the LLM with a prompt template to transform data.
   | 'SAVE_TO_MEMORY'    // Saves a static or dynamic value to session memory.
-  | 'BRANCH_ON_MEMORY'; // Jumps to a different step based on a value in memory.
+  | 'BRANCH_ON_MEMORY'  // Jumps to a different step based on a value in memory.
+  | 'VALIDATE_USER_INPUT'
+  | 'SAVE_TO_IMPORTANT_MEMORY';
 
 // Represents a single, atomic step in a conversational flow.
 export interface FlowStep {
@@ -20,7 +22,6 @@ export interface FlowStep {
   validation_rule?: string;
   on_fail_jump_to?: string;
   prompt_template?: string;
-  required_memory?: string[];
   history_buffer_size?: number;
   model?: string;
   temperature?: number;
@@ -45,6 +46,7 @@ export interface SessionState {
   currentStepId: string | null;
   namedMemory: { [key: string]: any };
   conversationHistory: { role: 'user' | 'assistant'; content: string }[];
+  importantMemory: { role: 'system'; content: string }[];
 }
 
 // The strict I/O contract for all action handlers.

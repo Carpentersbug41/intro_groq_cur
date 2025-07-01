@@ -8,18 +8,35 @@ steps:
   - id: 1_get_name
     action: GET_USER_INPUT
     save_to_memory_key: "user_name"
-    next_step: 2_save_greeting
+    next_step: 2_generate_and_show_greeting
 
-  - id: 2_save_greeting
-    action: SAVE_TO_MEMORY
-    value_to_save: "Hello, {{memory.user_name}}! It's nice to meet you."
+  - id: 2_generate_and_show_greeting
+    action: LLM_TRANSFORM
+    prompt_template: "prompts/common/generate_greeting.txt"
     save_to_memory_key: "greeting_message"
-    next_step: 3_show_greeting
+    next_step: 2.1_show_greeting
 
-  - id: 3_show_greeting
+  - id: 2.1_show_greeting
     action: SHOW_CONTENT
     content: "{{memory.greeting_message}}"
+    next_step: 2.5_generate_and_show_general
+
+  - id: 2.5_generate_and_show_general
+    action: LLM_TRANSFORM
+    prompt_template: "prompts/common/general.txt"
+    save_to_memory_key: "greeting_message1"
+
+    next_step: 2.6_generate_and_show_general2
+
+  - id: 2.6_generate_and_show_general2
+    action: SHOW_CONTENT
+    content: "{{memory.greeting_message1}}"
     next_step: 4_ask_about_mood
+    
+
+
+    
+    
 
   - id: 4_ask_about_mood
     action: ASK_USER
@@ -47,17 +64,44 @@ steps:
 
   - id: 8a_positive_response
     action: SHOW_CONTENT
-    content: "Glad to hear you're feeling positive! That's the power of LLM_TRANSFORM and BRANCH_ON_MEMORY working together."
-    next_step: 9_end_flow
+    content: "Glad to hear you're feeling positive!"
+    wait_time_ms: 1000
+    next_step: 8a_positive_response_detail
+
+  - id: 8a_positive_response_detail
+    action: SHOW_CONTENT
+    content: "That's the power of LLM_TRANSFORM and BRANCH_ON_MEMORY working together."
+    next_step: 10_ask_for_topic
 
   - id: 8b_negative_response
     action: SHOW_CONTENT
     content: "Sorry to hear you're not feeling great. At least we know LLM_TRANSFORM and BRANCH_ON_MEMORY are working correctly."
-    next_step: 9_end_flow
+    next_step: 10_ask_for_topic
 
   - id: 8c_neutral_response
     action: SHOW_CONTENT
     content: "Thanks for sharing. The LLM_TRANSFORM classified that as neutral, and BRANCH_ON_MEMORY sent you here."
+    next_step: 10_ask_for_topic
+
+  - id: 10_ask_for_topic
+    action: ASK_USER
+    content: "Now, let's test a generative response. What would you like to talk about?"
+    next_step: 11_get_topic
+
+  - id: 11_get_topic
+    action: GET_USER_INPUT
+    save_to_memory_key: "user_topic"
+    next_step: 12_generate_response
+
+  - id: 12_generate_response
+    action: LLM_TRANSFORM
+    prompt_template: "prompts/common/generate_response.txt"
+    save_to_memory_key: "assistant_response"
+    next_step: 12.1_show_response
+
+  - id: 12.1_show_response
+    action: SHOW_CONTENT
+    content: "{{memory.assistant_response}}"
     next_step: 9_end_flow
 
   - id: 9_end_flow

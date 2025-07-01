@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, FormEvent, useRef } from "react"; // <-- Keep useRef
+import { useState, useEffect, FormEvent, useRef } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ReactMarkdown from "react-markdown";
@@ -15,6 +15,18 @@ function customTrim(str: string) {
 type Message = {
   role: "user" | "assistant";
   content: string;
+};
+
+// Helper function to process messages with a delay
+const processAssistantMessages = async (
+  messages: Message[],
+  setMessages: React.Dispatch<React.SetStateAction<Message[]>>
+) => {
+  for (const message of messages) {
+    setMessages(prev => [...prev, message]);
+    // A small delay to simulate thinking and improve UX
+    await new Promise(resolve => setTimeout(resolve, 500)); 
+  }
 };
 
 export function ChatWindow(props: {
@@ -36,7 +48,7 @@ export function ChatWindow(props: {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
-  const [selectedEssayType, setSelectedEssayType] = useState<EssayType>("opinion");
+  const [selectedEssayType, setSelectedEssayType] = useState<EssayType>("action_test");
 
   const messageContainerRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -58,19 +70,21 @@ export function ChatWindow(props: {
   }, [isLoading, isResetting]);
 
   const handleNewChat = async () => {
-    // This should ideally call a `/api/chat/reset` endpoint
-    // which would call `destroySession`. For now, we just reset client-side.
     if (isLoading || isResetting) return;
     setIsResetting(true);
-    setMessages([]);
-    setInput("");
     
     try {
-      await fetch('/api/chat/reset', { method: 'POST' });
+      const response = await fetch('/api/chat', { method: 'DELETE' });
+      if (!response.ok) {
+          throw new Error('Server failed to reset session.');
+      }
+      
+      setMessages([]);
+      setInput("");
       toast.success("New chat started!");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error resetting chat:", error);
-      toast.error("Could not start a new chat. Please refresh the page.");
+      toast.error(`Could not start new chat: ${error.message}`);
     } finally {
       setIsResetting(false);
     }
@@ -80,7 +94,7 @@ export function ChatWindow(props: {
     e.preventDefault();
     if (isLoading || isResetting) return;
 
-    let trimmedInput = customTrim(input);
+    const trimmedInput = customTrim(input);
     if (!trimmedInput) {
       toast.warning("Please enter a message.");
       inputRef.current?.focus();
@@ -89,56 +103,39 @@ export function ChatWindow(props: {
 
     setIsLoading(true);
     const userMessage: Message = { role: "user", content: trimmedInput };
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+    const previousMessages = messages;
+    setMessages(prev => [...prev, userMessage]);
     setInput("");
 
     try {
       const requestBody = {
         essayType: selectedEssayType,
-        messages: newMessages,
+        message: trimmedInput,
       };
 
       const response = await fetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
       });
 
+      const responseData = await response.json();
+
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP error ${response.status}: ${errorText}`);
+        throw new Error(`HTTP error ${response.status}: ${responseData.error || 'Server error'}`);
       }
       
-      if (!response.body) {
-        throw new Error("Response body is empty.");
-      }
-
-      // Handle the streaming response
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let assistantResponse = "";
-      
-      setMessages(prev => [...prev, { role: 'assistant', content: "" }]);
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        
-        assistantResponse += decoder.decode(value, { stream: true });
-        setMessages(prev => {
-          const updatedMessages = [...prev];
-          updatedMessages[updatedMessages.length - 1].content = assistantResponse;
-          return updatedMessages;
-        });
+      // **CRITICAL CHANGE**: Handle the array of messages
+      if (responseData.messages && Array.isArray(responseData.messages)) {
+        await processAssistantMessages(responseData.messages, setMessages);
+      } else {
+        console.log("Received an empty or invalid messages array. Likely an internal state update.");
       }
 
     } catch (err: any) {
       console.error("Error in handleSubmit:", err);
       toast.error("Error: " + err.message);
-      setMessages(messages); // Revert to old messages on error
+      setMessages(previousMessages);
     } finally {
       setIsLoading(false);
     }
@@ -159,43 +156,30 @@ export function ChatWindow(props: {
 
   // --- Helper to create Radio Buttons ---
   const renderEssayTypeSelector = () => {
-    const introEssayTypes: { value: EssayType; label: string }[] = [
-      { value: "opinion", label: "Opinion Essay" },
-      { value: "ads_type1", label: "Adv/Disadv (Type 1)" },
-      { value: "discussion", label: "Discussion Essay" },
+    const essayTypes: { value: EssayType; label: string; group: string }[] = [
+        { value: "action_test", label: "Action Test Flow", group: "Test" },
+        { value: "opinion_mbp", label: "Opinion MBP", group: "Main Body" },
+        { value: "opinion", label: "Opinion Essay", group: "Introduction" },
+        { value: "ads_type1", label: "Adv/Disadv (Type 1)", group: "Introduction" },
+        { value: "discussion", label: "Discussion Essay", group: "Introduction" },
+        { value: "opinion_conclusion", label: "Opinion Conclusion", group: "Conclusion" },
     ];
 
-    const conclusionEssayTypes: { value: EssayType; label: string }[] = [
-      { value: "opinion_conclusion", label: "Opinion Conclusion" },
-      // Add other conclusion types here if needed later
-    ];
-
-    const disableRadios = isLoading || isResetting || messages.length > 0;
+    const disableRadios = isLoading || isResetting;
+    
+    const groupedTypes = essayTypes.reduce((acc, type) => {
+        (acc[type.group] = acc[type.group] || []).push(type);
+        return acc;
+    }, {} as Record<string, typeof essayTypes>);
 
     return (
-      <div className="mb-3 p-2 border border-gray-200 rounded-md bg-gray-50">
-        {/* Test Flows */}
-        <label className="block text-sm font-medium text-gray-700 mb-1">Test Flows:</label>
-        <div className="flex space-x-4 mb-3">
-          <label className="inline-flex items-center text-sm">
-            <input
-              type="radio"
-              name="essayType"
-              value="action_test"
-              checked={selectedEssayType === "action_test"}
-              onChange={() => setSelectedEssayType("action_test")}
-              disabled={disableRadios}
-              className="form-radio h-4 w-4 text-blue-600 transition duration-150 ease-in-out disabled:opacity-50"
-            />
-            <span className={`ml-2 ${disableRadios ? "text-gray-400" : "text-gray-800"}`}>Action Test Flow</span>
-          </label>
-        </div>
-
-        {/* Introduction Types */}
-        <label className="block text-sm font-medium text-gray-700 mb-1">Select Introduction Essay Type:</label>
-        <div className="flex space-x-4 mb-3">
-          {introEssayTypes.map((type) => (
-            <label key={type.value} className="inline-flex items-center text-sm">
+      <div className="mb-3 p-3 border border-gray-200 rounded-md bg-gray-50 text-sm">
+        {Object.entries(groupedTypes).map(([group, types]) => (
+            <div key={group} className="mb-2">
+                <label className="block font-medium text-gray-700 mb-1">{group} Flows:</label>
+                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                    {types.map((type) => (
+                         <label key={type.value} className="inline-flex items-center">
               <input
                 type="radio"
                 name="essayType"
@@ -209,43 +193,8 @@ export function ChatWindow(props: {
             </label>
           ))}
         </div>
-
-        {/* Main Body Paragraphs Types */}
-        <label className="block text-sm font-medium text-gray-700 mb-1 mt-2">Select Main Body Paragraphs Type:</label>
-        <div className="flex space-x-4 mb-3">
-          <label className="inline-flex items-center text-sm">
-            <input
-              type="radio"
-              name="essayType"
-              value="opinion_mbp"
-              checked={selectedEssayType === "opinion_mbp"}
-              onChange={() => setSelectedEssayType("opinion_mbp")}
-              disabled={disableRadios}
-              className="form-radio h-4 w-4 text-blue-600 transition duration-150 ease-in-out disabled:opacity-50"
-            />
-            <span className={`ml-2 ${disableRadios ? "text-gray-400" : "text-gray-800"}`}>Opinion MBP</span>
-          </label>
         </div>
-
-        {/* Conclusion Types */}
-        <label className="block text-sm font-medium text-gray-700 mb-1">Select Conclusion Essay Type:</label>
-        <div className="flex space-x-4">
-          {conclusionEssayTypes.map((type) => (
-            <label key={type.value} className="inline-flex items-center text-sm">
-              <input
-                type="radio"
-                name="essayType" // Keep the same name to ensure only one can be selected overall
-                value={type.value}
-                checked={selectedEssayType === type.value}
-                onChange={() => setSelectedEssayType(type.value)}
-                disabled={disableRadios}
-                className="form-radio h-4 w-4 text-blue-600 transition duration-150 ease-in-out disabled:opacity-50"
-              />
-              <span className={`ml-2 ${disableRadios ? "text-gray-400" : "text-gray-800"}`}>{type.label}</span>
-            </label>
-          ))}
-        </div>
-
+        ))}
          {messages.length > 0 && <p className="text-xs text-gray-500 mt-2">Start a new chat to change the essay type.</p>}
       </div>
     );
@@ -346,7 +295,7 @@ export function ChatWindow(props: {
           className={`bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition duration-150 ease-in-out text-sm ${isLoading || isResetting ? "opacity-50 cursor-not-allowed" : ""}`}
           disabled={isLoading || isResetting}
         >
-          {isLoading ? "Sending..." : "Send"}
+          {isLoading ? "Thinking..." : "Send"}
         </button>
       </form>
 

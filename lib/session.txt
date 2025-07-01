@@ -2,14 +2,10 @@ import { getIronSession, IronSession, SessionOptions } from 'iron-session';
 import { cookies } from 'next/headers';
 import { kv } from './kv';
 import { nanoid } from 'nanoid';
+import { SessionState } from '@/app/api/chat/flows/types'; // Import SessionState type
+import { SessionStoreUnavailableError } from '@/app/api/chat/errors'; // Import the new custom error
 
-// The structure of the session data stored in our server-side KV store.
-export interface SessionState {
-  sessionId: string;
-  currentStepId: string | null;
-  namedMemory: { [key: string]: any };
-  conversationHistory: { role: 'user' | 'assistant'; content: string }[];
-}
+// The structure of the session data is already in types.ts. We don't need to redefine it here.
 
 // This is the type that will be stored in the cookie, just the ID.
 interface SessionIdContainer {
@@ -26,6 +22,7 @@ export const sessionOptions: SessionOptions = {
     },
 };
 
+// CORRECTLY DEFINED AND EXPORTED DEFAULT STATE
 export const defaultSessionData: Omit<SessionState, 'sessionId'> = {
   currentStepId: '0_start',
   namedMemory: {},
@@ -33,13 +30,11 @@ export const defaultSessionData: Omit<SessionState, 'sessionId'> = {
 };
 
 async function getSessionFromCookie(): Promise<IronSession<SessionIdContainer>> {
-    // This is the correct usage for App Router
     return getIronSession<SessionIdContainer>(await cookies(), sessionOptions);
 }
 
 export async function getSession(): Promise<SessionState> {
   const session = await getSessionFromCookie();
-
   let sessionId = session.sessionId;
   let sessionData: SessionState | null = null;
 
@@ -47,32 +42,41 @@ export async function getSession(): Promise<SessionState> {
     try {
       sessionData = await kv.get(sessionId);
     } catch (error) {
-      console.error("KV Error retrieving session:", error);
-      sessionId = undefined; // Force re-creation
-      sessionData = null;
+      console.error("[SESSION-CRITICAL] KV Error retrieving session:", error);
+      throw new SessionStoreUnavailableError('The session store is currently unavailable during get.');
     }
   }
 
-  if (!sessionId || !sessionData) {
+  // If the session data is null FROM a successful kv.get (e.g., expired key),
+  // OR if there was no session ID in the cookie, we create a new one.
+  if (!sessionData) {
     const newSessionId = nanoid();
+    console.log(`[SESSION] No valid session found. Creating new session: ${newSessionId}`);
     sessionData = { sessionId: newSessionId, ...defaultSessionData };
     
-    await kv.set(newSessionId, sessionData, { ex: SESSION_TTL_SECONDS });
-
-    session.sessionId = newSessionId;
-    await session.save();
-    console.log(`[SESSION] New session created: ${newSessionId}`);
+    try {
+      await kv.set(newSessionId, sessionData, { ex: SESSION_TTL_SECONDS });
+      session.sessionId = newSessionId;
+      await session.save();
+    } catch (error) {
+        console.error("[SESSION-CRITICAL] KV Error creating new session:", error);
+        throw new SessionStoreUnavailableError('The session store is currently unavailable during set.');
+    }
   }
 
-  return sessionData as SessionState;
+  return sessionData;
 }
 
 export async function saveSession(data: SessionState): Promise<void> {
   if (!data.sessionId) {
-    console.error("[KV-ERROR] Attempted to save session without a session ID.");
-    return;
+    throw new Error("[KV-ERROR] Attempted to save session without a session ID.");
   }
-  await kv.set(data.sessionId, data, { ex: SESSION_TTL_SECONDS });
+  try {
+    await kv.set(data.sessionId, data, { ex: SESSION_TTL_SECONDS });
+  } catch(error) {
+    console.error("[SESSION-CRITICAL] KV Error saving session:", error);
+    throw new SessionStoreUnavailableError('The session store is currently unavailable during save.');
+  }
 }
 
 export async function destroySession(): Promise<void> {

@@ -89,7 +89,12 @@ steps:
   - id: 13_proceed_to_writing
     action: ASK_USER
     content: "Excellent. Please write the first IELTS main body paragraph (MBP1) for this introduction."
-    next_step: null # End of this example flow
+    next_step: 14_get_user_paragraph
+
+  - id: 14_get_user_paragraph
+    action: GET_USER_INPUT
+    save_to_memory_key: "user_mbp1_paragraph"
+    next_step: null # Flow ends here for now. Next step would be analysis.
 
   - id: 99_exit_flow
     action: SHOW_CONTENT

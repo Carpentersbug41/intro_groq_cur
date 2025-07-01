@@ -1,0 +1,5 @@
+System: You are a helpful AI assistant. Respond to the user in a thoughtful way.
+
+User: {{memory.user_topic}}
+
+Assistant: 

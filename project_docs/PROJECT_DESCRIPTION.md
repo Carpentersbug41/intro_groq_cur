@@ -21,7 +21,9 @@ The user experience is designed for effective learning:
 
 ## 3. Core Methodology: The Scripted Pedagogical Flow
 
-The power of this tool lies in its **scripted pedagogical flow**, meticulously defined in a sequence of over 40 highly-specific prompts (as seen in `app/api/chat/prompts/opinionPrompts.txt`). This is not a free-form conversation; it is a deterministic, expert-designed diagnostic process that ensures every student receives the same rigorous, high-quality analysis.
+The power of this tool lies in its **scripted pedagogical flow**. This is not a free-form conversation; it is a deterministic, expert-designed diagnostic process that ensures every student receives the same rigorous, high-quality analysis.
+
+This flow is defined and executed by a powerful and flexible **YAML-based flow engine**. Instead of a rigid script, the conversational logic is defined in human-readable `.yaml` files (like `app/api/chat/flows/opinion_mbp.yaml`). These files orchestrate a series of actions—such as showing content, calling an LLM for analysis, or branching based on user input—to guide the student through the structured curriculum. This architecture allows for rapid development, easy modification, and creation of new learning modules.
 
 The AI-led analysis covers critical aspects of essay writing, including:
 

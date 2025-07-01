@@ -1,0 +1,58 @@
+// The set of possible actions the Flow Runner can execute.
+export type ActionType =
+  | 'ASK_USER'          // Presents content to the user and waits for their next input.
+  | 'SHOW_CONTENT'      // Presents content and immediately proceeds to the next step.
+  | 'GET_USER_INPUT'    // Processes the user's input from the previous turn.
+  | 'LLM_TRANSFORM'     // Calls the LLM with a prompt template to transform data.
+  | 'SAVE_TO_MEMORY'    // Saves a static or dynamic value to session memory.
+  | 'BRANCH_ON_MEMORY'; // Jumps to a different step based on a value in memory.
+
+// Represents a single, atomic step in a conversational flow.
+export interface FlowStep {
+  id: string;
+  action: ActionType;
+  next_step?: string | null;
+  is_terminal?: boolean; // If true, the runner will stop after this step.
+
+  // --- Action-specific parameters ---
+  content?: string;
+  save_to_memory_key?: string;
+  validation_rule?: string;
+  on_fail_jump_to?: string;
+  prompt_template?: string;
+  required_memory?: string[];
+  history_buffer_size?: number;
+  model?: string;
+  temperature?: number;
+  value_to_save?: string;
+  memory_key_to_check?: string;
+  branches?: {
+    [value: string]: string;
+    default: string;
+  };
+  wait_time_ms?: number;
+}
+
+// Represents an entire conversational flow, loaded from a YAML file.
+export interface Flow {
+  name: string;
+  steps: FlowStep[];
+}
+
+// Represents the core data of a session, excluding the session ID.
+export interface SessionData {
+  currentStepId: string | null;
+  namedMemory: { [key: string]: any };
+  conversationHistory: { role: 'user' | 'assistant'; content: string }[];
+}
+
+// The structure of the session data stored in our server-side KV store.
+export interface SessionState extends SessionData {
+  sessionId: string;
+}
+
+// The strict I/O contract for all action handlers.
+export interface ActionResult {
+  contentForUser: string | null;
+  stateUpdates: Partial<SessionState>;
+} 
