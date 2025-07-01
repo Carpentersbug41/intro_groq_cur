@@ -12,7 +12,13 @@ export async function executeTurn(
   initialState: SessionState,
   requestId: string
 ): Promise<TurnResult> {
-  const log = (message: string) => console.log(`[req:${requestId}][RUNNER] ${message}`);
+  const log = (message: string, data?: any) => {
+    if (typeof data !== 'undefined') {
+      console.log(`[req:${requestId}][RUNNER] ${message}\n`, JSON.stringify(data, null, 2));
+    } else {
+      console.log(`[req:${requestId}][RUNNER] ${message}`);
+    }
+  };
   let currentState = { ...initialState };
   const messagesForUser: { role: 'assistant'; content: string }[] = [];
   let currentStepId: string | null = currentState.currentStepId;
@@ -24,7 +30,7 @@ export async function executeTurn(
 
   log(`--- Turn Start ---`);
   log(`Initial Step ID: ${currentStepId}`);
-  log(`Initial memory: ` + JSON.stringify(currentState.namedMemory, null, 2));
+  log('Initial memory: ', currentState.namedMemory);
 
   // --- HARDENED Auto-transition loop with Error Handling ---
   while (currentStepId) {
@@ -65,7 +71,7 @@ export async function executeTurn(
         namedMemory: { ...currentState.namedMemory, ...result.stateUpdates?.namedMemory },
     };
     
-    log(`Memory after step '${step.id}': ` + JSON.stringify(currentState.namedMemory, null, 2));
+    log(`Memory after step '${step.id}': `, currentState.namedMemory);
 
     if (result.contentForUser) {
         const renderedContent = mustache.render(result.contentForUser, { memory: currentState.namedMemory });
