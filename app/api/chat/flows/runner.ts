@@ -77,7 +77,7 @@ export async function executeTurn(
         const renderedContent = mustache.render(result.contentForUser, { memory: currentState.namedMemory });
         messagesForUser.push({ role: 'assistant', content: renderedContent });
         currentState.conversationHistory.push({ role: 'assistant', content: renderedContent });
-        log(`Added message for user: "${renderedContent.substring(0, 50)}..."`);
+        log(`Added message for user:`, renderedContent);
     }
 
     if (step.wait_time_ms && result.contentForUser) {

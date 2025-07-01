@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import { ChatCompletionMessageParam } from 'openai/resources';
+import { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -9,19 +9,10 @@ const DEFAULT_MODEL = 'gpt-4o';
 const DEFAULT_TEMPERATURE = 0.7;
 
 export async function callLlm(
-  systemPrompt: string,
-  history: { role: 'user' | 'assistant' | 'system'; content: string }[],
+  messages: ChatCompletionMessageParam[],
   model?: string,
   temperature?: number
 ): Promise<string> {
-  const messages: ChatCompletionMessageParam[] = [
-    {
-      role: 'system',
-      content: systemPrompt,
-    },
-    ...history,
-  ];
-
   try {
     const response = await openai.chat.completions.create({
       model: model || DEFAULT_MODEL,
